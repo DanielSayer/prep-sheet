@@ -1,0 +1,24 @@
+{
+  "name": "@prep-sheet/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@prep-sheet/db": "workspace:*",
+    "@prep-sheet/env": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@prep-sheet/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "prep-sheet",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "check-types": "turbo run check-types",
+    "dev:web": "turbo run dev -F web --",
+    "db:push": "turbo run db:push -F @prep-sheet/db --",
+    "db:studio": "turbo run db:studio -F @prep-sheet/db --",
+    "db:generate": "turbo run db:generate -F @prep-sheet/db --",
+    "db:migrate": "turbo run db:migrate -F @prep-sheet/db --",
+    "db:start": "turbo run db:start -F @prep-sheet/db --",
+    "db:watch": "turbo run db:watch -F @prep-sheet/db --",
+    "db:stop": "turbo run db:stop -F @prep-sheet/db --",
+    "db:down": "turbo run db:down -F @prep-sheet/db --",
+    "check": "biome check --write ."
+  },
+  "dependencies": {
+    "@prep-sheet/env": "workspace:*",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.11",
+    "@prep-sheet/config": "workspace:*",
+    "@types/node": "catalog:",
+    "turbo": "^2.10.12",
+    "typescript": "catalog:"
+  },
+  "packageManager": "pnpm@11.21.0"
+}
