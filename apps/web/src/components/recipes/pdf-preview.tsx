@@ -56,7 +56,7 @@ export function PdfPreview({
   return (
     <section className="pdf-section" aria-label="Recipe PDF">
       <div className="pdf-toolbar">
-        <span>YOUR KITCHEN COPY</span>
+        <span>Your kitchen copy</span>
         {url && (
           <div>
             <a

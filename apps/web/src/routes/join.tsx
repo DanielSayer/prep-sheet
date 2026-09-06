@@ -56,7 +56,6 @@ function JoinGroup() {
   return (
     <main id="main-content" className="login-page">
       <div className="login-card">
-        <span className="eyebrow">YOU'RE INVITED</span>
         <h1>Cook with your group.</h1>
         <LoadingState
           pending={isPending || token === undefined}

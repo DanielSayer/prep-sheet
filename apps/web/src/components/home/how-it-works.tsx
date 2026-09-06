@@ -9,7 +9,7 @@ const steps = [
   },
   {
     icon: BookOpen,
-    title: "Keep the good ones",
+    title: "Save to your collection",
     text: "Ingredients and steps, all in your collection.",
     colour: "green",
   },

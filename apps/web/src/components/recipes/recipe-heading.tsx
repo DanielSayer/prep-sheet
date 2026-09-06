@@ -14,10 +14,6 @@ export function RecipeHeading({
   return (
     <div className="page-heading">
       <div>
-        <span className="eyebrow">
-          {editing ? "A LITTLE TWEAK" : "READY WHEN YOU'RE HUNGRY"}
-        </span>
-
         <h1>{recipe.title}</h1>
         <p>
           {recipe.origin === "generated"

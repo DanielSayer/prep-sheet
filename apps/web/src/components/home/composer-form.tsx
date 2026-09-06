@@ -45,7 +45,7 @@ export function ComposerForm({
             </>
           ) : (
             <>
-              <Sparkles size={18} /> Make it a keeper <ArrowRight size={18} />
+              <Sparkles size={18} /> Create recipe <ArrowRight size={18} />
             </>
           )}
         </button>

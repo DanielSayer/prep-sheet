@@ -23,7 +23,6 @@ export function Collection() {
     <main id="main-content" className="collection-page page-width">
       <div className="page-heading">
         <div>
-          <span className="eyebrow">THE GOOD STUFF, ALL TOGETHER</span>
           <h1>
             {name}
             <span className="title-dot">.</span>
@@ -45,7 +44,7 @@ export function Collection() {
       <div className="collection-toolbar">
         <span>
           {query.data?.length ?? 0}{" "}
-          {query.data?.length === 1 ? "recipe" : "recipes"} worth keeping
+          {query.data?.length === 1 ? "recipe" : "recipes"}
         </span>
 
         <label className="search-box">

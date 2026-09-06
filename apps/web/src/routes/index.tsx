@@ -12,7 +12,7 @@ function Home() {
       <RecipeComposer />
       <HowItWorks />
       <footer className="home-footer">
-        <span>Made for the meals worth making again.</span>
+        <span>Your recipes, ready to cook.</span>
         <span>A little kitchen magic.</span>
       </footer>
     </main>

@@ -22,7 +22,7 @@ export function DeleteConfirmation({
         disabled={pending}
         onClick={onCancel}
       >
-        Keep it
+        Cancel
       </button>
 
       <button

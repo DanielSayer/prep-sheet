@@ -12,10 +12,6 @@ export function Hero() {
         </span>
       </div>
 
-      <div className="eyebrow">
-        <span /> YOUR LITTLE RECIPE KEEPER
-      </div>
-
       <h1 id="hero-title">
         Big ideas.
         <br />
@@ -24,7 +20,8 @@ export function Hero() {
 
       <p>
         A recipe you found. A dish you dreamed up.
-        <br className="desktop-break" /> Drop it here. We'll make it a keeper.
+        <br className="desktop-break" /> Add it here. We'll organise the
+        ingredients and steps.
       </p>
 
       <div className="hero-sticker sticker-fork" aria-hidden="true">

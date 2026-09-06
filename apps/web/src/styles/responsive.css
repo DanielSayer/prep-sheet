@@ -1,9 +1,9 @@
 @media (min-width: 1500px) {
   .hero {
-    padding-top: 80px;
+    padding-top: 40px;
   }
   .how-it-works {
-    margin-top: 65px;
+    margin-top: 40px;
   }
 }
 @media (max-width: 850px) {
@@ -50,9 +50,9 @@
 @media (max-width: 600px) {
   .site-header {
     height: auto;
-    min-height: 120px;
+    min-height: 108px;
     flex-wrap: wrap;
-    padding: 16px 20px 8px;
+    padding: 12px 20px 8px;
     gap: 12px;
   }
   .site-header nav {
@@ -77,22 +77,18 @@
     padding: 0 20px;
   }
   .hero {
-    padding: 38px 0 25px;
+    padding: 24px 0 20px;
   }
   .hero h1 {
-    font-size: 49px;
+    font-size: clamp(38px, 10vw, 46px);
     letter-spacing: -2.5px;
-    margin: 18px 0;
+    margin: 0 0 12px;
   }
   .hero p {
     font-size: 15px;
   }
   .hero-sticker {
     display: none;
-  }
-  .eyebrow {
-    font-size: 9px;
-    letter-spacing: 1.7px;
   }
   .composer {
     padding: 16px;
@@ -145,7 +141,7 @@
     gap: 5px;
   }
   .page-width {
-    padding: 35px 20px 50px;
+    padding: 24px 20px 48px;
   }
   .page-heading {
     flex-direction: column;

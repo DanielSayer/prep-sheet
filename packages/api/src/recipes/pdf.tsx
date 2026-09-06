@@ -80,7 +80,7 @@ export async function recipePdf(
   return renderToBuffer(
     <Document title={content.title} author="Prep Sheet">
       <Page size="A4" style={s.page}>
-        <Text style={s.brand}>prep sheet. / THE KITCHEN COPY</Text>
+        <Text style={s.brand}>prep sheet. / The kitchen copy</Text>
         <Text style={s.title}>{content.title}</Text>
         {content.description && (
           <Text style={s.description}>{content.description}</Text>

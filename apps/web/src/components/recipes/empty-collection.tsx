@@ -14,16 +14,12 @@ export function EmptyCollection({
         <BookOpen size={46} />
       </span>
 
-      <h2>
-        {searching
-          ? "No recipes by that name"
-          : "A fresh page. A hungry beginning."}
-      </h2>
+      <h2>{searching ? "No recipes by that name" : "No recipes yet"}</h2>
 
       <p>
         {searching
           ? "Try another name or clear your search."
-          : "Your first keeper is just a recipe, a link or an idea away."}
+          : "Paste a recipe or link, or describe a dish to get started."}
       </p>
 
       {searching ? (
@@ -36,7 +32,7 @@ export function EmptyCollection({
         </button>
       ) : (
         <Link to="/" className="button button-primary">
-          Find your first keeper <ArrowUpRight size={18} />
+          Add a recipe <ArrowUpRight size={18} />
         </Link>
       )}
     </div>

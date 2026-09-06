@@ -42,7 +42,6 @@ function Login() {
           <CookingPot size={58} />
         </span>
 
-        <span className="eyebrow">PULL UP A CHAIR</span>
         <h1>
           Your recipes.
           <br />

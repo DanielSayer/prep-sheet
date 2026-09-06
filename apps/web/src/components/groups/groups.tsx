@@ -27,7 +27,6 @@ export function Groups() {
     <main id="main-content" className="page-width groups-page">
       <div className="page-heading">
         <div>
-          <span className="eyebrow">GOOD FOOD IS FOR SHARING</span>
           <h1>
             Your groups<span className="title-dot">.</span>
           </h1>
