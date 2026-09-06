@@ -1,6 +1,8 @@
 packages:
   - apps/*
   - packages/*
+# Keep installs on the fresh project-local store used to repair missing package files.
+storeDir: .pnpm-store/repair
 allowBuilds:
   esbuild: true
 catalog:

@@ -50,6 +50,14 @@ pnpm check
 
 `pnpm test` needs the local database with the schema pushed. Integration tests create unique test users, exercise real database operations and remove those users afterwards. OpenAI calls are mocked in that suite. PDF fixtures are written under ignored `tmp/pdfs` for visual inspection.
 
+If the build or Vitest reports missing files inside `node_modules`, repair the installed dependencies without changing their locked versions:
+
+```sh
+pnpm install --frozen-lockfile --force --no-optimistic-repeat-install
+```
+
+The workspace uses the ignored `.pnpm-store/repair` cache. This replaced a damaged cache that restored incomplete packages even during a forced reinstall. If a repair still restores missing files, use a new empty directory with `--store-dir` and update `storeDir` in `pnpm-workspace.yaml` to match. The `--no-optimistic-repeat-install` flag prevents pnpm from skipping the repair as already up to date.
+
 To opt into live OpenAI generation/extraction checks in PowerShell:
 
 ```powershell
