@@ -8,7 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
-
+import { CollectionProvider } from "../components/groups/collection-context";
 import Header from "../components/header";
 
 import appCss from "../index.css?url";
@@ -56,8 +56,10 @@ function RootDocument() {
         </a>
 
         <div className="app-shell">
-          <Header />
-          <Outlet />
+          <CollectionProvider>
+            <Header />
+            <Outlet />
+          </CollectionProvider>
         </div>
 
         <Toaster richColors theme="light" />

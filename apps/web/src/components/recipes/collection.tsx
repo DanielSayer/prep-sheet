@@ -4,16 +4,18 @@ import { Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
 import { useTRPC } from "@/utils/trpc";
+import { CollectionSelect, useCollection } from "../groups/collection-context";
 import { EmptyCollection } from "./empty-collection";
 import { RecipeCard } from "./recipe-card";
 
 export function Collection() {
   const trpc = useTRPC();
-  const query = useQuery(trpc.recipes.list.queryOptions());
+  const { groupId, name } = useCollection();
+  const query = useQuery(trpc.recipes.list.queryOptions({ groupId }));
   const [search, setSearch] = useState("");
 
   const recipes =
-    query.data?.filter((recipe) =>
+    (query.isError ? undefined : query.data)?.filter((recipe) =>
       recipe.title.toLowerCase().includes(search.toLowerCase()),
     ) ?? [];
 
@@ -23,10 +25,15 @@ export function Collection() {
         <div>
           <span className="eyebrow">THE GOOD STUFF, ALL TOGETHER</span>
           <h1>
-            My collection<span className="title-dot">.</span>
+            {name}
+            <span className="title-dot">.</span>
           </h1>
 
-          <p>Your future dinners will thank you.</p>
+          <p>
+            {groupId
+              ? "Recipes everyone in your group can cook, edit and add to."
+              : "Just for you. Your personal recipes stay private."}
+          </p>
         </div>
 
         <Link to="/" className="button button-primary">
@@ -34,6 +41,7 @@ export function Collection() {
         </Link>
       </div>
 
+      <CollectionSelect />
       <div className="collection-toolbar">
         <span>
           {query.data?.length ?? 0}{" "}

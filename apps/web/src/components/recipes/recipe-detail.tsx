@@ -5,6 +5,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
 import { useTRPC } from "@/utils/trpc";
+import { useCollection } from "../groups/collection-context";
+import { CopyRecipe } from "../groups/copy-recipe";
 import { DeleteConfirmation } from "./delete-confirmation";
 import { PdfPreview } from "./pdf-preview";
 import { RecipeEditor } from "./recipe-editor";
@@ -17,6 +19,7 @@ export function RecipeDetail({ id }: { id: string }) {
   const recipe = useQuery(trpc.recipes.get.queryOptions({ id }));
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const { groups, selectGroup } = useCollection();
 
   const update = useMutation(
     trpc.recipes.update.mutationOptions({
@@ -49,8 +52,18 @@ export function RecipeDetail({ id }: { id: string }) {
 
   return (
     <main id="main-content" className="detail-page page-width">
-      <Link to="/recipes" className="back-link">
-        <ArrowLeft size={17} /> My collection
+      <Link
+        to="/recipes"
+        className="back-link"
+        onClick={() => {
+          if (recipe.data) selectGroup(recipe.data.groupId);
+        }}
+      >
+        <ArrowLeft size={17} />{" "}
+        {recipe.data?.groupId
+          ? (groups.data?.find((group) => group.id === recipe.data?.groupId)
+              ?.name ?? "Group collection")
+          : "Personal collection"}
       </Link>
 
       <LoadingState pending={recipe.isPending}>
@@ -59,7 +72,7 @@ export function RecipeDetail({ id }: { id: string }) {
           retry={() => void recipe.refetch()}
         />
 
-        {recipe.data && (
+        {recipe.data && !recipe.isError && (
           <>
             <RecipeHeading
               recipe={recipe.data}
@@ -67,9 +80,17 @@ export function RecipeDetail({ id }: { id: string }) {
               onEdit={() => setEditing(true)}
               onDelete={() => setConfirming(true)}
             />
+            {!editing && (
+              <CopyRecipe
+                key={id}
+                id={id}
+                sourceGroupId={recipe.data.groupId}
+              />
+            )}
 
             {confirming && (
               <DeleteConfirmation
+                shared={!!recipe.data.groupId}
                 pending={remove.isPending}
                 onCancel={() => setConfirming(false)}
                 onConfirm={() => remove.mutate({ id })}

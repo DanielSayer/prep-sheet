@@ -23,7 +23,7 @@ export default function Header() {
         </Link>
 
         <Link to="/recipes" activeProps={{ className: "active" }}>
-          <BookOpen size={18} /> My collection
+          <BookOpen size={18} /> Collections
         </Link>
       </nav>
 

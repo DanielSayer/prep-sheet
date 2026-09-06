@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { db } from "@prep-sheet/db";
 import { user } from "@prep-sheet/db/schema/auth";
+import { group, groupInvite } from "@prep-sheet/db/schema/group";
+import { recipe } from "@prep-sheet/db/schema/recipe";
 import { eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { Context } from "../context";
@@ -10,7 +12,7 @@ import { generateRecipe } from "./generate";
 
 vi.mock("./generate", () => ({ generateRecipe: vi.fn() }));
 
-const ids = [randomUUID(), randomUUID()] as const;
+const ids = [randomUUID(), randomUUID(), randomUUID(), randomUUID()] as const;
 function caller(id: string) {
   const now = new Date();
   const session: Context["session"] = {
@@ -48,6 +50,8 @@ describe("recipes API with PostgreSQL", () => {
     );
   });
   afterAll(async () => {
+    await db.delete(group).where(inArray(group.ownerId, ids));
+    await db.delete(recipe).where(inArray(recipe.userId, ids));
     await db.delete(user).where(inArray(user.id, ids));
     await db.$client.end();
   });
@@ -110,5 +114,251 @@ describe("recipes API with PostgreSQL", () => {
     expect(
       await db.select().from(user).where(eq(user.id, ids[0])),
     ).toHaveLength(1);
+  });
+
+  it("shares a group collection while keeping personal and other groups private", async () => {
+    vi.mocked(generateRecipe).mockResolvedValue({
+      content: sampleRecipe,
+      origin: "generated",
+      sourceUrl: null,
+    });
+    const owner = caller(ids[0]);
+    const member = caller(ids[1]);
+    const outsider = caller(ids[2]);
+    const friends = await owner.groups.create({ name: "Dinner friends" });
+    const separate = await outsider.groups.create({ name: "Another group" });
+    const invitation = await owner.groups.invite({ groupId: friends.id });
+    expect(
+      await member.groups.previewInvite({ token: invitation.token }),
+    ).toEqual({ name: "Dinner friends" });
+    await member.groups.acceptInvite({ token: invitation.token });
+    await expect(
+      outsider.groups.acceptInvite({ token: invitation.token }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(await member.groups.list()).toHaveLength(1);
+    await expect(
+      member.groups.invite({ groupId: friends.id }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      member.groups.rename({ groupId: friends.id, name: "No" }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      member.groups.removeMember({ groupId: friends.id, userId: ids[0] }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      owner.groups.removeMember({ groupId: friends.id, userId: ids[0] }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      outsider.groups.details({ groupId: friends.id }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+    const personal = await owner.recipes.create({
+      id: randomUUID(),
+      input: "Personal pasta",
+    });
+    const shared = await member.recipes.create({
+      id: randomUUID(),
+      input: "Shared pasta",
+      groupId: friends.id,
+    });
+    expect(await owner.recipes.list({ groupId: friends.id })).toHaveLength(1);
+    expect(await member.recipes.list()).toHaveLength(0);
+    expect(await owner.recipes.list()).toHaveLength(1);
+    expect(await outsider.recipes.list({ groupId: separate.id })).toHaveLength(
+      0,
+    );
+    await expect(
+      outsider.recipes.list({ groupId: friends.id }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(member.recipes.get({ id: personal.id })).rejects.toMatchObject(
+      { code: "NOT_FOUND" },
+    );
+    await expect(outsider.recipes.get({ id: shared.id })).rejects.toMatchObject(
+      { code: "NOT_FOUND" },
+    );
+    await expect(
+      outsider.recipes.update({ id: shared.id, content: sampleRecipe }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      outsider.recipes.delete({ id: shared.id }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    const calls = vi.mocked(generateRecipe).mock.calls.length;
+    await expect(
+      outsider.recipes.create({
+        id: randomUUID(),
+        input: "Unauthorised import",
+        groupId: friends.id,
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(vi.mocked(generateRecipe).mock.calls.length).toBe(calls);
+    await owner.recipes.update({
+      id: shared.id,
+      content: { ...sampleRecipe, title: "Everyone's pasta" },
+    });
+    expect((await member.recipes.get({ id: shared.id })).title).toBe(
+      "Everyone's pasta",
+    );
+    const copy = await owner.recipes.copy({
+      id: personal.id,
+      newId: randomUUID(),
+      groupId: friends.id,
+    });
+    expect((await member.recipes.get({ id: copy.id })).content).toEqual(
+      personal.content,
+    );
+    await expect(
+      member.recipes.copy({
+        id: shared.id,
+        newId: randomUUID(),
+        groupId: separate.id,
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await owner.groups.removeMember({ groupId: friends.id, userId: ids[1] });
+    expect(await member.groups.list()).toHaveLength(0);
+    await expect(member.recipes.get({ id: shared.id })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    await expect(
+      member.recipes.update({ id: shared.id, content: sampleRecipe }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      member.recipes.delete({ id: shared.id }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect((await owner.recipes.get({ id: shared.id })).id).toBe(shared.id);
+    await owner.recipes.delete({ id: shared.id });
+    await owner.recipes.delete({ id: personal.id });
+  });
+
+  it("expires and revokes invitations and accepts a link only once under concurrency", async () => {
+    const owner = caller(ids[0]);
+    const target = await owner.groups.create({ name: "Invitation checks" });
+    const expired = await owner.groups.invite({ groupId: target.id });
+    await db
+      .update(groupInvite)
+      .set({ expiresAt: new Date(0) })
+      .where(eq(groupInvite.groupId, target.id));
+    await expect(
+      caller(ids[1]).groups.acceptInvite({ token: expired.token }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    const revoked = await owner.groups.invite({ groupId: target.id });
+    const detail = await owner.groups.details({ groupId: target.id });
+    const inviteId = detail.invites[0]?.id;
+    if (!inviteId) throw new Error("Missing invite");
+    await owner.groups.revokeInvite({ groupId: target.id, inviteId });
+    await expect(
+      caller(ids[1]).groups.acceptInvite({ token: revoked.token }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    const concurrent = await owner.groups.invite({ groupId: target.id });
+    const results = await Promise.allSettled([
+      caller(ids[1]).groups.acceptInvite({ token: concurrent.token }),
+      caller(ids[2]).groups.acceptInvite({ token: concurrent.token }),
+    ]);
+    expect(
+      results.filter((result) => result.status === "fulfilled"),
+    ).toHaveLength(1);
+    expect(
+      (await owner.groups.details({ groupId: target.id })).members,
+    ).toHaveLength(2);
+    const members = (await owner.groups.details({ groupId: target.id }))
+      .members;
+    const joined = members.find((member) => member.id !== ids[0]);
+    if (!joined) throw new Error("Missing member");
+    await caller(joined.id).groups.removeMember({
+      groupId: target.id,
+      userId: joined.id,
+    });
+    expect(
+      (await owner.groups.details({ groupId: target.id })).members,
+    ).toHaveLength(1);
+  });
+
+  it("rechecks membership after generation and keeps contributions when an account is deleted", async () => {
+    const owner = caller(ids[0]);
+    const member = caller(ids[3]);
+    const target = await owner.groups.create({ name: "Membership checks" });
+    const invite = await owner.groups.invite({ groupId: target.id });
+    await member.groups.acceptInvite({ token: invite.token });
+    vi.mocked(generateRecipe).mockResolvedValue({
+      content: sampleRecipe,
+      origin: "generated",
+      sourceUrl: null,
+    });
+    const saved = await member.recipes.create({
+      id: randomUUID(),
+      input: "Keep this recipe",
+      groupId: target.id,
+    });
+    vi.mocked(generateRecipe).mockImplementationOnce(async () => {
+      await owner.groups.removeMember({ groupId: target.id, userId: ids[3] });
+      return { content: sampleRecipe, origin: "generated", sourceUrl: null };
+    });
+    await expect(
+      member.recipes.create({
+        id: randomUUID(),
+        input: "Removed during generation",
+        groupId: target.id,
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(await owner.recipes.list({ groupId: target.id })).toHaveLength(1);
+    await db.delete(user).where(eq(user.id, ids[3]));
+    expect((await owner.recipes.get({ id: saved.id })).userId).toBeNull();
+  });
+
+  it("transfers ownership and deletes only the chosen group's recipes", async () => {
+    const owner = caller(ids[0]);
+    const member = caller(ids[1]);
+    const target = await owner.groups.create({ name: "Group lifecycle" });
+    const invite = await owner.groups.invite({ groupId: target.id });
+    await member.groups.acceptInvite({ token: invite.token });
+    await owner.groups.rename({ groupId: target.id, name: "Renamed group" });
+    expect((await member.groups.details({ groupId: target.id })).name).toBe(
+      "Renamed group",
+    );
+    await expect(
+      member.groups.delete({ groupId: target.id, name: "Renamed group" }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      member.groups.transferOwnership({ groupId: target.id, userId: ids[1] }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      owner.groups.transferOwnership({ groupId: target.id, userId: ids[2] }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await owner.groups.transferOwnership({
+      groupId: target.id,
+      userId: ids[1],
+    });
+    await expect(
+      owner.groups.invite({ groupId: target.id }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await owner.groups.removeMember({ groupId: target.id, userId: ids[0] });
+    await expect(
+      owner.groups.details({ groupId: target.id }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    vi.mocked(generateRecipe).mockResolvedValue({
+      content: sampleRecipe,
+      origin: "generated",
+      sourceUrl: null,
+    });
+    const shared = await member.recipes.create({
+      id: randomUUID(),
+      input: "Shared fixture",
+      groupId: target.id,
+    });
+    const personal = await member.recipes.copy({
+      id: shared.id,
+      newId: randomUUID(),
+      groupId: null,
+    });
+    await expect(
+      member.groups.delete({ groupId: target.id, name: "Wrong name" }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await member.groups.delete({ groupId: target.id, name: "Renamed group" });
+    await expect(member.recipes.get({ id: shared.id })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    expect((await member.recipes.get({ id: personal.id })).title).toBe(
+      sampleRecipe.title,
+    );
+    await member.recipes.delete({ id: personal.id });
   });
 });

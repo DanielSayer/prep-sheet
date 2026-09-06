@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { type SubmitEvent, useEffect, useState } from "react";
+import { type SubmitEvent, useEffect, useRef, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useTRPC } from "@/utils/trpc";
+import { CollectionSelect, useCollection } from "../groups/collection-context";
 import { ComposerFeedback } from "./composer-feedback";
 import { ComposerForm } from "./composer-form";
 import { IdeaChips } from "./idea-chips";
@@ -12,6 +13,8 @@ const draftKey = "prep-sheet-draft";
 export function RecipeComposer() {
   const [input, setInput] = useState("");
   const [requestId, setRequestId] = useState<string>();
+  const { groupId, available } = useCollection();
+  const previousGroup = useRef(groupId);
   const { data: session, isPending: sessionPending } = authClient.useSession();
   const navigate = useNavigate();
   const trpc = useTRPC();
@@ -35,6 +38,13 @@ export function RecipeComposer() {
     setInput(sessionStorage.getItem(draftKey) ?? "");
   }, []);
 
+  useEffect(() => {
+    if (previousGroup.current === groupId) return;
+    previousGroup.current = groupId;
+    setRequestId(undefined);
+    create.reset();
+  }, [groupId, create.reset]);
+
   function change(value: string) {
     setInput(value);
     setRequestId(undefined);
@@ -45,7 +55,7 @@ export function RecipeComposer() {
   function submit(event: SubmitEvent) {
     event.preventDefault();
 
-    if (create.isPending || input.trim().length < 3) return;
+    if (create.isPending || !available || input.trim().length < 3) return;
 
     if (!session) {
       void navigate({ to: "/login" });
@@ -55,15 +65,23 @@ export function RecipeComposer() {
 
     const id = requestId ?? crypto.randomUUID();
     setRequestId(id);
-    create.mutate({ id, input });
+    create.mutate({ id, input, groupId });
   }
 
   return (
     <section className="composer-section" aria-label="Add a recipe">
+      {session && (
+        <CollectionSelect label="Save to" disabled={create.isPending} />
+      )}
       <ComposerForm
         input={input}
         pending={create.isPending}
-        disabled={create.isPending || sessionPending || input.trim().length < 3}
+        disabled={
+          create.isPending ||
+          !available ||
+          sessionPending ||
+          input.trim().length < 3
+        }
         onChange={change}
         onSubmit={submit}
       />
