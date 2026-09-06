@@ -9,6 +9,7 @@
     "ignoreUnknown": false,
     "includes": [
       "**",
+      "!**/tmp",
       "!**/.next",
       "!**/dist",
       "!**/.turbo",
@@ -31,7 +32,7 @@
   },
   "formatter": {
     "enabled": true,
-    "indentStyle": "tab"
+    "indentStyle": "space"
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
