@@ -15,9 +15,15 @@ export function createAuth() {
       schema: schema,
     }),
     trustedOrigins: [env.BETTER_AUTH_URL],
-    emailAndPassword: {
-      enabled: true,
-    },
+    socialProviders:
+      env.DISCORD_CLIENT_ID && env.DISCORD_CLIENT_SECRET
+        ? {
+            discord: {
+              clientId: env.DISCORD_CLIENT_ID,
+              clientSecret: env.DISCORD_CLIENT_SECRET,
+            },
+          }
+        : {},
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     plugins: [tanstackStartCookies()],

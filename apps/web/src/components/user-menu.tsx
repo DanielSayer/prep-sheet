@@ -1,62 +1,51 @@
-import { Button } from "@prep-sheet/ui/components/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@prep-sheet/ui/components/dropdown-menu";
-import { Skeleton } from "@prep-sheet/ui/components/skeleton";
-import { Link, useNavigate } from "@tanstack/react-router";
-
+import { useQueryClient } from "@tanstack/react-query";
+import { Link, useRouter } from "@tanstack/react-router";
+import { LogOut } from "lucide-react";
+import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 
 export default function UserMenu() {
-  const navigate = useNavigate();
   const { data: session, isPending } = authClient.useSession();
-
-  if (isPending) {
-    return <Skeleton className="h-9 w-24" />;
-  }
-
-  if (!session) {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  if (isPending)
     return (
-      <Link to="/login">
-        <Button variant="outline">Sign In</Button>
+      <span
+        className="account-placeholder"
+        role="status"
+        aria-label="Loading account"
+      />
+    );
+  if (!session)
+    return (
+      <Link className="button button-small button-outline" to="/login">
+        Sign in
       </Link>
     );
+  async function signOut() {
+    const result = await authClient.signOut();
+    if (result.error) {
+      toast.error("Couldn't sign out. Please try again.");
+      return;
+    }
+    queryClient.clear();
+    await router.invalidate();
+    await router.navigate({ to: "/" });
   }
-
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" />}>
-        {session.user.name}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="bg-card">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem>{session.user.email}</DropdownMenuItem>
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={() => {
-              authClient.signOut({
-                fetchOptions: {
-                  onSuccess: () => {
-                    navigate({
-                      to: "/",
-                    });
-                  },
-                },
-              });
-            }}
-          >
-            Sign Out
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="account">
+      <span className="avatar">
+        {session.user.name.slice(0, 1).toUpperCase()}
+      </span>
+      <span className="account-name">{session.user.name}</span>
+      <button
+        type="button"
+        className="icon-button"
+        aria-label="Sign out"
+        onClick={signOut}
+      >
+        <LogOut size={18} />
+      </button>
+    </div>
   );
 }
