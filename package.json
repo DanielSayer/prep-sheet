@@ -7,6 +7,8 @@
   ],
   "type": "module",
   "scripts": {
+    "test": "vitest run",
+    "test:live": "vitest run packages/api/src/recipes/live.test.ts",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "check-types": "turbo run check-types",
@@ -31,7 +33,8 @@
     "@prep-sheet/config": "workspace:*",
     "@types/node": "catalog:",
     "turbo": "^2.10.12",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "^5.0.0"
   },
   "packageManager": "pnpm@11.21.0"
 }
