@@ -17,6 +17,7 @@ export function RecipeDetail({ id }: { id: string }) {
   const recipe = useQuery(trpc.recipes.get.queryOptions({ id }));
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
+
   const update = useMutation(
     trpc.recipes.update.mutationOptions({
       onSuccess: async () => {
@@ -26,32 +27,38 @@ export function RecipeDetail({ id }: { id: string }) {
             queryKey: trpc.recipes.list.queryKey(),
           }),
         ]);
+
         setEditing(false);
         toast.success("Recipe updated.");
       },
     }),
   );
+
   const remove = useMutation(
     trpc.recipes.delete.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries({
           queryKey: trpc.recipes.list.queryKey(),
         });
+
         toast.success("Recipe removed.");
         await navigate({ to: "/recipes" });
       },
     }),
   );
+
   return (
     <main id="main-content" className="detail-page page-width">
       <Link to="/recipes" className="back-link">
         <ArrowLeft size={17} /> My collection
       </Link>
+
       <LoadingState pending={recipe.isPending}>
         <ErrorNotice
           message={recipe.error?.message}
           retry={() => void recipe.refetch()}
         />
+
         {recipe.data && (
           <>
             <RecipeHeading
@@ -60,6 +67,7 @@ export function RecipeDetail({ id }: { id: string }) {
               onEdit={() => setEditing(true)}
               onDelete={() => setConfirming(true)}
             />
+
             {confirming && (
               <DeleteConfirmation
                 pending={remove.isPending}
@@ -67,6 +75,7 @@ export function RecipeDetail({ id }: { id: string }) {
                 onConfirm={() => remove.mutate({ id })}
               />
             )}
+
             <ErrorNotice message={remove.error?.message} />
             {editing ? (
               <RecipeEditor

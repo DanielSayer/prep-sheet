@@ -13,16 +13,19 @@ export function EmptyCollection({
       <span className="empty-icon">
         <BookOpen size={46} />
       </span>
+
       <h2>
         {searching
           ? "No recipes by that name"
           : "A fresh page. A hungry beginning."}
       </h2>
+
       <p>
         {searching
           ? "Try another name or clear your search."
           : "Your first keeper is just a recipe, a link or an idea away."}
       </p>
+
       {searching ? (
         <button
           type="button"

@@ -18,11 +18,13 @@ export function PdfPreview({
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
+
   useEffect(() => {
     const controller = new AbortController();
     let blobUrl = "";
     setUrl("");
     setError("");
+
     fetch(
       `/api/recipes/${id}/pdf?v=${encodeURIComponent(version)}&attempt=${attempt}`,
       {
@@ -32,19 +34,25 @@ export function PdfPreview({
       .then(async (response) => {
         if (!response.ok)
           throw new Error("Couldn't make your PDF. Please try again.");
+
         const blob = await response.blob();
+
         if (controller.signal.aborted) return;
+
         blobUrl = URL.createObjectURL(blob);
         setUrl(blobUrl);
       })
       .catch((error: Error) => {
         if (!controller.signal.aborted) setError(error.message);
       });
+
     return () => {
       controller.abort();
+
       if (blobUrl) URL.revokeObjectURL(blobUrl);
     };
   }, [id, version, attempt]);
+
   return (
     <section className="pdf-section" aria-label="Recipe PDF">
       <div className="pdf-toolbar">
@@ -59,6 +67,7 @@ export function PdfPreview({
             >
               Open PDF <ExternalLink size={16} />
             </a>
+
             <a
               href={url}
               download={`${title.replace(/[^a-z0-9 -]/gi, "").slice(0, 80) || "recipe"}.pdf`}
@@ -69,6 +78,7 @@ export function PdfPreview({
           </div>
         )}
       </div>
+
       <ErrorNotice message={error} retry={() => setAttempt(attempt + 1)} />
       <LoadingState
         pending={!url && !error}

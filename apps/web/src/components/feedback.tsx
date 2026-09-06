@@ -17,6 +17,7 @@ export function LoadingState({
         <p>{label}</p>
       </div>
     );
+
   return children;
 }
 
@@ -28,6 +29,7 @@ export function ErrorNotice({
   retry?: () => void;
 }) {
   if (!message) return null;
+
   return (
     <div className="error-notice" role="alert">
       <AlertCircle size={20} />

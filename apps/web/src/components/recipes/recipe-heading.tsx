@@ -17,11 +17,13 @@ export function RecipeHeading({
         <span className="eyebrow">
           {editing ? "A LITTLE TWEAK" : "READY WHEN YOU'RE HUNGRY"}
         </span>
+
         <h1>{recipe.title}</h1>
         <p>
           {recipe.origin === "generated"
             ? "AI-generated recipe. Give it a read before you cook."
             : "Saved from a recipe you found."}
+
           {recipe.sourceUrl && (
             <>
               {" "}
@@ -37,6 +39,7 @@ export function RecipeHeading({
           )}
         </p>
       </div>
+
       {!editing && (
         <div className="detail-actions">
           <button
@@ -46,6 +49,7 @@ export function RecipeHeading({
           >
             <Pencil size={17} /> Edit
           </button>
+
           <button
             type="button"
             className="icon-button"

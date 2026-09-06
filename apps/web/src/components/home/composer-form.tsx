@@ -19,6 +19,7 @@ export function ComposerForm({
       <label className="sr-only" htmlFor="recipe-input">
         Paste a recipe, a link, or describe a dish
       </label>
+
       <textarea
         id="recipe-input"
         value={input}
@@ -27,10 +28,12 @@ export function ComposerForm({
         maxLength={20000}
         placeholder="Paste a recipe or link, or tell us what's for dinner..."
       />
+
       <div className="composer-toolbar">
         <span>
           <Link2 size={17} /> Recipes, links & bright ideas
         </span>
+
         <button
           type="submit"
           className="button button-primary"

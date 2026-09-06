@@ -12,7 +12,8 @@ import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import Header from "../components/header";
 
 import appCss from "../index.css?url";
-export interface RouterAppContext {
+
+interface RouterAppContext {
   trpc: TRPCOptionsProxy<AppRouter>;
   queryClient: QueryClient;
 }
@@ -48,14 +49,17 @@ function RootDocument() {
       <head>
         <HeadContent />
       </head>
+
       <body>
         <a href="#main-content" className="skip-link">
           Skip to content
         </a>
+
         <div className="app-shell">
           <Header />
           <Outlet />
         </div>
+
         <Toaster richColors theme="light" />
         <Scripts />
       </body>

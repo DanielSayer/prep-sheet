@@ -37,6 +37,7 @@ export function RecipeFields({ content }: { content: RecipeContent }) {
         maxLength={160}
         defaultValue={content.title}
       />
+
       <TextField
         label="A little introduction"
         name="description"
@@ -44,6 +45,7 @@ export function RecipeFields({ content }: { content: RecipeContent }) {
         maxLength={600}
         defaultValue={content.description}
       />
+
       <div className="form-row">
         <InputField
           label="Servings"
@@ -52,6 +54,7 @@ export function RecipeFields({ content }: { content: RecipeContent }) {
           defaultValue={content.servings ?? ""}
           placeholder="e.g. 4 people"
         />
+
         <InputField
           label="Prep minutes"
           name="prepMinutes"
@@ -60,6 +63,7 @@ export function RecipeFields({ content }: { content: RecipeContent }) {
           max={10080}
           defaultValue={content.prepMinutes ?? ""}
         />
+
         <InputField
           label="Cook minutes"
           name="cookMinutes"
@@ -69,6 +73,7 @@ export function RecipeFields({ content }: { content: RecipeContent }) {
           defaultValue={content.cookMinutes ?? ""}
         />
       </div>
+
       <TextField
         label="Ingredients"
         hint="One ingredient per line, including its quantity."
@@ -77,6 +82,7 @@ export function RecipeFields({ content }: { content: RecipeContent }) {
         rows={9}
         defaultValue={content.ingredients.join("\n")}
       />
+
       <TextField
         label="Method"
         hint="One step per line."
@@ -85,6 +91,7 @@ export function RecipeFields({ content }: { content: RecipeContent }) {
         rows={10}
         defaultValue={content.steps.join("\n")}
       />
+
       <TextField
         label="Kitchen notes"
         name="notes"

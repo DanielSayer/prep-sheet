@@ -11,15 +11,21 @@ export function PdfPages({ url }: { url: string }) {
   const container = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(600);
   const [pages, setPages] = useState(0);
+
   useEffect(() => {
     const element = container.current;
+
     if (!element) return;
+
     const observer = new ResizeObserver(() =>
       setWidth(Math.min(760, element.clientWidth - 24)),
     );
+
     observer.observe(element);
+
     return () => observer.disconnect();
   }, []);
+
   return (
     <div ref={container} className="pdf-pages">
       <Document

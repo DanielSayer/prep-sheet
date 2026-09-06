@@ -18,7 +18,6 @@
     "@prep-sheet/db": "workspace:*",
     "@prep-sheet/env": "workspace:*",
     "@react-pdf/renderer": "^4.9.0",
-    "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "ai": "^7.0.93",
     "cheerio": "^1.2.0",

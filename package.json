@@ -24,7 +24,6 @@
     "check": "biome check --write ."
   },
   "dependencies": {
-    "@prep-sheet/env": "workspace:*",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },

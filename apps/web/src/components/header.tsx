@@ -12,6 +12,7 @@ export default function Header() {
         prep<span>sheet</span>
         <span className="brand-dot">.</span>
       </Link>
+
       <nav aria-label="Main navigation">
         <Link
           to="/"
@@ -20,10 +21,12 @@ export default function Header() {
         >
           <Plus size={18} /> Add a recipe
         </Link>
+
         <Link to="/recipes" activeProps={{ className: "active" }}>
           <BookOpen size={18} /> My collection
         </Link>
       </nav>
+
       <UserMenu />
     </header>
   );

@@ -29,6 +29,7 @@ export function HowItWorks() {
           <span className={`step-icon ${colour}`}>
             <Icon size={23} />
           </span>
+
           <div>
             <span className="step-number">0{index + 1}</span>
             <h2>{title}</h2>

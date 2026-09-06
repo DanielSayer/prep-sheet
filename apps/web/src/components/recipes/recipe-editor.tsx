@@ -20,16 +20,20 @@ export function RecipeEditor({
   onCancel: () => void;
 }) {
   const [validation, setValidation] = useState("");
+
   function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const text = (name: string) => String(data.get(name) ?? "").trim();
+
     const lines = (name: string) =>
       text(name)
         .split("\n")
         .map((line) => line.trim())
         .filter(Boolean);
+
     const minutes = (name: string) => (text(name) ? Number(text(name)) : null);
+
     const result = recipeContentSchema.safeParse({
       title: text("title"),
       description: text("description"),
@@ -40,14 +44,18 @@ export function RecipeEditor({
       steps: lines("steps"),
       notes: text("notes"),
     });
+
     if (!result.success) {
       const issue = result.error.issues[0];
       setValidation(`${issue?.path.join(" ")}: ${issue?.message}`);
+
       return;
     }
+
     setValidation("");
     onSave(result.data);
   }
+
   return (
     <form className="recipe-editor" onSubmit={submit}>
       <fieldset disabled={pending}>
@@ -61,6 +69,7 @@ export function RecipeEditor({
           >
             Cancel
           </button>
+
           <button type="submit" className="button button-primary">
             {pending ? "Saving..." : "Save changes"}
           </button>

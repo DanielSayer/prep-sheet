@@ -18,6 +18,7 @@ export function DeleteConfirmation({
       >
         Keep it
       </button>
+
       <button
         type="button"
         className="button button-small button-danger"

@@ -10,10 +10,12 @@ export function RecipeCard({
   colour: number;
 }) {
   const { prepMinutes, cookMinutes } = recipe.content;
+
   const time =
     prepMinutes === null && cookMinutes === null
       ? "Time not listed"
       : `${(prepMinutes ?? 0) + (cookMinutes ?? 0)} min`;
+
   return (
     <Link
       to="/recipes/$recipeId"
@@ -32,16 +34,19 @@ export function RecipeCard({
           )}
         </span>
       </div>
+
       <h2>{recipe.title}</h2>
       <p>
         {recipe.content.description ||
           `${recipe.content.ingredients.length} ingredients. Something good for dinner.`}
       </p>
+
       <div className="recipe-card-bottom">
         <span>
           <Clock size={15} />
           {time}
         </span>
+
         <span className="card-arrow">
           <ArrowUpRight size={22} />
         </span>
