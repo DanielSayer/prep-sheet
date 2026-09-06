@@ -1,100 +1,67 @@
-# prep-sheet
+# Prep Sheet
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines React, TanStack Start, Self, TRPC, and more.
+A personal recipe keeper. Paste a recipe, import a public recipe link, or describe a dish. The app saves a structured recipe and opens a printable PDF when you select it from your collection.
 
-## Features
+## Run locally
 
-- **TypeScript** - For type safety and improved developer experience
-- **TanStack Start** - SSR framework with TanStack Router
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **Shared UI package** - shadcn/ui primitives live in `packages/ui`
-- **tRPC** - End-to-end type-safe APIs
-- **Drizzle** - TypeScript-first ORM
-- **PostgreSQL** - Database engine
-- **Authentication** - Better-Auth
-- **Biome** - Linting and formatting
-- **Turborepo** - Optimized monorepo build system
-
-## Getting Started
-
-First, install the dependencies:
-
-```bash
+```sh
 pnpm install
+pnpm db:start
 ```
 
-## Database Setup
+Copy `apps/web/.env.example` to `apps/web/.env` and fill in the credentials. Keep this file ignored.
 
-This project uses PostgreSQL with Drizzle ORM.
+- `DATABASE_URL`: local Docker PostgreSQL connection.
+- `BETTER_AUTH_SECRET`: a random secret of at least 32 characters.
+- `BETTER_AUTH_URL`: `http://localhost:3001`.
+- `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET`: from your Discord application.
+- `OPENAI_API_KEY`: an API key with available API credits.
+- `OPENAI_MODEL`: defaults to `gpt-5.6-luna`.
 
-1. Make sure you have a PostgreSQL database set up.
-2. Update your `apps/web/.env` file with your PostgreSQL connection details.
+Register `http://localhost:3001/api/auth/callback/discord` in the Discord Developer Portal under OAuth2 redirects. Use the same hostname for the app and callback.
 
-3. Apply the schema to your database:
-
-```bash
-pnpm run db:push
+```sh
+pnpm db:push
+pnpm dev
 ```
 
-Then, run the development server:
+Open http://localhost:3001. This MVP uses Drizzle push; no migrations are generated yet.
 
-```bash
-pnpm run dev
+## Implementation
+
+- TanStack Start, React, tRPC and TanStack Query.
+- Better Auth with Discord. Each API operation checks the session and recipe owner.
+- PostgreSQL JSONB stores the recipe, with separate owner/title/source/timestamp columns. Zod validates generation and edits.
+- Vercel AI SDK and OpenAI structured output. One submission creates one recipe, without a chat transcript. Missing credentials, inaccessible pages and provider failures leave the input available to retry.
+- Link imports fetch HTML, prefer Recipe JSON-LD, then fall back to article text. Private network addresses and unsafe redirects are rejected. Requests are bounded by time and response size. No browser automation or paywall support.
+- React PDF Renderer generates A4 PDFs on demand. React PDF/PDF.js previews them with a locally bundled worker. No PDF files are stored in the database or object storage.
+- Small feature components and shared loading/error wrappers. Styles are grouped by screen, with Nunito fonts served locally. The preset's shared UI primitives remain available for future controls.
+
+The collection supports title search, editing and deletion. Saves use a request ID to avoid duplicate records on retries. There is a simple limit of 50 saved recipes per account in a rolling 24-hour window; this is an MVP limit, not full abuse protection.
+
+## Checks
+
+```sh
+pnpm test
+pnpm check-types
+pnpm build
+pnpm check
 ```
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the fullstack application.
+`pnpm test` needs the local database with the schema pushed. Integration tests create unique test users, exercise real database operations and remove those users afterwards. OpenAI calls are mocked in that suite. PDF fixtures are written under ignored `tmp/pdfs` for visual inspection.
 
-## UI Customization
+To opt into live OpenAI generation/extraction checks in PowerShell:
 
-React web apps in this stack share shadcn/ui primitives through `packages/ui`.
-
-- Change design tokens and global styles in `packages/ui/src/styles/globals.css`
-- Update shared primitives in `packages/ui/src/components/*`
-- Adjust shadcn aliases or style config in `packages/ui/components.json` and `apps/web/components.json`
-
-### Add more shared components
-
-Run this from the project root to add more primitives to the shared UI package:
-
-```bash
-npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
+```powershell
+$env:LIVE_AI_TEST = '1'
+pnpm test:live
+Remove-Item Env:LIVE_AI_TEST
 ```
 
-Import shared components like this:
+Live checks use API credits. The regular test suite never makes paid AI requests.
 
-```tsx
-import { Button } from "@prep-sheet/ui/components/button";
-```
+## Before deployment
 
-### Add app-specific blocks
+Use a Supabase PostgreSQL connection, check the PostgreSQL version and pooling settings, and create the initial migration. Add the deployed Discord callback URL and update `BETTER_AUTH_URL`. Restrict access to household Discord accounts before making the app publicly reachable. Local Docker data does not automatically sync to Supabase.
 
-If you want to add app-specific blocks instead of shared primitives, run the shadcn CLI from `apps/web`.
-
-## Git Hooks and Formatting
-
-- Run checks: `pnpm run check`
-
-## Project Structure
-
-```
-prep-sheet/
-├── apps/
-│   └── web/         # Fullstack application (React + TanStack Start)
-├── packages/
-│   ├── ui/          # Shared shadcn/ui components and styles
-│   ├── api/         # API layer / business logic
-│   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
-```
-
-## Available Scripts
-
-- `pnpm run dev`: Start all applications in development mode
-- `pnpm run build`: Build all applications
-- `pnpm run dev:web`: Start only the web application
-- `pnpm run check-types`: Check TypeScript types across all apps
-- `pnpm run db:push`: Push schema changes to database
-- `pnpm run db:generate`: Generate database client/types
-- `pnpm run db:migrate`: Run database migrations
-- `pnpm run db:studio`: Open database studio UI
-- `pnpm run check`: Run Biome formatting and linting
+If localhost shows an older app after sign-in, an existing service worker from another project may be serving cached content at that port. Clear that localhost site's service worker/cache in your browser, or use a fresh query URL such as `http://localhost:3001/?prep-sheet=1` while diagnosing it.
