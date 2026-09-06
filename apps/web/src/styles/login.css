@@ -1,0 +1,41 @@
+.login-page {
+  padding: 60px 24px;
+}
+.login-card {
+  max-width: 440px;
+  margin: auto;
+  padding: 36px;
+  border: 2px solid var(--ink);
+  background: #fffdf5;
+  border-radius: 24px;
+  box-shadow: 0 7px 0 #dce0ca;
+  text-align: center;
+}
+.login-illustration {
+  display: grid;
+  place-items: center;
+  margin: 0 auto 28px;
+  width: 112px;
+  height: 112px;
+  background: #f8ddb0;
+  border: 2px solid var(--ink);
+  border-radius: 30px;
+  transform: rotate(-7deg);
+}
+.login-card h1 {
+  font-size: 35px;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -1px;
+  margin: 17px 0;
+}
+.login-card > p {
+  color: var(--muted-ink);
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 26px;
+}
+.login-card p.small-note {
+  font-size: 12px;
+  margin: 20px 0;
+}

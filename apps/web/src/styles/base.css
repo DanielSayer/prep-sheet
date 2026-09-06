@@ -1,0 +1,215 @@
+:root {
+  --paper: #faf7ef;
+  --ink: #283e32;
+  --green: #527b42;
+  --green-dark: #35532d;
+  --orange: #ee8a4b;
+  --line: #dedfce;
+  --muted-ink: #6b7365;
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --font-sans: "Nunito", sans-serif;
+}
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Nunito", sans-serif;
+  font-size: 16px;
+}
+button,
+input,
+textarea {
+  font: inherit;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a,
+input,
+textarea {
+  touch-action: manipulation;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #de772f;
+  outline-offset: 4px;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+.app-shell {
+  min-height: 100svh;
+}
+.skip-link {
+  position: fixed;
+  top: -80px;
+  left: 20px;
+  z-index: 100;
+  background: white;
+  padding: 12px;
+  border: 2px solid var(--ink);
+}
+.skip-link:focus {
+  top: 12px;
+}
+.site-header {
+  height: 92px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 5.5%;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  font-size: 29px;
+  font-weight: 900;
+  letter-spacing: -1.3px;
+}
+.brand > span:not(.brand-icon, .brand-dot) {
+  font-weight: 600;
+}
+.brand-icon {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--ink);
+  border-radius: 13px;
+  background: #edb767;
+  box-shadow: 0 3px 0 var(--ink);
+  display: grid;
+  place-items: center;
+  margin-right: 11px;
+  transform: rotate(-7deg);
+}
+.brand-dot,
+.title-dot {
+  color: #d87734;
+}
+.site-header nav {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.site-header nav a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 11px 17px;
+  border-radius: 10px;
+  color: var(--muted-ink);
+}
+.site-header nav a:hover,
+.site-header nav a.active {
+  color: var(--ink);
+  background: #e9eddf;
+}
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px 22px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 15px;
+  line-height: 1.4;
+  box-shadow: 0 4px 0 var(--ink);
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s,
+    background 0.15s;
+  white-space: nowrap;
+}
+.button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--ink);
+}
+.button:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.button-primary {
+  background: var(--green);
+  color: white;
+  border-color: var(--green-dark);
+  box-shadow: 0 4px 0 var(--green-dark);
+}
+.button-primary:hover:not(:disabled) {
+  background: #466e38;
+  box-shadow: 0 6px 0 var(--green-dark);
+}
+.button-outline {
+  background: var(--paper);
+}
+.button-small {
+  padding: 8px 17px;
+  font-size: 14px;
+}
+.button-discord {
+  background: #5865f2;
+  color: white;
+  width: 100%;
+  border-color: #353d95;
+  box-shadow: 0 4px 0 #353d95;
+}
+.button-danger {
+  color: white;
+  background: #aa4536;
+}
+.account {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 800;
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid var(--ink);
+  background: #ebdcb6;
+  border-radius: 50%;
+}
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  padding: 10px;
+  border-radius: 9px;
+  background: transparent;
+  border: 0;
+}
+.icon-button:hover {
+  background: #eae4d5;
+}
+.account-placeholder {
+  width: 85px;
+  height: 36px;
+  background: #e9eddf;
+  border-radius: 10px;
+}

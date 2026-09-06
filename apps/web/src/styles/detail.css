@@ -1,0 +1,108 @@
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 28px;
+}
+.detail-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.detail-page .page-heading {
+  align-items: flex-start;
+}
+.detail-page .page-heading > div:first-child {
+  max-width: 760px;
+}
+.pdf-section {
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #e8eadf;
+}
+.pdf-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 22px;
+  gap: 15px;
+  background: #f1f2e9;
+  border-bottom: 1px solid var(--line);
+}
+.pdf-toolbar > span {
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  font-weight: 900;
+}
+.pdf-toolbar > div {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.pdf-frame {
+  width: 100%;
+  height: 800px;
+  border: 0;
+  display: block;
+}
+.recipe-editor {
+  max-width: 800px;
+  margin: auto;
+  padding: 28px;
+  background: #fffdf5;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+}
+.recipe-editor fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.recipe-editor label {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  font-weight: 800;
+  gap: 7px;
+  margin-bottom: 20px;
+}
+.recipe-editor small {
+  color: var(--muted-ink);
+  font-weight: 400;
+}
+.recipe-editor input,
+.recipe-editor textarea {
+  border: 1.5px solid #bfc9b0;
+  border-radius: 8px;
+  padding: 11px;
+  background: white;
+  width: 100%;
+  font-weight: 400;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 16px;
+}
+.editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 20px;
+}
+.delete-confirmation {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  padding: 20px;
+  border: 1px solid #cc9f82;
+  border-radius: 12px;
+  background: #fbe8db;
+  margin-bottom: 25px;
+}
+.delete-confirmation p {
+  margin-right: auto;
+}

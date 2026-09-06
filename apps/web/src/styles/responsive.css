@@ -1,0 +1,219 @@
+@media (min-width: 1500px) {
+  .hero {
+    padding-top: 80px;
+  }
+  .how-it-works {
+    margin-top: 65px;
+  }
+}
+@media (max-width: 850px) {
+  .site-header {
+    padding: 0 24px;
+    gap: 15px;
+  }
+  .brand {
+    font-size: 25px;
+  }
+  .site-header nav a {
+    padding: 10px;
+    font-size: 12px;
+  }
+  .account-name {
+    display: none;
+  }
+  .hero-sticker {
+    scale: 0.75;
+  }
+  .sticker-carrot {
+    left: -15px;
+  }
+  .sticker-fork {
+    right: -5px;
+  }
+  .how-it-works {
+    gap: 20px;
+  }
+  .how-step {
+    gap: 10px;
+  }
+  .step-icon {
+    width: 38px;
+    height: 38px;
+  }
+  .recipe-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .composer-toolbar > span {
+    font-size: 11px;
+  }
+}
+@media (max-width: 600px) {
+  .site-header {
+    height: auto;
+    min-height: 120px;
+    flex-wrap: wrap;
+    padding: 16px 20px 8px;
+    gap: 12px;
+  }
+  .site-header nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    gap: 15px;
+  }
+  .site-header nav a {
+    padding: 8px 13px;
+    font-size: 13px;
+  }
+  .brand {
+    font-size: 25px;
+  }
+  .brand-icon {
+    width: 35px;
+    height: 35px;
+    border-radius: 10px;
+  }
+  .home-page {
+    padding: 0 20px;
+  }
+  .hero {
+    padding: 38px 0 25px;
+  }
+  .hero h1 {
+    font-size: 49px;
+    letter-spacing: -2.5px;
+    margin: 18px 0;
+  }
+  .hero p {
+    font-size: 15px;
+  }
+  .hero-sticker {
+    display: none;
+  }
+  .eyebrow {
+    font-size: 9px;
+    letter-spacing: 1.7px;
+  }
+  .composer {
+    padding: 16px;
+    border-radius: 15px;
+  }
+  .composer textarea {
+    min-height: 130px;
+    font-size: 16px;
+  }
+  .composer-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .composer-toolbar > span {
+    justify-content: center;
+    order: 2;
+  }
+  .composer-toolbar > button {
+    width: 100%;
+  }
+  .idea-chips {
+    justify-content: flex-start;
+  }
+  .idea-chips > span {
+    width: 100%;
+  }
+  .idea-chips button {
+    font-size: 11px;
+  }
+  .how-it-works {
+    grid-template-columns: 1fr;
+    gap: 23px;
+    margin-top: 35px;
+    padding-top: 25px;
+  }
+  .how-step {
+    gap: 18px;
+  }
+  .step-icon {
+    width: 47px;
+    height: 47px;
+  }
+  .how-step p {
+    max-width: none;
+  }
+  .home-footer {
+    margin-top: 30px;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .page-width {
+    padding: 35px 20px 50px;
+  }
+  .page-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+  }
+  .collection-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .search-box input {
+    width: 100%;
+  }
+  .recipe-grid {
+    grid-template-columns: 1fr;
+  }
+  .recipe-card-top {
+    margin-bottom: 20px;
+  }
+  .empty-collection {
+    padding: 40px 16px;
+  }
+  .empty-collection h2 {
+    font-size: 22px;
+  }
+  .login-page {
+    padding: 35px 20px;
+  }
+  .login-card {
+    padding: 28px 22px;
+  }
+  .pdf-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .pdf-frame {
+    height: 620px;
+  }
+  .recipe-editor {
+    padding: 18px;
+  }
+  .form-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .form-row label:first-child {
+    grid-column: 1 / -1;
+  }
+  .delete-confirmation {
+    flex-wrap: wrap;
+  }
+  .delete-confirmation p {
+    width: 100%;
+  }
+  .save-success {
+    flex-wrap: wrap;
+  }
+  .save-success > .text-button {
+    margin-left: 50px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin,
+  .progress-track > span {
+    animation: none;
+  }
+  .button,
+  .composer,
+  .recipe-card {
+    transition: none;
+  }
+}
