@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { ErrorNotice } from "@/components/feedback";
 import { useTRPC } from "@/utils/trpc";
 import { useCollection } from "./collection-context";
+import { CollectionDropdown } from "./collection-dropdown";
 
 export function CopyRecipe({
   id,
@@ -28,29 +29,23 @@ export function CopyRecipe({
   );
   return (
     <div className="recipe-copy">
-      <label>
-        Copy to another collection
-        <select
-          value={target}
-          disabled={copy.isPending}
-          onChange={(event) => {
-            setTarget(event.target.value);
-            copy.reset();
-          }}
-        >
-          <option value="">Choose a collection</option>
-          {sourceGroupId && (
-            <option value="personal">Personal collection</option>
-          )}
-          {groups.data
+      <CollectionDropdown
+        label="Copy to another collection"
+        value={target}
+        disabled={copy.isPending}
+        onValueChange={(value) => {
+          setTarget(value);
+          copy.reset();
+        }}
+        options={[
+          ...(sourceGroupId
+            ? [{ label: "Personal collection", value: "personal" }]
+            : []),
+          ...(groups.data
             ?.filter((group) => group.id !== sourceGroupId)
-            .map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.name}
-              </option>
-            ))}
-        </select>
-      </label>
+            .map((group) => ({ label: group.name, value: group.id })) ?? []),
+        ]}
+      />
       <button
         type="button"
         className="button button-small button-outline"

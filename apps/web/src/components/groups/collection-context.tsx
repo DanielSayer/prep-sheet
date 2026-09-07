@@ -1,25 +1,14 @@
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@prep-sheet/ui/components/dropdown-menu";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { ChevronDown, Users } from "lucide-react";
 import {
   createContext,
   type ReactNode,
   useContext,
   useEffect,
-  useId,
   useState,
 } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useTRPC } from "@/utils/trpc";
+import { CollectionDropdown } from "./collection-dropdown";
 
 const CollectionContext = createContext<{
   groupId: string | null;
@@ -97,62 +86,26 @@ export function CollectionSelect({
   disabled?: boolean;
   label?: string;
 }) {
-  const { groupId, selectGroup, groups, available, name } = useCollection();
-  const labelId = useId();
-  const valueId = useId();
+  const { groupId, selectGroup, groups, available } = useCollection();
   return (
-    <div className="collection-select">
-      <span id={labelId} className="collection-select-label">
-        {label}
-      </span>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          className="collection-select-trigger"
-          disabled={disabled}
-          aria-labelledby={`${labelId} ${valueId}`}
-        >
-          <span id={valueId}>{name}</span>
-          <ChevronDown size={18} aria-hidden="true" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="collection-select-menu" sideOffset={8}>
-          <DropdownMenuRadioGroup
-            value={groupId ?? ""}
-            onValueChange={(value) => selectGroup(value || null)}
-          >
-            <DropdownMenuRadioItem
-              className="collection-select-option"
-              value=""
-            >
-              Personal collection
-            </DropdownMenuRadioItem>
-            {!available && groupId && (
-              <DropdownMenuRadioItem
-                className="collection-select-option"
-                value={groupId}
-              >
-                Unavailable group
-              </DropdownMenuRadioItem>
-            )}
-            {groups.data?.map((group) => (
-              <DropdownMenuRadioItem
-                className="collection-select-option"
-                key={group.id}
-                value={group.id}
-              >
-                {group.name}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-          <DropdownMenuSeparator className="collection-select-divider" />
-          <DropdownMenuItem
-            className="collection-select-manage"
-            render={<Link to="/groups" />}
-          >
-            <Users size={16} aria-hidden="true" />
-            Manage groups
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    <>
+      <CollectionDropdown
+        disabled={disabled}
+        label={label}
+        manageGroups
+        value={groupId ?? ""}
+        onValueChange={(value) => selectGroup(value || null)}
+        options={[
+          { label: "Personal collection", value: "" },
+          ...(!available && groupId
+            ? [{ label: "Unavailable group", value: groupId }]
+            : []),
+          ...(groups.data?.map((group) => ({
+            label: group.name,
+            value: group.id,
+          })) ?? []),
+        ]}
+      />
       {groups.error && (
         <span role="alert">
           Couldn't load groups.{" "}
@@ -165,6 +118,6 @@ export function CollectionSelect({
           </button>
         </span>
       )}
-    </div>
+    </>
   );
 }

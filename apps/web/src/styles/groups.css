@@ -11,8 +11,7 @@
   gap: 7px;
   font-weight: 800;
 }
-.group-panel input,
-.recipe-copy select {
+.group-panel input {
   font: inherit;
   color: var(--ink);
   background: #fffdf7;
@@ -166,17 +165,19 @@ select:focus-visible {
 }
 .recipe-copy {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   flex-wrap: wrap;
   gap: 12px;
   padding: 16px 0 24px;
 }
-.recipe-copy label {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
+.recipe-copy .collection-select {
+  margin: 0;
 }
+
+.recipe-copy .button {
+  margin-bottom: 4px;
+}
+
 .group-settings summary {
   cursor: pointer;
   font-weight: 800;
