@@ -4,13 +4,26 @@ import { useState } from "react";
 import { ErrorNotice } from "@/components/feedback";
 import { authClient } from "@/lib/auth-client";
 
-export const Route = createFileRoute("/login")({ component: Login });
+export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>): { error?: string } => ({
+    error: typeof search.error === "string" ? search.error : undefined,
+  }),
+  component: Login,
+});
 
 function Login() {
+  const { error: callbackError } = Route.useSearch();
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() =>
+    callbackError === "access_denied"
+      ? "Discord sign-in was cancelled. You can try again when you're ready."
+      : callbackError
+        ? "We couldn't finish signing in with Discord. Please try again. If it keeps failing, the sign-in settings may need checking."
+        : "",
+  );
 
   async function signIn() {
+    if (pending) return;
     setPending(true);
     setError("");
 
@@ -18,6 +31,7 @@ function Login() {
       const result = await authClient.signIn.social({
         provider: "discord",
         callbackURL: "/",
+        errorCallbackURL: "/login",
       });
 
       if (result.error)

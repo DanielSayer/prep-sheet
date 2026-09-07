@@ -69,8 +69,8 @@ export function Collection() {
         )}
 
         <div className="recipe-grid">
-          {recipes.map((recipe, index) => (
-            <RecipeCard key={recipe.id} recipe={recipe} colour={index % 3} />
+          {recipes.map((recipe) => (
+            <RecipeCard key={recipe.id} recipe={recipe} />
           ))}
         </div>
       </LoadingState>

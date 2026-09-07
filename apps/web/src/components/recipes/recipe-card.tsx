@@ -4,12 +4,15 @@ import { ArrowUpRight, BookOpen, Clock, Sparkles } from "lucide-react";
 
 export function RecipeCard({
   recipe,
-  colour,
 }: {
   recipe: { id: string; title: string; content: RecipeContent; origin: string };
-  colour: number;
 }) {
   const { prepMinutes, cookMinutes } = recipe.content;
+  const colour =
+    [...recipe.id].reduce(
+      (hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0,
+      0,
+    ) % 4;
 
   const time =
     prepMinutes === null && cookMinutes === null

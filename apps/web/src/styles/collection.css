@@ -119,6 +119,9 @@
 .recipe-colour-2 .recipe-label {
   background: #e9e0f2;
 }
+.recipe-colour-3 .recipe-label {
+  background: #f3e9bd;
+}
 .recipe-card h2 {
   font-size: 23px;
   line-height: 1.2;

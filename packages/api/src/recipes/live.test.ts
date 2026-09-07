@@ -5,6 +5,52 @@ import { sampleRecipe } from "./fixtures";
 import { generateRecipe } from "./generate";
 import { recipePdf } from "./pdf";
 
+it.skipIf(process.env.LIVE_AI_TEST !== "1").each([
+  {
+    name: "derives cook time from total minus prep despite zero metadata",
+    times: '"prepTime":"PT10M","cookTime":"PT0M","totalTime":"PT40M"',
+    prep: [10],
+    cook: 30,
+  },
+  {
+    name: "converts hours and derives missing prep time",
+    times: '"cookTime":"PT1H","totalTime":"PT1H10M"',
+    prep: [10],
+    cook: 60,
+  },
+  {
+    name: "excludes separately stated waiting time",
+    times:
+      '"prepTime":"PT10M","totalTime":"PT1H10M","description":"Total includes 30 minutes of cooling after cooking."',
+    prep: [10],
+    cook: 30,
+  },
+  {
+    name: "leaves an unsupported split unknown",
+    times: '"totalTime":"PT40M"',
+    prep: [null],
+    cook: null,
+  },
+  {
+    name: "does not derive a negative cook time",
+    times: '"prepTime":"PT50M","totalTime":"PT40M"',
+    // The stated prep time may be preserved or marked unknown due to the conflict.
+    prep: [50, null],
+    cook: null,
+  },
+])(
+  "$name",
+  async ({ times, prep, cook }) => {
+    const imported = await generateRecipe(
+      `{"@type":"Recipe","name":"Tomato rice",${times},"recipeIngredient":["1 cup rice","2 cups water","1 tomato, chopped"],"recipeInstructions":["Combine the rice, water and tomato in a saucepan.","Bring to a boil, then cover and simmer until the rice is tender."]}`,
+    );
+    expect(imported.origin).toBe("imported");
+    expect(prep).toContain(imported.content.prepMinutes);
+    expect(imported.content.cookMinutes).toBe(cook);
+  },
+  100000,
+);
+
 it.skipIf(process.env.LIVE_AI_TEST !== "1")(
   "uses the configured OpenAI model for generation and pasted extraction",
   async () => {
