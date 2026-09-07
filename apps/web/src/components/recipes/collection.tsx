@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Star } from "lucide-react";
 import { useState } from "react";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
 import { useTRPC } from "@/utils/trpc";
@@ -13,10 +13,13 @@ export function Collection() {
   const { groupId, name } = useCollection();
   const query = useQuery(trpc.recipes.list.queryOptions({ groupId }));
   const [search, setSearch] = useState("");
+  const [favouritesOnly, setFavouritesOnly] = useState(false);
 
   const recipes =
-    (query.isError ? undefined : query.data)?.filter((recipe) =>
-      recipe.title.toLowerCase().includes(search.toLowerCase()),
+    (query.isError ? undefined : query.data)?.filter(
+      (recipe) =>
+        recipe.title.toLowerCase().includes(search.toLowerCase()) &&
+        (!favouritesOnly || recipe.isFavourite),
     ) ?? [];
 
   return (
@@ -43,17 +46,29 @@ export function Collection() {
       <CollectionSelect />
       <div className="collection-toolbar">
         <span>
-          {query.data?.length ?? 0}{" "}
-          {query.data?.length === 1 ? "recipe" : "recipes"}
+          {recipes.length} {recipes.length === 1 ? "recipe" : "recipes"}
         </span>
 
+        <button
+          type="button"
+          className="button button-outline favourites-filter"
+          aria-pressed={favouritesOnly}
+          onClick={() => setFavouritesOnly(!favouritesOnly)}
+        >
+          <Star
+            size={17}
+            fill={favouritesOnly ? "currentColor" : "none"}
+            aria-hidden="true"
+          />{" "}
+          Favourites
+        </button>
         <label className="search-box">
           <Search size={18} />
           <span className="sr-only">Search recipes</span>
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Find a favourite..."
+            placeholder="Search recipes..."
           />
         </label>
       </div>
@@ -65,7 +80,14 @@ export function Collection() {
         />
 
         {query.isSuccess && recipes.length === 0 && (
-          <EmptyCollection searching={!!search} onClear={() => setSearch("")} />
+          <EmptyCollection
+            searching={!!search}
+            favouritesOnly={favouritesOnly}
+            onClear={() => {
+              setSearch("");
+              setFavouritesOnly(false);
+            }}
+          />
         )}
 
         <div className="recipe-grid">

@@ -1,4 +1,5 @@
 import { Pencil, Trash2 } from "lucide-react";
+import { FavouriteButton } from "./favourite-button";
 
 export function RecipeHeading({
   recipe,
@@ -6,7 +7,13 @@ export function RecipeHeading({
   onEdit,
   onDelete,
 }: {
-  recipe: { title: string; origin: string; sourceUrl: string | null };
+  recipe: {
+    id: string;
+    title: string;
+    origin: string;
+    sourceUrl: string | null;
+    isFavourite: boolean;
+  };
   editing: boolean;
   onEdit: () => void;
   onDelete: () => void;
@@ -38,6 +45,11 @@ export function RecipeHeading({
 
       {!editing && (
         <div className="detail-actions">
+          <FavouriteButton
+            id={recipe.id}
+            title={recipe.title}
+            isFavourite={recipe.isFavourite}
+          />
           <button
             type="button"
             className="button button-outline"

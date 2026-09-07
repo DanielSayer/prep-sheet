@@ -2,6 +2,7 @@ import {
   index,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uuid,
@@ -32,5 +33,21 @@ export const recipe = pgTable(
   (table) => [
     index("recipe_user_created_idx").on(table.userId, table.createdAt),
     index("recipe_group_created_idx").on(table.groupId, table.createdAt),
+  ],
+);
+
+export const recipeFavourite = pgTable(
+  "recipe_favourite",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    recipeId: uuid("recipe_id")
+      .notNull()
+      .references(() => recipe.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.recipeId] }),
+    index("recipe_favourite_recipe_idx").on(table.recipeId),
   ],
 );

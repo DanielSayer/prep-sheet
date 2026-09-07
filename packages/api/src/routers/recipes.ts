@@ -1,8 +1,17 @@
 import { db } from "@prep-sheet/db";
 import { recipeContentSchema } from "@prep-sheet/db/recipe-content";
-import { recipe } from "@prep-sheet/db/schema/recipe";
+import { recipe, recipeFavourite } from "@prep-sheet/db/schema/recipe";
 import { TRPCError } from "@trpc/server";
-import { and, count, desc, eq, gte, isNull } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  getTableColumns,
+  gte,
+  isNull,
+  sql,
+} from "drizzle-orm";
 import { z } from "zod";
 import { accessibleRecipe, lockGroup, requireGroup } from "../groups/access";
 import { protectedProcedure, router } from "../index";
@@ -14,8 +23,17 @@ const owned = (id: string, userId: string) =>
 const missing = () =>
   new TRPCError({ code: "NOT_FOUND", message: "Recipe not found." });
 
+const favouriteOf = (userId: string) => sql<boolean>`exists (
+  select 1 from ${recipeFavourite}
+  where ${recipeFavourite.recipeId} = ${recipe.id}
+    and ${recipeFavourite.userId} = ${userId}
+)`;
+
 export async function getRecipe(id: string, userId: string) {
-  const [result] = await db.select().from(recipe).where(owned(id, userId));
+  const [result] = await db
+    .select({ ...getTableColumns(recipe), isFavourite: favouriteOf(userId) })
+    .from(recipe)
+    .where(owned(id, userId));
   if (!result) throw missing();
   return result;
 }
@@ -33,6 +51,7 @@ export const recipesRouter = router({
           content: recipe.content,
           origin: recipe.origin,
           createdAt: recipe.createdAt,
+          isFavourite: favouriteOf(ctx.session.user.id),
         })
         .from(recipe)
         .where(
@@ -48,6 +67,28 @@ export const recipesRouter = router({
   get: protectedProcedure
     .input(idInput)
     .query(({ input, ctx }) => getRecipe(input.id, ctx.session.user.id)),
+  setFavourite: protectedProcedure
+    .input(idInput.extend({ isFavourite: z.boolean() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.user.id;
+      await getRecipe(input.id, userId);
+      if (input.isFavourite) {
+        await db
+          .insert(recipeFavourite)
+          .values({ userId, recipeId: input.id })
+          .onConflictDoNothing();
+      } else {
+        await db
+          .delete(recipeFavourite)
+          .where(
+            and(
+              eq(recipeFavourite.userId, userId),
+              eq(recipeFavourite.recipeId, input.id),
+            ),
+          );
+      }
+      return { id: input.id, isFavourite: input.isFavourite };
+    }),
   create: protectedProcedure
     .input(
       z.object({
