@@ -33,34 +33,94 @@ Font.registerHyphenationCallback((word) => [word]);
 
 const s = StyleSheet.create({
   page: {
-    paddingTop: 44,
-    paddingLeft: 44,
-    paddingRight: 44,
-    paddingBottom: 58,
+    paddingTop: 32,
+    paddingLeft: 34,
+    paddingRight: 34,
+    paddingBottom: 36,
     fontFamily: "Nunito",
-    fontSize: 11,
-    color: "#263b32",
-    lineHeight: 1.5,
+    fontSize: 10.5,
+    color: "#334451",
+    lineHeight: 1.4,
   },
-  brand: { fontSize: 12, fontWeight: 800, color: "#47754c", marginBottom: 24 },
-  title: { fontSize: 29, fontWeight: 800, lineHeight: 1.15, marginBottom: 12 },
-  description: { color: "#5f665c", marginBottom: 16 },
+  brand: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 22,
+    gap: 9,
+  },
+  brandName: { fontSize: 19, fontWeight: 800, color: "#063338" },
+  title: {
+    fontSize: 30,
+    fontWeight: 800,
+    color: "#063338",
+    lineHeight: 1.12,
+    marginBottom: 10,
+  },
+  description: { fontSize: 12, color: "#63747b", marginBottom: 16 },
   meta: {
-    backgroundColor: "#f1f4e7",
-    padding: 12,
-    marginBottom: 20,
-    borderRadius: 6,
+    flexDirection: "row",
+    backgroundColor: "#eff3ee",
+    paddingVertical: 13,
+    marginBottom: 6,
+    borderRadius: 10,
   },
-  heading: { fontSize: 15, fontWeight: 800, marginTop: 16, marginBottom: 10 },
-  ingredient: { marginBottom: 5, paddingLeft: 12 },
-  step: { flexDirection: "row", marginBottom: 12 },
-  number: { width: 25, fontWeight: 800, color: "#47754c" },
+  metaItem: { flex: 1, paddingHorizontal: 20 },
+  metaDivider: { borderLeftWidth: 0.5, borderLeftColor: "#9eafaa" },
+  metaLabel: { fontSize: 10, color: "#334451" },
+  metaValue: { fontSize: 14, fontWeight: 800, color: "#063338" },
+  heading: {
+    fontSize: 20,
+    color: "#063338",
+    fontWeight: 800,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  ingredientRow: { flexDirection: "row", gap: 22 },
+  ingredient: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 7,
+    gap: 10,
+  },
+  checkbox: {
+    width: 11,
+    height: 11,
+    marginTop: 2,
+    borderWidth: 0.7,
+    borderColor: "#164449",
+    borderRadius: 2,
+  },
+  ingredientText: { flex: 1 },
+  step: { flexDirection: "row", marginBottom: 13, gap: 12 },
+  number: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#dce7d6",
+    textAlign: "center",
+    paddingTop: 3,
+    fontSize: 14,
+    fontWeight: 800,
+    color: "#063338",
+  },
   stepText: { flex: 1 },
   note: {
-    marginTop: 16,
+    marginTop: 8,
     padding: 12,
     backgroundColor: "#fff5dd",
-    borderRadius: 6,
+    borderRadius: 8,
+  },
+  noteHeading: {
+    fontSize: 13,
+    fontWeight: 800,
+    color: "#063338",
+    marginBottom: 5,
+  },
+  noteLine: {
+    height: 18,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#d6cdb6",
   },
   source: { fontSize: 9, marginTop: 20, color: "#5f665c" },
 });
@@ -71,44 +131,70 @@ export async function recipePdf(
   origin: string,
 ) {
   const meta = [
-    content.servings && `Serves ${content.servings}`,
-    content.prepMinutes !== null && `Prep ${content.prepMinutes} min`,
-    content.cookMinutes !== null && `Cook ${content.cookMinutes} min`,
-  ]
-    .filter(Boolean)
-    .join("    /    ");
+    { label: "Serves", value: content.servings },
+    {
+      label: "Prep time",
+      value: content.prepMinutes !== null ? `${content.prepMinutes} min` : null,
+    },
+    {
+      label: "Cook time",
+      value: content.cookMinutes !== null ? `${content.cookMinutes} min` : null,
+    },
+  ].filter((item) => item.value !== null && item.value !== "");
+  const columnLength = Math.ceil(content.ingredients.length / 2);
   return renderToBuffer(
     <Document title={content.title} author="Prep Sheet">
       <Page size="A4" style={s.page}>
-        <Text style={s.brand}>prep sheet. / The kitchen copy</Text>
+        <View style={s.brand}>
+          <Text style={s.brandName}>
+            prepsheet<Text style={{ color: "#eb713a" }}>.</Text>
+          </Text>
+        </View>
         <Text style={s.title}>{content.title}</Text>
         {content.description && (
           <Text style={s.description}>{content.description}</Text>
         )}
-        {meta && <Text style={s.meta}>{meta}</Text>}
+        {meta.length > 0 && (
+          <View style={s.meta} wrap={false}>
+            {meta.map((item, index) => (
+              <View
+                key={item.label}
+                style={index > 0 ? [s.metaItem, s.metaDivider] : s.metaItem}
+              >
+                <Text style={s.metaLabel}>{item.label}</Text>
+                <Text style={s.metaValue}>{item.value}</Text>
+              </View>
+            ))}
+          </View>
+        )}
         <Text style={s.heading} minPresenceAhead={30}>
-          What goes in
+          Ingredients
         </Text>
-        {content.ingredients.map((item, index) => (
-          <Text key={`${index}-${item}`} style={s.ingredient}>
-            • {item}
-          </Text>
+        {content.ingredients.slice(0, columnLength).map((item, index) => (
+          <View key={`${index}-${item}`} style={s.ingredientRow} wrap={false}>
+            {[item, content.ingredients[index + columnLength]].map(
+              (ingredient, column) => (
+                <View key={column} style={s.ingredient}>
+                  {ingredient && (
+                    <>
+                      <View style={s.checkbox} />
+                      <Text style={s.ingredientText}>{ingredient}</Text>
+                    </>
+                  )}
+                </View>
+              ),
+            )}
+          </View>
         ))}
         <Text style={s.heading} minPresenceAhead={50}>
           Let's make it
         </Text>
         {content.steps.map((step, index) => (
           <View key={`${index}-${step}`} style={s.step} wrap={false}>
-            <Text style={s.number}>{index + 1}.</Text>
+            <Text style={s.number}>{index + 1}</Text>
             <Text style={s.stepText}>{step}</Text>
           </View>
         ))}
-        {content.notes && (
-          <View style={s.note}>
-            <Text style={{ fontWeight: 800 }}>Kitchen notes</Text>
-            <Text>{content.notes}</Text>
-          </View>
-        )}
         {sourceUrl && (
           <Text style={s.source}>
             Original recipe: <Link src={sourceUrl}>{sourceUrl}</Link>
@@ -120,6 +206,19 @@ export async function recipePdf(
             cooking.
           </Text>
         )}
+        <View style={s.note}>
+          <Text style={s.noteHeading} minPresenceAhead={36}>
+            Kitchen notes
+          </Text>
+          {content.notes ? (
+            <Text>{content.notes}</Text>
+          ) : (
+            <View wrap={false}>
+              <View style={s.noteLine} />
+              <View style={s.noteLine} />
+            </View>
+          )}
+        </View>
       </Page>
     </Document>,
   );
