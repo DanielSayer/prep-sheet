@@ -1,6 +1,8 @@
 import type { RecipeContent } from "@prep-sheet/db/recipe-content";
+import { useState } from "react";
 
 export function RecipeBody({ content }: { content: RecipeContent }) {
+  const [checked, setChecked] = useState<Set<number>>(() => new Set());
   return (
     <div className="recipe-body">
       {content.description && (
@@ -29,9 +31,38 @@ export function RecipeBody({ content }: { content: RecipeContent }) {
       <div className="recipe-columns">
         <section aria-labelledby="ingredients-heading">
           <h2 id="ingredients-heading">Ingredients</h2>
+          <div className="ingredient-progress">
+            <span>
+              {checked.size} of {content.ingredients.length} checked
+            </span>
+            <button
+              type="button"
+              className="text-button"
+              disabled={checked.size === 0}
+              onClick={() => setChecked(new Set())}
+            >
+              Reset
+            </button>
+          </div>
           <ul className="recipe-ingredients">
             {content.ingredients.map((ingredient, index) => (
-              <li key={index}>{ingredient}</li>
+              <li key={index}>
+                <label className="ingredient-check">
+                  <input
+                    type="checkbox"
+                    checked={checked.has(index)}
+                    onChange={() =>
+                      setChecked((previous) => {
+                        const next = new Set(previous);
+                        if (next.has(index)) next.delete(index);
+                        else next.add(index);
+                        return next;
+                      })
+                    }
+                  />
+                  <span>{ingredient}</span>
+                </label>
+              </li>
             ))}
           </ul>
         </section>

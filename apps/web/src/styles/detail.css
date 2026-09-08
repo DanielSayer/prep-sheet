@@ -121,8 +121,45 @@
   margin-bottom: 12px;
 }
 .recipe-ingredients {
-  list-style: disc;
-  padding-left: 20px;
+  list-style: none;
+  padding-left: 0;
+}
+.ingredient-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 0;
+  cursor: pointer;
+}
+.ingredient-check input {
+  width: 22px;
+  height: 22px;
+  margin-top: 3px;
+  flex-shrink: 0;
+  accent-color: var(--ink);
+}
+.ingredient-check input:checked + span {
+  text-decoration: line-through;
+  color: var(--muted-ink);
+}
+.ingredient-progress {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+.ingredient-progress button {
+  min-height: 44px;
+}
+.ingredient-progress button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.keep-awake:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 .recipe-method {
   list-style: decimal;

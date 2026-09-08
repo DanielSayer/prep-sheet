@@ -130,7 +130,7 @@ export function RecipeDetail({ id }: { id: string }) {
                 onCancel={() => setEditing(false)}
               />
             ) : (
-              <RecipeBody content={recipe.data.content} />
+              <RecipeBody key={id} content={recipe.data.content} />
             )}
           </>
         )}
