@@ -17,36 +17,6 @@
 .detail-page .page-heading > div:first-child {
   max-width: 760px;
 }
-.pdf-section {
-  border: 2px solid var(--ink);
-  border-radius: 16px;
-  overflow: hidden;
-  background: #e8eadf;
-}
-.pdf-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 22px;
-  gap: 15px;
-  background: #f1f2e9;
-  border-bottom: 1px solid var(--line);
-}
-.pdf-toolbar > span {
-  font-size: 13px;
-  font-weight: 900;
-}
-.pdf-toolbar > div {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-.pdf-frame {
-  width: 100%;
-  height: 800px;
-  border: 0;
-  display: block;
-}
 .recipe-editor {
   max-width: 800px;
   margin: auto;
@@ -104,4 +74,77 @@
 }
 .delete-confirmation p {
   margin-right: auto;
+}
+.recipe-body {
+  font-size: 16px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.recipe-description {
+  max-width: 70ch;
+  margin-bottom: 14px;
+  color: var(--muted-ink);
+  white-space: pre-line;
+}
+.recipe-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  margin: 0 0 22px;
+  font-size: 14px;
+}
+.recipe-meta:empty {
+  display: none;
+}
+.recipe-meta > div {
+  display: flex;
+  gap: 8px;
+}
+.recipe-meta dt {
+  font-weight: 800;
+}
+.recipe-meta dd {
+  margin: 0;
+}
+.recipe-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr);
+  gap: 40px;
+}
+.recipe-body h2 {
+  font-size: 21px;
+  font-weight: 900;
+  margin-bottom: 12px;
+}
+.recipe-ingredients {
+  list-style: disc;
+  padding-left: 20px;
+}
+.recipe-method {
+  list-style: decimal;
+  padding-left: 24px;
+}
+.recipe-ingredients li,
+.recipe-method li {
+  padding-left: 4px;
+  margin-bottom: 10px;
+  white-space: pre-line;
+}
+.recipe-method li::marker {
+  font-weight: 900;
+}
+.recipe-notes {
+  margin-top: 22px;
+}
+.recipe-notes p {
+  white-space: pre-line;
+}
+.detail-page .page-heading {
+  margin-bottom: 18px;
+}
+@media (max-width: 700px) {
+  .recipe-columns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+  }
 }

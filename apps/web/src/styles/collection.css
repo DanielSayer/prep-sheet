@@ -294,6 +294,7 @@
   color: var(--muted-ink);
   line-height: 1.6;
   display: -webkit-box;
+  line-clamp: 3;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -310,12 +311,4 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-}
-.card-arrow {
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  width: 34px;
-  height: 34px;
-  background: #e7ecd9;
 }

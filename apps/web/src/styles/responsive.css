@@ -173,13 +173,6 @@
   .login-card {
     padding: 28px 22px;
   }
-  .pdf-toolbar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .pdf-frame {
-    height: 620px;
-  }
   .recipe-editor {
     padding: 18px;
   }

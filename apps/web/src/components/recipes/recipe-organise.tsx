@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Copy, Plus } from "lucide-react";
+import { Copy, Download, ExternalLink, Plus } from "lucide-react";
 import { useState } from "react";
 import { useTRPC } from "@/utils/trpc";
 import { ErrorNotice } from "../feedback";
@@ -60,6 +60,21 @@ export function RecipeOrganise({
           <Copy size={16} />
           Copy
         </button>
+        <a
+          href={`/api/recipes/${recipe.id}/pdf`}
+          target="_blank"
+          rel="noreferrer"
+          className="organise-action"
+        >
+          <ExternalLink size={16} /> Open PDF
+        </a>
+        <a
+          href={`/api/recipes/${recipe.id}/pdf`}
+          download={`${recipe.title.replace(/[^a-z0-9 -]/gi, "").slice(0, 80) || "recipe"}.pdf`}
+          className="organise-action"
+        >
+          <Download size={16} /> Download
+        </a>
       </div>
       <TagChoices
         tags={chosen}

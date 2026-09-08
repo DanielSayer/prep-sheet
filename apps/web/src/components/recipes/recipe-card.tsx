@@ -1,6 +1,6 @@
 import type { RecipeContent } from "@prep-sheet/db/recipe-content";
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight, BookOpen, Clock } from "lucide-react";
+import { BookOpen, Clock } from "lucide-react";
 import { FavouriteButton } from "./favourite-button";
 
 export function RecipeCard({
@@ -49,10 +49,6 @@ export function RecipeCard({
         <span>
           <Clock size={15} />
           {time}
-        </span>
-
-        <span className="card-arrow">
-          <ArrowUpRight size={22} />
         </span>
       </div>
     </article>

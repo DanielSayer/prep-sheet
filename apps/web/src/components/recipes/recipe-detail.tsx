@@ -7,7 +7,7 @@ import { ErrorNotice, LoadingState } from "@/components/feedback";
 import { useTRPC } from "@/utils/trpc";
 import { useCollection } from "../groups/collection-context";
 import { DeleteConfirmation } from "./delete-confirmation";
-import { PdfPreview } from "./pdf-preview";
+import { RecipeBody } from "./recipe-body";
 import { RecipeEditor } from "./recipe-editor";
 import { RecipeHeading } from "./recipe-heading";
 import { RecipeOrganise } from "./recipe-organise";
@@ -101,11 +101,7 @@ export function RecipeDetail({ id }: { id: string }) {
                 onCancel={() => setEditing(false)}
               />
             ) : (
-              <PdfPreview
-                id={id}
-                title={recipe.data.title}
-                version={recipe.data.updatedAt}
-              />
+              <RecipeBody content={recipe.data.content} />
             )}
           </>
         )}
