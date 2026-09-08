@@ -152,6 +152,13 @@
     align-items: stretch;
     flex-direction: column;
   }
+  .collection-toolbar-controls {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+  .sort-control {
+    justify-content: space-between;
+  }
   .search-box input {
     width: 100%;
   }

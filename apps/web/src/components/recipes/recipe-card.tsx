@@ -35,6 +35,7 @@ export function RecipeCard({
         <Link
           to="/recipes/$recipeId"
           params={{ recipeId: recipe.id }}
+          state={{ fromRecipeCollection: true }}
           className="recipe-card-link"
         >
           {recipe.title}

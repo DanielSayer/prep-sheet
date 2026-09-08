@@ -22,7 +22,7 @@ export function EmptyCollection({
         {tagged
           ? "No recipes match these tags"
           : searching
-            ? "No recipes by that name"
+            ? "No recipes match that search"
             : favouritesOnly
               ? "No favourites yet"
               : "No recipes yet"}
@@ -32,7 +32,7 @@ export function EmptyCollection({
         {tagged
           ? "Try fewer tags or clear your filters."
           : searching
-            ? "Try another name or clear your filters."
+            ? "Try another name or ingredient, or clear your filters."
             : favouritesOnly
               ? "Star recipes in this collection to find them here."
               : "Paste a recipe or link, or describe a dish to get started."}

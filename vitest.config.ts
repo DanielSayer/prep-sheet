@@ -5,7 +5,7 @@ config({ path: "apps/web/.env", quiet: true });
 
 export default defineConfig({
   test: {
-    include: ["packages/**/*.test.ts"],
+    include: ["packages/**/*.test.ts", "apps/web/**/*.test.ts"],
     testTimeout: 15000,
     hookTimeout: 15000,
   },

@@ -1,34 +1,49 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { getRouteApi, Link } from "@tanstack/react-router";
 import { Plus, Search, Star } from "lucide-react";
-import { useState } from "react";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
 import { useTRPC } from "@/utils/trpc";
 import { CollectionSelect, useCollection } from "../groups/collection-context";
 import { EmptyCollection } from "./empty-collection";
 import { RecipeCard } from "./recipe-card";
+import { filterAndSortRecipes, type RecipeSort } from "./recipe-list";
+import { SortDropdown } from "./sort-dropdown";
 import { TagChoices } from "./tag-choices";
+
+const collectionRoute = getRouteApi("/_auth/recipes/");
 
 export function Collection() {
   const trpc = useTRPC();
   const { groupId, name } = useCollection();
   const query = useQuery(trpc.recipes.list.queryOptions({ groupId }));
-  const [search, setSearch] = useState("");
-  const [favouritesOnly, setFavouritesOnly] = useState(false);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const filters = collectionRoute.useSearch();
+  const navigate = collectionRoute.useNavigate();
+  const search = filters.q ?? "";
+  const favouritesOnly = filters.favourites ?? false;
+  const selectedTags = filters.tags?.split(",").filter(Boolean) ?? [];
+  const sort = filters.sort ?? "newest";
   const tags = useQuery(trpc.tags.list.queryOptions());
   const activeTags = selectedTags.filter((id) =>
     tags.data?.some((tag) => tag.id === id),
   );
   const filterCount = activeTags.length + Number(favouritesOnly);
 
-  const recipes =
-    (query.isError ? undefined : query.data)?.filter(
-      (recipe) =>
-        recipe.title.toLowerCase().includes(search.toLowerCase()) &&
-        (!favouritesOnly || recipe.isFavourite) &&
-        activeTags.every((id) => recipe.tagIds.includes(id)),
-    ) ?? [];
+  const recipes = filterAndSortRecipes(
+    query.isError ? [] : (query.data ?? []),
+    { search, favouritesOnly, tagIds: activeTags, sort },
+  );
+
+  const updateFilters = (next: {
+    q?: string;
+    favourites?: boolean;
+    tags?: string;
+    sort?: RecipeSort;
+  }) =>
+    void navigate({
+      search: (old) => ({ ...old, ...next }),
+      replace: true,
+      resetScroll: false,
+    });
 
   return (
     <main id="main-content" className="collection-page page-width">
@@ -57,15 +72,24 @@ export function Collection() {
           {recipes.length} {recipes.length === 1 ? "recipe" : "recipes"}
         </span>
 
-        <label className="search-box">
-          <Search size={18} />
-          <span className="sr-only">Search recipes</span>
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search recipes..."
+        <div className="collection-toolbar-controls">
+          <SortDropdown
+            value={sort}
+            onValueChange={(value) => updateFilters({ sort: value })}
           />
-        </label>
+
+          <label className="search-box">
+            <Search size={18} />
+            <span className="sr-only">Search recipes</span>
+            <input
+              value={search}
+              onChange={(event) =>
+                updateFilters({ q: event.target.value || undefined })
+              }
+              placeholder="Search names or ingredients..."
+            />
+          </label>
+        </div>
       </div>
 
       <section
@@ -76,7 +100,9 @@ export function Collection() {
           type="button"
           className="organise-action"
           aria-pressed={favouritesOnly}
-          onClick={() => setFavouritesOnly(!favouritesOnly)}
+          onClick={() =>
+            updateFilters({ favourites: favouritesOnly ? undefined : true })
+          }
         >
           <Star size={17} fill={favouritesOnly ? "currentColor" : "none"} />
           Show favourites
@@ -84,19 +110,19 @@ export function Collection() {
         <TagChoices
           tags={tags.data ?? []}
           selected={activeTags}
-          toggle={(id) =>
-            setSelectedTags((old) =>
-              old.includes(id) ? old.filter((tag) => tag !== id) : [...old, id],
-            )
-          }
+          toggle={(id) => {
+            const next = selectedTags.includes(id)
+              ? selectedTags.filter((tag) => tag !== id)
+              : [...selectedTags, id];
+            updateFilters({ tags: next.length ? next.join(",") : undefined });
+          }}
         />
         {filterCount > 0 && (
           <button
             type="button"
             className="text-button"
             onClick={() => {
-              setSelectedTags([]);
-              setFavouritesOnly(false);
+              updateFilters({ favourites: undefined, tags: undefined });
             }}
           >
             Clear filters
@@ -121,9 +147,11 @@ export function Collection() {
             favouritesOnly={favouritesOnly}
             tagged={activeTags.length > 0}
             onClear={() => {
-              setSearch("");
-              setFavouritesOnly(false);
-              setSelectedTags([]);
+              updateFilters({
+                q: undefined,
+                favourites: undefined,
+                tags: undefined,
+              });
             }}
           />
         )}

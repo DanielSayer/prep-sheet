@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -16,10 +21,20 @@ export function RecipeDetail({ id }: { id: string }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const router = useRouter();
+  const fromRecipeCollection = useLocation({
+    select: (location) => location.state.fromRecipeCollection,
+  });
   const recipe = useQuery(trpc.recipes.get.queryOptions({ id }));
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const { groups, selectGroup } = useCollection();
+
+  const returnToCollection = () => {
+    if (recipe.data) selectGroup(recipe.data.groupId);
+    if (fromRecipeCollection) router.history.back();
+    else void navigate({ to: "/recipes" });
+  };
 
   const update = useMutation(
     trpc.recipes.update.mutationOptions({
@@ -45,26 +60,40 @@ export function RecipeDetail({ id }: { id: string }) {
         });
 
         toast.success("Recipe removed.");
-        await navigate({ to: "/recipes" });
+        returnToCollection();
       },
     }),
   );
 
   return (
     <main id="main-content" className="detail-page page-width">
-      <Link
-        to="/recipes"
-        className="back-link"
-        onClick={() => {
-          if (recipe.data) selectGroup(recipe.data.groupId);
-        }}
-      >
-        <ArrowLeft size={17} />{" "}
-        {recipe.data?.groupId
-          ? (groups.data?.find((group) => group.id === recipe.data?.groupId)
-              ?.name ?? "Group collection")
-          : "Personal collection"}
-      </Link>
+      {fromRecipeCollection ? (
+        <button
+          type="button"
+          className="back-link"
+          onClick={returnToCollection}
+        >
+          <ArrowLeft size={17} />{" "}
+          {recipe.data?.groupId
+            ? (groups.data?.find((group) => group.id === recipe.data?.groupId)
+                ?.name ?? "Group collection")
+            : "Personal collection"}
+        </button>
+      ) : (
+        <Link
+          to="/recipes"
+          className="back-link"
+          onClick={() => {
+            if (recipe.data) selectGroup(recipe.data.groupId);
+          }}
+        >
+          <ArrowLeft size={17} />{" "}
+          {recipe.data?.groupId
+            ? (groups.data?.find((group) => group.id === recipe.data?.groupId)
+                ?.name ?? "Group collection")
+            : "Personal collection"}
+        </Link>
+      )}
 
       <LoadingState pending={recipe.isPending}>
         <ErrorNotice
