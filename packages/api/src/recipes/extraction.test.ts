@@ -40,6 +40,10 @@ describe("recipe extraction", () => {
       recipeContentSchema.safeParse({ ...sampleRecipe, prepMinutes: -1 })
         .success,
     ).toBe(false);
+    expect(
+      recipeContentSchema.safeParse({ ...sampleRecipe, totalMinutes: -1 })
+        .success,
+    ).toBe(false);
   });
 });
 

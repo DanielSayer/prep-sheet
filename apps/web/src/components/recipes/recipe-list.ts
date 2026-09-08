@@ -1,4 +1,5 @@
 import type { RecipeContent } from "@prep-sheet/db/recipe-content";
+import { sortableRecipeMinutes } from "./recipe-time";
 
 export const recipeSorts = [
   "newest",
@@ -32,13 +33,6 @@ const byName = new Intl.Collator(undefined, {
   sensitivity: "base",
 });
 
-function totalCookingMinutes(recipe: CollectionRecipe) {
-  const { prepMinutes, cookMinutes } = recipe.content;
-  return prepMinutes === null && cookMinutes === null
-    ? null
-    : (prepMinutes ?? 0) + (cookMinutes ?? 0);
-}
-
 function compareRecipes(sort: RecipeSort) {
   return (left: CollectionRecipe, right: CollectionRecipe) => {
     if (sort === "name") return byName.compare(left.title, right.title);
@@ -54,8 +48,8 @@ function compareRecipes(sort: RecipeSort) {
     }
 
     if (sort === "cooking-time") {
-      const leftMinutes = totalCookingMinutes(left);
-      const rightMinutes = totalCookingMinutes(right);
+      const leftMinutes = sortableRecipeMinutes(left.content);
+      const rightMinutes = sortableRecipeMinutes(right.content);
       if (leftMinutes === null && rightMinutes !== null) return 1;
       if (leftMinutes !== null && rightMinutes === null) return -1;
       if (leftMinutes !== null && rightMinutes !== null) {

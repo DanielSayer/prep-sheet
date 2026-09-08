@@ -7,6 +7,7 @@ export const sampleRecipe: RecipeContent = {
   servings: "2",
   prepMinutes: 5,
   cookMinutes: 15,
+  totalMinutes: 20,
   ingredients: [
     "200 g pasta",
     "1 tbsp olive oil",

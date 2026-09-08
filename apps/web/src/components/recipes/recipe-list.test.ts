@@ -8,6 +8,7 @@ const content = (overrides: Partial<RecipeContent> = {}): RecipeContent => ({
   servings: null,
   prepMinutes: 10,
   cookMinutes: 20,
+  totalMinutes: 30,
   ingredients: ["1 onion"],
   steps: ["Cook it"],
   notes: "",
@@ -72,16 +73,24 @@ describe("filterAndSortRecipes", () => {
     ).toEqual(["apple pie", "Soup 2", "Soup 10"]);
   });
 
-  it("sorts total cooking time ascending and puts unknown times last", () => {
+  it("sorts elapsed time ascending and puts incomplete times last", () => {
     const recipes = [
       recipe("1", "Unknown", {
-        content: content({ prepMinutes: null, cookMinutes: null }),
+        content: content({
+          prepMinutes: null,
+          cookMinutes: null,
+          totalMinutes: null,
+        }),
       }),
       recipe("2", "Long", {
-        content: content({ prepMinutes: 20, cookMinutes: 40 }),
+        content: content({
+          prepMinutes: 20,
+          cookMinutes: 40,
+          totalMinutes: 90,
+        }),
       }),
       recipe("3", "Quick", {
-        content: content({ prepMinutes: 5, cookMinutes: 10 }),
+        content: content({ prepMinutes: 5, cookMinutes: 10, totalMinutes: 15 }),
       }),
     ];
 
@@ -91,6 +100,32 @@ describe("filterAndSortRecipes", () => {
         sort: "cooking-time",
       }).map(({ title }) => title),
     ).toEqual(["Quick", "Long", "Unknown"]);
+  });
+
+  it("does not sort a partial duration as though it were complete", () => {
+    const recipes = [
+      recipe("1", "Partial", {
+        content: content({
+          prepMinutes: null,
+          cookMinutes: 5,
+          totalMinutes: null,
+        }),
+      }),
+      recipe("2", "Complete", {
+        content: content({
+          prepMinutes: 10,
+          cookMinutes: 10,
+          totalMinutes: null,
+        }),
+      }),
+    ];
+
+    expect(
+      filterAndSortRecipes(recipes, {
+        ...filters,
+        sort: "cooking-time",
+      }).map(({ title }) => title),
+    ).toEqual(["Complete", "Partial"]);
   });
 
   it("sorts ratings descending and puts unrated recipes last", () => {

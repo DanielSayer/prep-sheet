@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "typescript-best-practices": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "skillPath": "pstack/skills/typescript-best-practices/SKILL.md",
+      "computedHash": "9f0985815731c81253bbc9e856eb390ad0b08232bf016f84819b9a5adc52a150"
+    }
+  }
+}

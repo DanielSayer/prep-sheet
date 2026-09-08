@@ -341,16 +341,20 @@
 }
 .recipe-card-bottom {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding-top: 25px;
   margin-top: auto;
 }
 .recipe-card-bottom > span:first-child {
   display: flex;
+  flex: 1 1 140px;
   align-items: center;
   gap: 6px;
   font-size: 12px;
+  line-height: 1.4;
 }
 .rating-control {
   position: relative;
@@ -407,6 +411,7 @@
 }
 .rating-control-compact {
   gap: 0;
+  margin-left: auto;
 }
 .rating-control-compact .rating-star {
   width: 25px;

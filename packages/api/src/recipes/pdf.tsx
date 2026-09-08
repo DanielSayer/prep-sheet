@@ -140,6 +140,11 @@ export async function recipePdf(
       label: "Cook time",
       value: content.cookMinutes !== null ? `${content.cookMinutes} min` : null,
     },
+    {
+      label: "Elapsed time",
+      value:
+        content.totalMinutes != null ? `${content.totalMinutes} min` : null,
+    },
   ].filter((item) => item.value !== null && item.value !== "");
   const columnLength = Math.ceil(content.ingredients.length / 2);
   return renderToBuffer(

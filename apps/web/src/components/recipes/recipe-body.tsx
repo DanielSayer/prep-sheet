@@ -27,6 +27,12 @@ export function RecipeBody({ content }: { content: RecipeContent }) {
             <dd>{content.cookMinutes} min</dd>
           </div>
         )}
+        {content.totalMinutes != null && (
+          <div>
+            <dt>Elapsed</dt>
+            <dd>{content.totalMinutes} min</dd>
+          </div>
+        )}
       </dl>
       <div className="recipe-columns">
         <section aria-labelledby="ingredients-heading">

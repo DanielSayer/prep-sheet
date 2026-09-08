@@ -45,6 +45,7 @@ it("checks ingredients independently and resets them", () => {
         servings: "2",
         prepMinutes: 5,
         cookMinutes: 10,
+        totalMinutes: 15,
         ingredients: ["1 onion", "1 onion"],
         steps: ["Chop.", "Cook."],
         notes: "",

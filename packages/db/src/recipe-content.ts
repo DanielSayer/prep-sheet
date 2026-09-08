@@ -8,6 +8,7 @@ export const recipeContentSchema = z.object({
   servings: z.string().max(80).nullable(),
   prepMinutes: z.number().int().min(0).max(10080).nullable(),
   cookMinutes: z.number().int().min(0).max(10080).nullable(),
+  totalMinutes: z.number().int().min(0).max(10080).nullable(),
   ingredients: z.array(line).min(1).max(100),
   steps: z.array(line).min(1).max(100),
   notes: z.string().max(2000),

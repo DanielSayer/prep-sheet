@@ -72,6 +72,15 @@ export function RecipeFields({ content }: { content: RecipeContent }) {
           max={10080}
           defaultValue={content.cookMinutes ?? ""}
         />
+
+        <InputField
+          label="Total elapsed minutes"
+          name="totalMinutes"
+          type="number"
+          min={0}
+          max={10080}
+          defaultValue={content.totalMinutes ?? ""}
+        />
       </div>
 
       <TextField

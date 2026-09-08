@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { BookOpen, Clock } from "lucide-react";
 import { FavouriteButton } from "./favourite-button";
 import { RatingControl } from "./rating-control";
+import { recipeTimeSummary } from "./recipe-time";
 
 export function RecipeCard({
   recipe,
@@ -15,12 +16,7 @@ export function RecipeCard({
     rating: number | null;
   };
 }) {
-  const { prepMinutes, cookMinutes } = recipe.content;
-
-  const time =
-    prepMinutes === null && cookMinutes === null
-      ? "Time not listed"
-      : `${(prepMinutes ?? 0) + (cookMinutes ?? 0)} min`;
+  const time = recipeTimeSummary(recipe.content);
 
   return (
     <article className="recipe-card">

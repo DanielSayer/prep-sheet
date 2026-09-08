@@ -40,6 +40,7 @@ export function RecipeEditor({
       servings: text("servings") || null,
       prepMinutes: minutes("prepMinutes"),
       cookMinutes: minutes("cookMinutes"),
+      totalMinutes: minutes("totalMinutes"),
       ingredients: lines("ingredients"),
       steps: lines("steps"),
       notes: text("notes"),
