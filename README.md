@@ -54,6 +54,16 @@ Choose **Manage groups** beside the collection picker to create a group for frie
 
 For an existing local database, run `pnpm db:push` before starting the updated app. This adds `group`, `group_member`, `group_invite`, and nullable `recipe.group_id` tables/columns and changes the creator reference to allow deleted contributors. No recipe backfill is needed: a null group ID denotes a personal collection. The local database was upgraded during implementation. Apply the schema separately to other environments using your deployment process.
 
+## Tags and account settings
+
+Open the profile menu for Settings or Sign out. Settings has a Tags page where each user can create up to 100 custom tags with optional descriptions. Five built-in tags are available to everyone: High protein, Under 30 minutes, Under an hour, Vegetarian and Freezer friendly.
+
+Recipe creation passes the user's available tags to the AI and saves only recognised tag IDs. Existing recipes are not retagged automatically. Tags are personal, including on shared recipes, and copies preserve the copying user's tags. Deleting a custom tag removes its recipe assignments.
+
+Collections has an expandable Filters panel. Selected tags must all match and combine with search and favourites. Recipe details keeps tags, favourites and copying under Organise; Edit and Delete are in the recipe actions menu.
+
+Run `pnpm db:push` to add `tag` and `recipe_tag` before running this version against an existing database. The local schema has been updated; other environments need the same schema update. Built-in tags are inserted idempotently when tags are first requested.
+
 ## Checks
 
 ```sh

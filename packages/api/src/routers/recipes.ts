@@ -1,6 +1,7 @@
 import { db } from "@prep-sheet/db";
 import { recipeContentSchema } from "@prep-sheet/db/recipe-content";
 import { recipe, recipeFavourite } from "@prep-sheet/db/schema/recipe";
+import { recipeTag, tag } from "@prep-sheet/db/schema/tag";
 import { TRPCError } from "@trpc/server";
 import {
   and,
@@ -9,13 +10,16 @@ import {
   eq,
   getTableColumns,
   gte,
+  inArray,
   isNull,
+  or,
   sql,
 } from "drizzle-orm";
 import { z } from "zod";
 import { accessibleRecipe, lockGroup, requireGroup } from "../groups/access";
 import { protectedProcedure, router } from "../index";
 import { generateRecipe } from "../recipes/generate";
+import { availableTags } from "./tags";
 
 const idInput = z.object({ id: z.uuid() });
 const owned = (id: string, userId: string) =>
@@ -29,9 +33,18 @@ const favouriteOf = (userId: string) => sql<boolean>`exists (
     and ${recipeFavourite.userId} = ${userId}
 )`;
 
+const tagsOf = (userId: string) => sql<string[]>`coalesce((
+  select json_agg(${recipeTag.tagId}) from ${recipeTag}
+  where ${recipeTag.recipeId} = ${recipe.id} and ${recipeTag.userId} = ${userId}
+), '[]'::json)`;
+
 export async function getRecipe(id: string, userId: string) {
   const [result] = await db
-    .select({ ...getTableColumns(recipe), isFavourite: favouriteOf(userId) })
+    .select({
+      ...getTableColumns(recipe),
+      isFavourite: favouriteOf(userId),
+      tagIds: tagsOf(userId),
+    })
     .from(recipe)
     .where(owned(id, userId));
   if (!result) throw missing();
@@ -52,6 +65,7 @@ export const recipesRouter = router({
           origin: recipe.origin,
           createdAt: recipe.createdAt,
           isFavourite: favouriteOf(ctx.session.user.id),
+          tagIds: tagsOf(ctx.session.user.id),
         })
         .from(recipe)
         .where(
@@ -67,6 +81,39 @@ export const recipesRouter = router({
   get: protectedProcedure
     .input(idInput)
     .query(({ input, ctx }) => getRecipe(input.id, ctx.session.user.id)),
+  setTag: protectedProcedure
+    .input(idInput.extend({ tagId: z.uuid(), selected: z.boolean() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.user.id;
+      await getRecipe(input.id, userId);
+      const [available] = await db
+        .select()
+        .from(tag)
+        .where(
+          and(
+            eq(tag.id, input.tagId),
+            or(isNull(tag.userId), eq(tag.userId, userId)),
+          ),
+        );
+      if (!available)
+        throw new TRPCError({ code: "NOT_FOUND", message: "Tag not found." });
+      if (input.selected)
+        await db
+          .insert(recipeTag)
+          .values({ userId, recipeId: input.id, tagId: input.tagId })
+          .onConflictDoNothing();
+      else
+        await db
+          .delete(recipeTag)
+          .where(
+            and(
+              eq(recipeTag.userId, userId),
+              eq(recipeTag.recipeId, input.id),
+              eq(recipeTag.tagId, input.tagId),
+            ),
+          );
+      return { success: true };
+    }),
   setFavourite: protectedProcedure
     .input(idInput.extend({ isFavourite: z.boolean() }))
     .mutation(async ({ input, ctx }) => {
@@ -127,13 +174,16 @@ export const recipesRouter = router({
           message:
             "You've saved 50 recipes today. Come back tomorrow for more.",
         });
-      const result = await generateRecipe(input.input);
+      const { tagIds = [], ...result } = await generateRecipe(
+        input.input,
+        await availableTags(userId),
+      );
       await db.transaction(async (tx) => {
         if (input.groupId) {
           await lockGroup(tx, input.groupId);
           await requireGroup(tx, input.groupId, userId);
         }
-        await tx
+        const inserted = await tx
           .insert(recipe)
           .values({
             id: input.id,
@@ -142,7 +192,26 @@ export const recipesRouter = router({
             title: result.content.title,
             ...result,
           })
-          .onConflictDoNothing();
+          .onConflictDoNothing()
+          .returning({ id: recipe.id });
+        if (inserted.length && tagIds.length) {
+          const valid = await tx
+            .select({ id: tag.id })
+            .from(tag)
+            .where(
+              and(
+                inArray(tag.id, tagIds),
+                or(isNull(tag.userId), eq(tag.userId, userId)),
+              ),
+            );
+          if (valid.length)
+            await tx
+              .insert(recipeTag)
+              .values(
+                valid.map((t) => ({ userId, recipeId: input.id, tagId: t.id })),
+              )
+              .onConflictDoNothing();
+        }
       });
       return getRecipe(input.id, userId);
     }),
@@ -179,6 +248,18 @@ export const recipesRouter = router({
             message:
               "This copy has already been saved. Refresh your collection.",
           });
+        const sourceTags = await tx
+          .select({ tagId: recipeTag.tagId })
+          .from(recipeTag)
+          .where(
+            and(eq(recipeTag.recipeId, input.id), eq(recipeTag.userId, userId)),
+          );
+        if (sourceTags.length)
+          await tx
+            .insert(recipeTag)
+            .values(
+              sourceTags.map((t) => ({ ...t, userId, recipeId: saved.id })),
+            );
         return saved;
       }),
     ),

@@ -8,10 +8,12 @@ export function FavouriteButton({
   id,
   title,
   isFavourite,
+  showLabel = false,
 }: {
   id: string;
   title: string;
   isFavourite: boolean;
+  showLabel?: boolean;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -40,7 +42,7 @@ export function FavouriteButton({
   return (
     <button
       type="button"
-      className="icon-button favourite-button"
+      className={`${showLabel ? "organise-action" : "icon-button"} favourite-button`}
       aria-label={`${selected ? "Remove" : "Add"} ${title} ${selected ? "from" : "to"} favourites`}
       title={selected ? "Remove from favourites" : "Add to favourites"}
       aria-pressed={selected}
@@ -76,6 +78,7 @@ export function FavouriteButton({
           </span>
         )}
       </span>
+      {showLabel && <span>{selected ? "Favourited" : "Favourite"}</span>}
     </button>
   );
 }

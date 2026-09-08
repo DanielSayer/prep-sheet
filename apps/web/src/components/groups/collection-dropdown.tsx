@@ -9,7 +9,7 @@ import {
 } from "@prep-sheet/ui/components/dropdown-menu";
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, Users } from "lucide-react";
-import { useId } from "react";
+import { useId, useRef } from "react";
 
 type CollectionOption = {
   label: string;
@@ -34,11 +34,12 @@ export function CollectionDropdown({
   value: string;
 }) {
   const labelId = useId();
+  const container = useRef<HTMLDivElement>(null);
   const valueId = useId();
   const selected = options.find((option) => option.value === value);
 
   return (
-    <div className="collection-select">
+    <div className="collection-select" ref={container}>
       <span id={labelId} className="collection-select-label">
         {label}
       </span>
@@ -51,7 +52,11 @@ export function CollectionDropdown({
           <span id={valueId}>{selected?.label ?? placeholder}</span>
           <ChevronDown size={18} aria-hidden="true" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="collection-select-menu" sideOffset={8}>
+        <DropdownMenuContent
+          container={container}
+          className="collection-select-menu"
+          sideOffset={8}
+        >
           <DropdownMenuRadioGroup value={value} onValueChange={onValueChange}>
             {options.map((option) => (
               <DropdownMenuRadioItem

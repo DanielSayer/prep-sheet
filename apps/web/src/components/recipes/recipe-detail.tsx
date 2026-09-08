@@ -6,11 +6,11 @@ import { toast } from "sonner";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
 import { useTRPC } from "@/utils/trpc";
 import { useCollection } from "../groups/collection-context";
-import { CopyRecipe } from "../groups/copy-recipe";
 import { DeleteConfirmation } from "./delete-confirmation";
 import { PdfPreview } from "./pdf-preview";
 import { RecipeEditor } from "./recipe-editor";
 import { RecipeHeading } from "./recipe-heading";
+import { RecipeOrganise } from "./recipe-organise";
 
 export function RecipeDetail({ id }: { id: string }) {
   const trpc = useTRPC();
@@ -80,13 +80,7 @@ export function RecipeDetail({ id }: { id: string }) {
               onEdit={() => setEditing(true)}
               onDelete={() => setConfirming(true)}
             />
-            {!editing && (
-              <CopyRecipe
-                key={id}
-                id={id}
-                sourceGroupId={recipe.data.groupId}
-              />
-            )}
+            {!editing && <RecipeOrganise key={id} recipe={recipe.data} />}
 
             {confirming && (
               <DeleteConfirmation

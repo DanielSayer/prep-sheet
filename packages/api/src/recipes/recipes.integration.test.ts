@@ -60,6 +60,71 @@ describe("recipes API with PostgreSQL", () => {
       appRouter.createCaller({ auth: null, session: null }).recipes.list(),
     ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
+  it("passes available tags to AI, saves valid personal tags, copies them and cascades deletion", async () => {
+    const owner = caller(ids[2]);
+    const other = caller(ids[3]);
+    const defaults = await owner.tags.list();
+    expect(defaults).toHaveLength(5);
+    const builtIn = defaults[0];
+    if (!builtIn) throw new Error("Missing built-in tags");
+    const custom = await owner.tags.create({
+      name: "Lunchbox",
+      description: "Easy to pack",
+    });
+    await expect(
+      owner.tags.create({ name: " lunchBOX " }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    expect((await other.tags.list()).some((t) => t.id === custom.id)).toBe(
+      false,
+    );
+    await expect(other.tags.delete({ id: custom.id })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    await expect(owner.tags.delete({ id: builtIn.id })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    const foreign = await other.tags.create({ name: "Private" });
+    const id = randomUUID();
+    vi.mocked(generateRecipe).mockResolvedValueOnce({
+      content: sampleRecipe,
+      origin: "generated",
+      sourceUrl: null,
+      tagIds: [custom.id, foreign.id, randomUUID()],
+    });
+    await owner.recipes.create({ id, input: "Make lunch" });
+    expect(generateRecipe).toHaveBeenLastCalledWith(
+      "Make lunch",
+      expect.arrayContaining([
+        expect.objectContaining({ id: custom.id, description: "Easy to pack" }),
+      ]),
+    );
+    expect((await owner.recipes.get({ id })).tagIds).toEqual([custom.id]);
+    expect(
+      (await owner.recipes.list()).find((r) => r.id === id)?.tagIds,
+    ).toEqual([custom.id]);
+    await expect(
+      other.recipes.setTag({ id, tagId: foreign.id, selected: true }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      owner.recipes.setTag({ id, tagId: foreign.id, selected: true }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await owner.recipes.setTag({ id, tagId: custom.id, selected: false });
+    expect((await owner.recipes.get({ id })).tagIds).toEqual([]);
+    await owner.recipes.setTag({ id, tagId: custom.id, selected: true });
+    await owner.recipes.setTag({ id, tagId: custom.id, selected: true });
+    const copied = await owner.recipes.copy({
+      id,
+      newId: randomUUID(),
+      groupId: null,
+    });
+    expect((await owner.recipes.get(copied)).tagIds).toEqual([custom.id]);
+    await owner.tags.delete({ id: custom.id });
+    expect((await owner.recipes.get({ id })).tagIds).toEqual([]);
+    expect((await owner.recipes.get(copied)).tagIds).toEqual([]);
+    await owner.recipes.delete({ id });
+    await owner.recipes.delete(copied);
+    vi.mocked(generateRecipe).mockClear();
+  });
   it("saves JSONB, avoids duplicate saves, isolates users, edits and deletes", async () => {
     const owner = caller(ids[0]);
     const other = caller(ids[1]);
@@ -68,6 +133,7 @@ describe("recipes API with PostgreSQL", () => {
       content: sampleRecipe,
       origin: "generated",
       sourceUrl: null,
+      tagIds: [],
     });
     const saved = await owner.recipes.create({ id, input: "Make lemon pasta" });
     expect(saved.content.ingredients).toEqual(sampleRecipe.ingredients);
@@ -154,6 +220,7 @@ describe("recipes API with PostgreSQL", () => {
       content: sampleRecipe,
       origin: "generated",
       sourceUrl: null,
+      tagIds: [],
     });
     const owner = caller(ids[0]);
     const member = caller(ids[1]);
@@ -196,6 +263,17 @@ describe("recipes API with PostgreSQL", () => {
     });
     expect(await owner.recipes.list({ groupId: friends.id })).toHaveLength(1);
     await member.recipes.setFavourite({ id: shared.id, isFavourite: true });
+    const sharedTag = (await member.tags.list())[0];
+    if (!sharedTag) throw new Error("Missing default tag");
+    await member.recipes.setTag({
+      id: shared.id,
+      tagId: sharedTag.id,
+      selected: true,
+    });
+    expect((await member.recipes.get({ id: shared.id })).tagIds).toEqual([
+      sharedTag.id,
+    ]);
+    expect((await owner.recipes.get({ id: shared.id })).tagIds).toEqual([]);
     expect((await member.recipes.get({ id: shared.id })).isFavourite).toBe(
       true,
     );
@@ -260,6 +338,13 @@ describe("recipes API with PostgreSQL", () => {
       }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     await owner.groups.removeMember({ groupId: friends.id, userId: ids[1] });
+    await expect(
+      member.recipes.setTag({
+        id: shared.id,
+        tagId: sharedTag.id,
+        selected: false,
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(
       member.recipes.setFavourite({ id: shared.id, isFavourite: false }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
@@ -331,6 +416,7 @@ describe("recipes API with PostgreSQL", () => {
       content: sampleRecipe,
       origin: "generated",
       sourceUrl: null,
+      tagIds: [],
     });
     const saved = await member.recipes.create({
       id: randomUUID(),
@@ -339,7 +425,12 @@ describe("recipes API with PostgreSQL", () => {
     });
     vi.mocked(generateRecipe).mockImplementationOnce(async () => {
       await owner.groups.removeMember({ groupId: target.id, userId: ids[3] });
-      return { content: sampleRecipe, origin: "generated", sourceUrl: null };
+      return {
+        content: sampleRecipe,
+        origin: "generated",
+        sourceUrl: null,
+        tagIds: [],
+      };
     });
     await expect(
       member.recipes.create({
@@ -387,6 +478,7 @@ describe("recipes API with PostgreSQL", () => {
       content: sampleRecipe,
       origin: "generated",
       sourceUrl: null,
+      tagIds: [],
     });
     const shared = await member.recipes.create({
       id: randomUUID(),

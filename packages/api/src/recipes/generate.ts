@@ -11,9 +11,13 @@ import { buildRecipeSystemPrompt } from "./prompt";
 const resultSchema = z.object({
   recipe: recipeContentSchema.nullable(),
   origin: z.enum(["imported", "generated"]),
+  tagIds: z.array(z.string()).max(105),
 });
 
-export async function generateRecipe(input: string) {
+export async function generateRecipe(
+  input: string,
+  tags: { id: string; name: string; description: string }[] = [],
+) {
   if (!env.OPENAI_API_KEY)
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
@@ -40,7 +44,7 @@ export async function generateRecipe(input: string) {
       maxOutputTokens: 7000,
       maxRetries: 1,
       abortSignal: AbortSignal.timeout(90000),
-      system: buildRecipeSystemPrompt(sourceUrl ? "web" : "input"),
+      system: buildRecipeSystemPrompt(sourceUrl ? "web" : "input", tags),
       prompt: content,
     });
     if (!output.recipe)
@@ -52,6 +56,9 @@ export async function generateRecipe(input: string) {
       });
     return {
       content: output.recipe,
+      tagIds: [...new Set(output.tagIds)].filter((id) =>
+        tags.some((tag) => tag.id === id),
+      ),
       sourceUrl,
       origin: sourceUrl ? ("imported" as const) : output.origin,
     };

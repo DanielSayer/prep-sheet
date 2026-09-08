@@ -1,5 +1,10 @@
-import { Pencil, Trash2 } from "lucide-react";
-import { FavouriteButton } from "./favourite-button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@prep-sheet/ui/components/dropdown-menu";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 export function RecipeHeading({
   recipe,
@@ -45,27 +50,31 @@ export function RecipeHeading({
 
       {!editing && (
         <div className="detail-actions">
-          <FavouriteButton
-            id={recipe.id}
-            title={recipe.title}
-            isFavourite={recipe.isFavourite}
-          />
-          <button
-            type="button"
-            className="button button-outline"
-            onClick={onEdit}
-          >
-            <Pencil size={17} /> Edit
-          </button>
-
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="Delete recipe"
-            onClick={onDelete}
-          >
-            <Trash2 size={20} />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className="icon-button"
+              aria-label="Recipe actions"
+            >
+              <MoreHorizontal size={22} />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className="collection-select-menu recipe-actions-menu"
+              align="end"
+            >
+              <DropdownMenuItem
+                className="collection-select-manage"
+                onClick={onEdit}
+              >
+                <Pencil size={17} /> Edit recipe
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="collection-select-manage"
+                onClick={onDelete}
+              >
+                <Trash2 size={17} /> Delete recipe
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       )}
     </div>

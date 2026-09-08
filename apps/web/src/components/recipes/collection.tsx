@@ -7,6 +7,7 @@ import { useTRPC } from "@/utils/trpc";
 import { CollectionSelect, useCollection } from "../groups/collection-context";
 import { EmptyCollection } from "./empty-collection";
 import { RecipeCard } from "./recipe-card";
+import { TagChoices } from "./tag-choices";
 
 export function Collection() {
   const trpc = useTRPC();
@@ -14,12 +15,19 @@ export function Collection() {
   const query = useQuery(trpc.recipes.list.queryOptions({ groupId }));
   const [search, setSearch] = useState("");
   const [favouritesOnly, setFavouritesOnly] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const tags = useQuery(trpc.tags.list.queryOptions());
+  const activeTags = selectedTags.filter((id) =>
+    tags.data?.some((tag) => tag.id === id),
+  );
+  const filterCount = activeTags.length + Number(favouritesOnly);
 
   const recipes =
     (query.isError ? undefined : query.data)?.filter(
       (recipe) =>
         recipe.title.toLowerCase().includes(search.toLowerCase()) &&
-        (!favouritesOnly || recipe.isFavourite),
+        (!favouritesOnly || recipe.isFavourite) &&
+        activeTags.every((id) => recipe.tagIds.includes(id)),
     ) ?? [];
 
   return (
@@ -49,19 +57,6 @@ export function Collection() {
           {recipes.length} {recipes.length === 1 ? "recipe" : "recipes"}
         </span>
 
-        <button
-          type="button"
-          className="button button-outline favourites-filter"
-          aria-pressed={favouritesOnly}
-          onClick={() => setFavouritesOnly(!favouritesOnly)}
-        >
-          <Star
-            size={17}
-            fill={favouritesOnly ? "currentColor" : "none"}
-            aria-hidden="true"
-          />{" "}
-          Favourites
-        </button>
         <label className="search-box">
           <Search size={18} />
           <span className="sr-only">Search recipes</span>
@@ -73,6 +68,47 @@ export function Collection() {
         </label>
       </div>
 
+      <section
+        className="collection-tag-filters"
+        aria-label="Match all selected tags"
+      >
+        <button
+          type="button"
+          className="organise-action"
+          aria-pressed={favouritesOnly}
+          onClick={() => setFavouritesOnly(!favouritesOnly)}
+        >
+          <Star size={17} fill={favouritesOnly ? "currentColor" : "none"} />
+          Show favourites
+        </button>
+        <TagChoices
+          tags={tags.data ?? []}
+          selected={activeTags}
+          toggle={(id) =>
+            setSelectedTags((old) =>
+              old.includes(id) ? old.filter((tag) => tag !== id) : [...old, id],
+            )
+          }
+        />
+        {filterCount > 0 && (
+          <button
+            type="button"
+            className="text-button"
+            onClick={() => {
+              setSelectedTags([]);
+              setFavouritesOnly(false);
+            }}
+          >
+            Clear filters
+          </button>
+        )}
+      </section>
+      <ErrorNotice
+        message={tags.error?.message}
+        retry={() => void tags.refetch()}
+      />
+      {tags.isPending && <p role="status">Loading tags...</p>}
+
       <LoadingState pending={query.isPending}>
         <ErrorNotice
           message={query.error?.message}
@@ -83,9 +119,11 @@ export function Collection() {
           <EmptyCollection
             searching={!!search}
             favouritesOnly={favouritesOnly}
+            tagged={activeTags.length > 0}
             onClear={() => {
               setSearch("");
               setFavouritesOnly(false);
+              setSelectedTags([]);
             }}
           />
         )}

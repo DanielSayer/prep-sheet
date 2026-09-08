@@ -5,6 +5,41 @@ import { sampleRecipe } from "./fixtures";
 import { generateRecipe } from "./generate";
 import { recipePdf } from "./pdf";
 
+it.skipIf(process.env.LIVE_AI_TEST !== "1")(
+  "auto-tags using supplied choices",
+  async () => {
+    const tags = [
+      {
+        id: "00000000-0000-4000-8000-000000000001",
+        name: "Under 30 minutes",
+        description: "Total time strictly below 30 minutes. Omit if unknown.",
+      },
+      {
+        id: "00000000-0000-4000-8000-000000000002",
+        name: "Vegetarian",
+        description: "No meat or fish.",
+      },
+      {
+        id: "00000000-0000-4000-8000-000000000003",
+        name: "Slow cooked",
+        description: "At least two hours of cooking.",
+      },
+    ];
+    const result = await generateRecipe(
+      "Tomato toast. Serves 1. Prep 5 minutes, cook 2 minutes, total 7 minutes. Ingredients: 1 slice bread, 1 tomato, 1 tsp olive oil. Steps: Toast the bread for 2 minutes. Slice the tomato. Put tomato on toast and drizzle with oil.",
+      tags,
+    );
+    expect(result.tagIds).toEqual(
+      expect.arrayContaining(tags.slice(0, 2).map((tag) => tag.id)),
+    );
+    expect(result.tagIds).toHaveLength(2);
+    expect(result.tagIds.every((id) => tags.some((tag) => tag.id === id))).toBe(
+      true,
+    );
+  },
+  100000,
+);
+
 it.skipIf(process.env.LIVE_AI_TEST !== "1").each([
   {
     name: "derives cook time from total minus prep despite zero metadata",

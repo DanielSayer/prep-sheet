@@ -1,6 +1,12 @@
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@prep-sheet/ui/components/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useRouter } from "@tanstack/react-router";
-import { LogOut } from "lucide-react";
+import { ChevronDown, LogIn, LogOut, Settings, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 
@@ -20,9 +26,25 @@ export default function UserMenu() {
 
   if (!session)
     return (
-      <Link className="button button-small button-outline" to="/login">
-        Sign in
-      </Link>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className="account account-trigger"
+          aria-label="Account menu"
+        >
+          <span className="avatar">
+            <UserRound size={18} />
+          </span>
+          <ChevronDown size={14} aria-hidden="true" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="collection-select-menu" align="end">
+          <DropdownMenuItem
+            className="collection-select-manage"
+            render={<Link to="/login" />}
+          >
+            <LogIn size={16} /> Sign in
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
 
   async function signOut() {
@@ -40,20 +62,36 @@ export default function UserMenu() {
   }
 
   return (
-    <div className="account">
-      <span className="avatar">
-        {session.user.name.slice(0, 1).toUpperCase()}
-      </span>
-
-      <span className="account-name">{session.user.name}</span>
-      <button
-        type="button"
-        className="icon-button"
-        aria-label="Sign out"
-        onClick={signOut}
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className="account account-trigger"
+        aria-label="Account menu"
       >
-        <LogOut size={18} />
-      </button>
-    </div>
+        <span className="avatar">
+          {session.user.name.slice(0, 1).toUpperCase()}
+        </span>
+
+        <span className="account-name">{session.user.name}</span>
+        <ChevronDown size={14} aria-hidden="true" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        className="collection-select-menu"
+        align="end"
+        sideOffset={8}
+      >
+        <DropdownMenuItem
+          className="collection-select-manage"
+          render={<Link to="/settings" />}
+        >
+          <Settings size={16} /> Settings
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="collection-select-manage"
+          onClick={signOut}
+        >
+          <LogOut size={16} /> Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
