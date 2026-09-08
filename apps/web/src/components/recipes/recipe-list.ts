@@ -1,6 +1,11 @@
 import type { RecipeContent } from "@prep-sheet/db/recipe-content";
 
-export const recipeSorts = ["newest", "name", "cooking-time"] as const;
+export const recipeSorts = [
+  "newest",
+  "highest-rated",
+  "name",
+  "cooking-time",
+] as const;
 
 export type RecipeSort = (typeof recipeSorts)[number];
 
@@ -10,12 +15,14 @@ export type CollectionRecipe = {
   content: RecipeContent;
   createdAt: Date | string;
   isFavourite: boolean;
+  rating: number | null;
   tagIds: string[];
 };
 
 type RecipeFilters = {
   search: string;
   favouritesOnly: boolean;
+  unratedOnly: boolean;
   tagIds: string[];
   sort: RecipeSort;
 };
@@ -35,6 +42,16 @@ function totalCookingMinutes(recipe: CollectionRecipe) {
 function compareRecipes(sort: RecipeSort) {
   return (left: CollectionRecipe, right: CollectionRecipe) => {
     if (sort === "name") return byName.compare(left.title, right.title);
+
+    if (sort === "highest-rated") {
+      if (left.rating === null && right.rating !== null) return 1;
+      if (left.rating !== null && right.rating === null) return -1;
+      if (left.rating !== null && right.rating !== null) {
+        const difference = right.rating - left.rating;
+        if (difference !== 0) return difference;
+      }
+      return byName.compare(left.title, right.title);
+    }
 
     if (sort === "cooking-time") {
       const leftMinutes = totalCookingMinutes(left);
@@ -69,6 +86,7 @@ export function filterAndSortRecipes(
             ingredient.toLocaleLowerCase().includes(search),
           )) &&
         (!filters.favouritesOnly || recipe.isFavourite) &&
+        (!filters.unratedOnly || recipe.rating === null) &&
         filters.tagIds.every((id) => recipe.tagIds.includes(id)),
     )
     .sort(compareRecipes(filters.sort));

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, Link } from "@tanstack/react-router";
-import { Plus, Search, Star } from "lucide-react";
+import { Heart, Plus, Search, Star } from "lucide-react";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
 import { useTRPC } from "@/utils/trpc";
 import { CollectionSelect, useCollection } from "../groups/collection-context";
@@ -20,22 +20,25 @@ export function Collection() {
   const navigate = collectionRoute.useNavigate();
   const search = filters.q ?? "";
   const favouritesOnly = filters.favourites ?? false;
+  const unratedOnly = filters.unrated ?? false;
   const selectedTags = filters.tags?.split(",").filter(Boolean) ?? [];
   const sort = filters.sort ?? "newest";
   const tags = useQuery(trpc.tags.list.queryOptions());
   const activeTags = selectedTags.filter((id) =>
     tags.data?.some((tag) => tag.id === id),
   );
-  const filterCount = activeTags.length + Number(favouritesOnly);
+  const filterCount =
+    activeTags.length + Number(favouritesOnly) + Number(unratedOnly);
 
   const recipes = filterAndSortRecipes(
     query.isError ? [] : (query.data ?? []),
-    { search, favouritesOnly, tagIds: activeTags, sort },
+    { search, favouritesOnly, unratedOnly, tagIds: activeTags, sort },
   );
 
   const updateFilters = (next: {
     q?: string;
     favourites?: boolean;
+    unrated?: boolean;
     tags?: string;
     sort?: RecipeSort;
   }) =>
@@ -104,8 +107,19 @@ export function Collection() {
             updateFilters({ favourites: favouritesOnly ? undefined : true })
           }
         >
-          <Star size={17} fill={favouritesOnly ? "currentColor" : "none"} />
+          <Heart size={17} fill={favouritesOnly ? "currentColor" : "none"} />
           Show favourites
+        </button>
+        <button
+          type="button"
+          className="organise-action"
+          aria-pressed={unratedOnly}
+          onClick={() =>
+            updateFilters({ unrated: unratedOnly ? undefined : true })
+          }
+        >
+          <Star size={17} />
+          Show unrated
         </button>
         <TagChoices
           tags={tags.data ?? []}
@@ -122,7 +136,11 @@ export function Collection() {
             type="button"
             className="text-button"
             onClick={() => {
-              updateFilters({ favourites: undefined, tags: undefined });
+              updateFilters({
+                favourites: undefined,
+                unrated: undefined,
+                tags: undefined,
+              });
             }}
           >
             Clear filters
@@ -145,11 +163,13 @@ export function Collection() {
           <EmptyCollection
             searching={!!search}
             favouritesOnly={favouritesOnly}
+            unratedOnly={unratedOnly}
             tagged={activeTags.length > 0}
             onClear={() => {
               updateFilters({
                 q: undefined,
                 favourites: undefined,
+                unrated: undefined,
                 tags: undefined,
               });
             }}

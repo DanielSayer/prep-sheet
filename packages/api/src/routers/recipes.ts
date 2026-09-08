@@ -1,6 +1,10 @@
 import { db } from "@prep-sheet/db";
 import { recipeContentSchema } from "@prep-sheet/db/recipe-content";
-import { recipe, recipeFavourite } from "@prep-sheet/db/schema/recipe";
+import {
+  recipe,
+  recipeFavourite,
+  recipeRating,
+} from "@prep-sheet/db/schema/recipe";
 import { recipeTag, tag } from "@prep-sheet/db/schema/tag";
 import { TRPCError } from "@trpc/server";
 import {
@@ -33,6 +37,12 @@ const favouriteOf = (userId: string) => sql<boolean>`exists (
     and ${recipeFavourite.userId} = ${userId}
 )`;
 
+const ratingOf = (userId: string) => sql<number | null>`(
+  select ${recipeRating.rating} from ${recipeRating}
+  where ${recipeRating.recipeId} = ${recipe.id}
+    and ${recipeRating.userId} = ${userId}
+)`;
+
 const tagsOf = (userId: string) => sql<string[]>`coalesce((
   select json_agg(${recipeTag.tagId}) from ${recipeTag}
   where ${recipeTag.recipeId} = ${recipe.id} and ${recipeTag.userId} = ${userId}
@@ -43,6 +53,7 @@ export async function getRecipe(id: string, userId: string) {
     .select({
       ...getTableColumns(recipe),
       isFavourite: favouriteOf(userId),
+      rating: ratingOf(userId),
       tagIds: tagsOf(userId),
     })
     .from(recipe)
@@ -65,6 +76,7 @@ export const recipesRouter = router({
           origin: recipe.origin,
           createdAt: recipe.createdAt,
           isFavourite: favouriteOf(ctx.session.user.id),
+          rating: ratingOf(ctx.session.user.id),
           tagIds: tagsOf(ctx.session.user.id),
         })
         .from(recipe)
@@ -135,6 +147,33 @@ export const recipesRouter = router({
           );
       }
       return { id: input.id, isFavourite: input.isFavourite };
+    }),
+  setRating: protectedProcedure
+    .input(
+      idInput.extend({ rating: z.number().int().min(1).max(5).nullable() }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.user.id;
+      await getRecipe(input.id, userId);
+      if (input.rating === null) {
+        await db
+          .delete(recipeRating)
+          .where(
+            and(
+              eq(recipeRating.userId, userId),
+              eq(recipeRating.recipeId, input.id),
+            ),
+          );
+      } else {
+        await db
+          .insert(recipeRating)
+          .values({ userId, recipeId: input.id, rating: input.rating })
+          .onConflictDoUpdate({
+            target: [recipeRating.userId, recipeRating.recipeId],
+            set: { rating: input.rating },
+          });
+      }
+      return { id: input.id, rating: input.rating };
     }),
   create: protectedProcedure
     .input(

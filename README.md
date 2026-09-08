@@ -27,7 +27,7 @@ pnpm dev
 
 Open http://localhost:3001. This MVP uses Drizzle push; no migrations are generated yet.
 
-Recipe favourites are personal to each user, including in shared collections. Star recipes from the collection or recipe page, then use the Favourites filter alongside search. Run `pnpm db:push` for existing databases to add the `recipe_favourite` table before running the updated app. Apply the schema separately in other environments.
+Recipe favourites and 1–5 star ratings are personal to each user, including in shared collections. Use favourites as a shortlist, sort by highest rated, or filter for recipes you have not rated yet. Run `pnpm db:push` for existing databases to add the `recipe_favourite` and `recipe_rating` tables before running the updated app. Apply the schema separately in other environments.
 
 ## Implementation
 

@@ -5,6 +5,7 @@ import { type RecipeSort, recipeSorts } from "@/components/recipes/recipe-list";
 export type CollectionSearch = {
   q?: string;
   favourites?: boolean;
+  unrated?: boolean;
   tags?: string;
   sort?: RecipeSort;
 };
@@ -17,6 +18,8 @@ export const Route = createFileRoute("/_auth/recipes/")({
       search.favourites === true || search.favourites === "true"
         ? true
         : undefined,
+    unrated:
+      search.unrated === true || search.unrated === "true" ? true : undefined,
     tags:
       typeof search.tags === "string" && search.tags ? search.tags : undefined,
     sort: recipeSorts.includes(search.sort as RecipeSort)

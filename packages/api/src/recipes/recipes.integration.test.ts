@@ -2,7 +2,11 @@ import { randomUUID } from "node:crypto";
 import { db } from "@prep-sheet/db";
 import { user } from "@prep-sheet/db/schema/auth";
 import { group, groupInvite } from "@prep-sheet/db/schema/group";
-import { recipe, recipeFavourite } from "@prep-sheet/db/schema/recipe";
+import {
+  recipe,
+  recipeFavourite,
+  recipeRating,
+} from "@prep-sheet/db/schema/recipe";
 import { eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { Context } from "../context";
@@ -203,6 +207,39 @@ describe("recipes API with PostgreSQL", () => {
         .where(eq(recipeFavourite.recipeId, id)),
     ).toHaveLength(0);
   });
+  it("persists personal ratings and rejects inaccessible recipes", async () => {
+    const owner = caller(ids[0]);
+    const other = caller(ids[1]);
+    const id = randomUUID();
+    await db.insert(recipe).values({
+      id,
+      userId: ids[0],
+      title: sampleRecipe.title,
+      content: sampleRecipe,
+      origin: "imported",
+    });
+    expect((await owner.recipes.get({ id })).rating).toBeNull();
+    await expect(
+      other.recipes.setRating({ id, rating: 4 }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await owner.recipes.setRating({ id, rating: 4 });
+    await owner.recipes.setRating({ id, rating: 5 });
+    expect((await owner.recipes.get({ id })).rating).toBe(5);
+    expect(
+      (await owner.recipes.list()).find((item) => item.id === id)?.rating,
+    ).toBe(5);
+    expect(await other.recipes.list()).toHaveLength(0);
+    await owner.recipes.setRating({ id, rating: null });
+    expect((await owner.recipes.get({ id })).rating).toBeNull();
+    await expect(
+      owner.recipes.setRating({ id, rating: 6 }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await owner.recipes.setRating({ id, rating: 3 });
+    await owner.recipes.delete({ id });
+    expect(
+      await db.select().from(recipeRating).where(eq(recipeRating.recipeId, id)),
+    ).toHaveLength(0);
+  });
   it("validates edits before touching the database", async () => {
     await expect(
       caller(ids[0]).recipes.update({
@@ -263,6 +300,7 @@ describe("recipes API with PostgreSQL", () => {
     });
     expect(await owner.recipes.list({ groupId: friends.id })).toHaveLength(1);
     await member.recipes.setFavourite({ id: shared.id, isFavourite: true });
+    await member.recipes.setRating({ id: shared.id, rating: 5 });
     const sharedTag = (await member.tags.list())[0];
     if (!sharedTag) throw new Error("Missing default tag");
     await member.recipes.setTag({
@@ -280,11 +318,16 @@ describe("recipes API with PostgreSQL", () => {
     expect((await owner.recipes.get({ id: shared.id })).isFavourite).toBe(
       false,
     );
+    expect((await member.recipes.get({ id: shared.id })).rating).toBe(5);
+    expect((await owner.recipes.get({ id: shared.id })).rating).toBeNull();
     expect(
       (await member.recipes.list({ groupId: friends.id }))[0]?.isFavourite,
     ).toBe(true);
     await expect(
       outsider.recipes.setFavourite({ id: shared.id, isFavourite: true }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      outsider.recipes.setRating({ id: shared.id, rating: 4 }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(await member.recipes.list()).toHaveLength(0);
     expect(await owner.recipes.list()).toHaveLength(1);
@@ -347,6 +390,9 @@ describe("recipes API with PostgreSQL", () => {
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(
       member.recipes.setFavourite({ id: shared.id, isFavourite: false }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      member.recipes.setRating({ id: shared.id, rating: null }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(await member.groups.list()).toHaveLength(0);
     await expect(member.recipes.get({ id: shared.id })).rejects.toMatchObject({

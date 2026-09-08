@@ -7,6 +7,7 @@ import { ErrorNotice } from "../feedback";
 import { CopyRecipe } from "../groups/copy-recipe";
 import { FavouriteButton } from "./favourite-button";
 import { OrganiseDialog } from "./organise-dialog";
+import { RatingControl } from "./rating-control";
 import { TagChoices } from "./tag-choices";
 export function RecipeOrganise({
   recipe,
@@ -16,6 +17,7 @@ export function RecipeOrganise({
     title: string;
     groupId: string | null;
     isFavourite: boolean;
+    rating: number | null;
     tagIds: string[];
   };
 }) {
@@ -40,6 +42,11 @@ export function RecipeOrganise({
     tags.data?.filter((tag) => recipe.tagIds.includes(tag.id)) ?? [];
   return (
     <section className="recipe-organise" aria-label="Organise recipe">
+      <RatingControl
+        id={recipe.id}
+        title={recipe.title}
+        rating={recipe.rating}
+      />
       <div className="organise-actions">
         <FavouriteButton {...recipe} showLabel />
         <button

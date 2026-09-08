@@ -1,5 +1,8 @@
+import { sql } from "drizzle-orm";
 import {
+  check,
   index,
+  integer,
   jsonb,
   pgTable,
   primaryKey,
@@ -49,5 +52,23 @@ export const recipeFavourite = pgTable(
   (table) => [
     primaryKey({ columns: [table.userId, table.recipeId] }),
     index("recipe_favourite_recipe_idx").on(table.recipeId),
+  ],
+);
+
+export const recipeRating = pgTable(
+  "recipe_rating",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    recipeId: uuid("recipe_id")
+      .notNull()
+      .references(() => recipe.id, { onDelete: "cascade" }),
+    rating: integer("rating").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.recipeId] }),
+    index("recipe_rating_recipe_idx").on(table.recipeId),
+    check("recipe_rating_value_check", sql`${table.rating} between 1 and 5`),
   ],
 );

@@ -11,6 +11,7 @@ import type { RecipeSort } from "./recipe-list";
 
 const options: { label: string; value: RecipeSort }[] = [
   { label: "Newest", value: "newest" },
+  { label: "Highest rated", value: "highest-rated" },
   { label: "Name", value: "name" },
   { label: "Cooking time", value: "cooking-time" },
 ];

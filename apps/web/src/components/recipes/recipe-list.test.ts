@@ -24,6 +24,7 @@ const recipe = (
   content: content({ title }),
   createdAt: new Date(`2026-09-0${id}T00:00:00Z`),
   isFavourite: false,
+  rating: null,
   tagIds: [],
   ...overrides,
 });
@@ -31,6 +32,7 @@ const recipe = (
 const filters = {
   search: "",
   favouritesOnly: false,
+  unratedOnly: false,
   tagIds: [] as string[],
   sort: "newest" as const,
 };
@@ -89,6 +91,34 @@ describe("filterAndSortRecipes", () => {
         sort: "cooking-time",
       }).map(({ title }) => title),
     ).toEqual(["Quick", "Long", "Unknown"]);
+  });
+
+  it("sorts ratings descending and puts unrated recipes last", () => {
+    const recipes = [
+      recipe("1", "Unrated"),
+      recipe("2", "Good", { rating: 4 }),
+      recipe("3", "Favourite", { rating: 5 }),
+    ];
+
+    expect(
+      filterAndSortRecipes(recipes, {
+        ...filters,
+        sort: "highest-rated",
+      }).map(({ title }) => title),
+    ).toEqual(["Favourite", "Good", "Unrated"]);
+  });
+
+  it("can show only unrated recipes", () => {
+    const recipes = [
+      recipe("1", "Unrated"),
+      recipe("2", "Rated", { rating: 3 }),
+    ];
+
+    expect(
+      filterAndSortRecipes(recipes, { ...filters, unratedOnly: true }).map(
+        ({ title }) => title,
+      ),
+    ).toEqual(["Unrated"]);
   });
 
   it("applies favourites and every selected tag", () => {

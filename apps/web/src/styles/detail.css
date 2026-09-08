@@ -86,7 +86,6 @@
   overflow-wrap: anywhere;
 }
 .recipe-description {
-  max-width: 70ch;
   margin-bottom: 14px;
   color: var(--muted-ink);
   white-space: pre-line;

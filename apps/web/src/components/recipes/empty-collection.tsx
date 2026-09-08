@@ -4,11 +4,13 @@ import { ArrowUpRight, BookOpen } from "lucide-react";
 export function EmptyCollection({
   searching,
   favouritesOnly,
+  unratedOnly = false,
   tagged = false,
   onClear,
 }: {
   searching: boolean;
   favouritesOnly: boolean;
+  unratedOnly?: boolean;
   tagged?: boolean;
   onClear: () => void;
 }) {
@@ -25,7 +27,9 @@ export function EmptyCollection({
             ? "No recipes match that search"
             : favouritesOnly
               ? "No favourites yet"
-              : "No recipes yet"}
+              : unratedOnly
+                ? "Everything here is rated"
+                : "No recipes yet"}
       </h2>
 
       <p>
@@ -34,11 +38,13 @@ export function EmptyCollection({
           : searching
             ? "Try another name or ingredient, or clear your filters."
             : favouritesOnly
-              ? "Star recipes in this collection to find them here."
-              : "Paste a recipe or link, or describe a dish to get started."}
+              ? "Save recipes as favourites to find them here."
+              : unratedOnly
+                ? "Clear the filter to see your rated recipes."
+                : "Paste a recipe or link, or describe a dish to get started."}
       </p>
 
-      {searching || favouritesOnly || tagged ? (
+      {searching || favouritesOnly || unratedOnly || tagged ? (
         <button
           type="button"
           className="button button-outline"

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Star } from "lucide-react";
+import { Heart } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTRPC } from "@/utils/trpc";
@@ -67,7 +67,7 @@ export function FavouriteButton({
         }
         aria-hidden="true"
       >
-        <Star size={20} fill={selected ? "currentColor" : "none"} />
+        <Heart size={20} fill={selected ? "currentColor" : "none"} />
         {interaction.count > 0 && interaction.starred && (
           <span className="favourite-confetti">
             <span />

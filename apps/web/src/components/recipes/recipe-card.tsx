@@ -2,6 +2,7 @@ import type { RecipeContent } from "@prep-sheet/db/recipe-content";
 import { Link } from "@tanstack/react-router";
 import { BookOpen, Clock } from "lucide-react";
 import { FavouriteButton } from "./favourite-button";
+import { RatingControl } from "./rating-control";
 
 export function RecipeCard({
   recipe,
@@ -11,6 +12,7 @@ export function RecipeCard({
     title: string;
     content: RecipeContent;
     isFavourite: boolean;
+    rating: number | null;
   };
 }) {
   const { prepMinutes, cookMinutes } = recipe.content;
@@ -51,6 +53,12 @@ export function RecipeCard({
           <Clock size={15} />
           {time}
         </span>
+        <RatingControl
+          id={recipe.id}
+          title={recipe.title}
+          rating={recipe.rating}
+          compact
+        />
       </div>
     </article>
   );
