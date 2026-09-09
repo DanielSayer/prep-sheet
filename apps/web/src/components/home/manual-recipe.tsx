@@ -5,6 +5,7 @@ import { useRef } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useTRPC } from "@/utils/trpc";
 import { CollectionSelect, useCollection } from "../groups/collection-context";
+import { recipeDraftKey, writeRecipeDraft } from "../recipes/recipe-draft";
 import { RecipeEditor } from "../recipes/recipe-editor";
 
 const emptyRecipe: RecipeContent = {
@@ -21,6 +22,7 @@ const emptyRecipe: RecipeContent = {
 
 export function ManualRecipe({ onCancel }: { onCancel: () => void }) {
   const { data: session } = authClient.useSession();
+  const draftKey = recipeDraftKey(session?.user.id ?? "guest");
   const { groupId, available } = useCollection();
   const request = useRef<{ id: string; groupId: string | null } | null>(null);
   const trpc = useTRPC();
@@ -29,6 +31,7 @@ export function ManualRecipe({ onCancel }: { onCancel: () => void }) {
   const save = useMutation(
     trpc.recipes.createManual.mutationOptions({
       onSuccess: (recipe) => {
+        writeRecipeDraft(draftKey, null);
         void queryClient.invalidateQueries({
           queryKey: trpc.recipes.list.queryKey(),
         });
@@ -57,6 +60,9 @@ export function ManualRecipe({ onCancel }: { onCancel: () => void }) {
         <CollectionSelect label="Save to" disabled={save.isPending} />
       )}
       <RecipeEditor
+        key={draftKey}
+        draftKey={draftKey}
+        resetLabel="Clear form"
         content={emptyRecipe}
         pending={save.isPending}
         error={

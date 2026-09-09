@@ -1,5 +1,5 @@
-import type { RecipeContent } from "@prep-sheet/db/recipe-content";
 import type { ComponentProps } from "react";
+import type { RecipeDraft } from "./recipe-draft";
 
 function InputField({
   label,
@@ -27,7 +27,7 @@ function TextField({
   );
 }
 
-export function RecipeFields({ content }: { content: RecipeContent }) {
+export function RecipeFields({ content }: { content: RecipeDraft }) {
   return (
     <>
       <InputField
@@ -89,7 +89,7 @@ export function RecipeFields({ content }: { content: RecipeContent }) {
         name="ingredients"
         required
         rows={9}
-        defaultValue={content.ingredients.join("\n")}
+        defaultValue={content.ingredients}
       />
 
       <TextField
@@ -98,7 +98,7 @@ export function RecipeFields({ content }: { content: RecipeContent }) {
         name="steps"
         required
         rows={10}
-        defaultValue={content.steps.join("\n")}
+        defaultValue={content.steps}
       />
 
       <TextField

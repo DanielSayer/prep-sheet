@@ -66,6 +66,7 @@
 }
 .editor-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 14px;
   margin-top: 20px;
@@ -187,6 +188,12 @@
   margin-bottom: 18px;
 }
 @media (max-width: 700px) {
+  .editor-actions > button {
+    flex: 1;
+  }
+  .editor-actions > button[type="submit"] {
+    flex-basis: 100%;
+  }
   .recipe-columns {
     grid-template-columns: minmax(0, 1fr);
     gap: 22px;

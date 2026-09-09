@@ -6,19 +6,27 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
+import { authClient } from "@/lib/auth-client";
 import { useTRPC } from "@/utils/trpc";
 import { useCollection } from "../groups/collection-context";
 import { DeleteConfirmation } from "./delete-confirmation";
 import { RecipeBody } from "./recipe-body";
+import {
+  readRecipeDraft,
+  recipeDraftKey,
+  writeRecipeDraft,
+} from "./recipe-draft";
 import { RecipeEditor } from "./recipe-editor";
 import { RecipeHeading } from "./recipe-heading";
 import { RecipeOrganise } from "./recipe-organise";
 
 export function RecipeDetail({ id }: { id: string }) {
   const trpc = useTRPC();
+  const { data: session } = authClient.useSession();
+  const draftKey = recipeDraftKey(session?.user.id ?? "guest", id);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const router = useRouter();
@@ -27,6 +35,9 @@ export function RecipeDetail({ id }: { id: string }) {
   });
   const recipe = useQuery(trpc.recipes.get.queryOptions({ id }));
   const [editing, setEditing] = useState(false);
+  useEffect(() => {
+    setEditing(!!readRecipeDraft(draftKey));
+  }, [draftKey]);
   const [confirming, setConfirming] = useState(false);
   const { groups, selectGroup } = useCollection();
 
@@ -39,6 +50,7 @@ export function RecipeDetail({ id }: { id: string }) {
   const update = useMutation(
     trpc.recipes.update.mutationOptions({
       onSuccess: async () => {
+        writeRecipeDraft(draftKey, null);
         await Promise.all([
           recipe.refetch(),
           queryClient.invalidateQueries({
@@ -123,6 +135,8 @@ export function RecipeDetail({ id }: { id: string }) {
             <ErrorNotice message={remove.error?.message} />
             {editing ? (
               <RecipeEditor
+                key={draftKey}
+                draftKey={draftKey}
                 content={recipe.data.content}
                 pending={update.isPending}
                 error={update.error?.message}

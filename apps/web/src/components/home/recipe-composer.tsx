@@ -4,6 +4,7 @@ import { type SubmitEvent, useEffect, useRef, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useTRPC } from "@/utils/trpc";
 import { CollectionSelect, useCollection } from "../groups/collection-context";
+import { readRecipeDraft, recipeDraftKey } from "../recipes/recipe-draft";
 import { ComposerFeedback } from "./composer-feedback";
 import { ComposerForm } from "./composer-form";
 import { IdeaChips } from "./idea-chips";
@@ -18,6 +19,10 @@ export function RecipeComposer() {
   const { groupId, available } = useCollection();
   const previousGroup = useRef(groupId);
   const { data: session, isPending: sessionPending } = authClient.useSession();
+  const userId = session?.user.id;
+  useEffect(() => {
+    setManual(!!userId && !!readRecipeDraft(recipeDraftKey(userId)));
+  }, [userId]);
   const navigate = useNavigate();
   const trpc = useTRPC();
   const queryClient = useQueryClient();

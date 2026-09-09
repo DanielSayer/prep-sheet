@@ -2,12 +2,21 @@ import {
   type RecipeContent,
   recipeContentSchema,
 } from "@prep-sheet/db/recipe-content";
-import { type SubmitEvent, useState } from "react";
-import { ErrorNotice } from "@/components/feedback";
+import { useBlocker } from "@tanstack/react-router";
+import { type SubmitEvent, useEffect, useState } from "react";
+import { ErrorNotice } from "../feedback";
+import {
+  readRecipeDraft,
+  readRecipeFields,
+  recipeFields,
+  writeRecipeDraft,
+} from "./recipe-draft";
 import { RecipeFields } from "./recipe-fields";
 
 export function RecipeEditor({
   content,
+  draftKey,
+  resetLabel = "Revert changes",
   pending,
   error,
   onSave,
@@ -15,6 +24,8 @@ export function RecipeEditor({
   saveLabel = "Save changes",
 }: {
   content: RecipeContent;
+  draftKey: string;
+  resetLabel?: string;
   pending: boolean;
   error?: string;
   onSave: (content: RecipeContent) => void;
@@ -22,6 +33,58 @@ export function RecipeEditor({
   saveLabel?: string;
 }) {
   const [validation, setValidation] = useState("");
+
+  const [initial] = useState(() => recipeFields(content));
+  const [fields, setFields] = useState(initial);
+  const [revision, setRevision] = useState(0);
+  const [storageFailed, setStorageFailed] = useState(false);
+  const dirty = JSON.stringify(fields) !== JSON.stringify(initial);
+
+  useEffect(() => {
+    const saved = readRecipeDraft(draftKey);
+    if (saved) {
+      setFields(saved);
+      setRevision((value) => value + 1);
+    }
+  }, [draftKey]);
+
+  useBlocker({
+    shouldBlockFn: () =>
+      dirty &&
+      storageFailed &&
+      !window.confirm(
+        "Your draft could not be saved in this browser. Leave and lose these changes?",
+      ),
+    enableBeforeUnload: false,
+  });
+
+  useEffect(() => {
+    if (!dirty || !storageFailed) return;
+    function warn(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty, storageFailed]);
+
+  function discard(close: boolean) {
+    if (
+      dirty &&
+      !window.confirm("Discard your unsaved changes? This cannot be undone.")
+    )
+      return;
+    if (!writeRecipeDraft(draftKey, null)) {
+      setStorageFailed(true);
+      setValidation("Couldn't clear the saved draft. Please try again.");
+      return;
+    }
+    setFields(initial);
+    setRevision((value) => value + 1);
+    setValidation("");
+    setStorageFailed(false);
+    if (close) onCancel();
+  }
 
   function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,19 +123,47 @@ export function RecipeEditor({
   }
 
   return (
-    <form className="recipe-editor" onSubmit={submit}>
+    <form
+      className="recipe-editor"
+      onSubmit={submit}
+      onChange={(event) => {
+        const next = readRecipeFields(event.currentTarget);
+        setFields(next);
+        setStorageFailed(
+          !writeRecipeDraft(
+            draftKey,
+            JSON.stringify(next) === JSON.stringify(initial) ? null : next,
+          ),
+        );
+      }}
+    >
       <fieldset disabled={pending}>
-        <RecipeFields content={content} />
+        <RecipeFields key={revision} content={fields} />
+        {dirty && (
+          <p role="status">
+            {storageFailed
+              ? "Draft could not be saved in this browser. Keep this page open until you save your recipe."
+              : "Draft saved in this tab. You can leave and come back."}
+          </p>
+        )}
         <ErrorNotice message={validation || error} />
         <div className="editor-actions">
           <button
             type="button"
             className="button button-outline"
-            onClick={onCancel}
+            onClick={() => discard(true)}
           >
             Cancel
           </button>
 
+          <button
+            type="button"
+            className="button button-outline"
+            disabled={!dirty}
+            onClick={() => discard(false)}
+          >
+            {resetLabel}
+          </button>
           <button type="submit" className="button button-primary">
             {pending ? "Saving..." : saveLabel}
           </button>
