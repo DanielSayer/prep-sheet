@@ -25,7 +25,9 @@ export const recipe = pgTable(
     title: text("title").notNull(),
     content: jsonb("content").$type<RecipeContent>().notNull(),
     sourceUrl: text("source_url"),
-    origin: text("origin", { enum: ["imported", "generated"] }).notNull(),
+    origin: text("origin", {
+      enum: ["imported", "generated", "manual"],
+    }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

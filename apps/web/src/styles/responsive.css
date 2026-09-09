@@ -43,9 +43,6 @@
   .recipe-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  .composer-toolbar > span {
-    font-size: 11px;
-  }
 }
 @media (max-width: 600px) {
   .site-header {
@@ -101,9 +98,9 @@
   .composer-toolbar {
     flex-direction: column;
     align-items: stretch;
-    gap: 16px;
+    gap: 8px;
   }
-  .composer-toolbar > span {
+  .composer-toolbar .composer-manual {
     justify-content: center;
     order: 2;
   }
@@ -184,10 +181,7 @@
     padding: 18px;
   }
   .form-row {
-    grid-template-columns: 1fr 1fr;
-  }
-  .form-row label:first-child {
-    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .delete-confirmation {
     flex-wrap: wrap;

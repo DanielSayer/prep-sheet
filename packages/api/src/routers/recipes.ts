@@ -254,6 +254,45 @@ export const recipesRouter = router({
       });
       return getRecipe(input.id, userId);
     }),
+  createManual: protectedProcedure
+    .input(
+      idInput.extend({
+        content: recipeContentSchema,
+        groupId: z.uuid().nullable(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.user.id;
+      await db.transaction(async (tx) => {
+        if (input.groupId) {
+          await lockGroup(tx, input.groupId);
+          await requireGroup(tx, input.groupId, userId);
+        }
+        await tx
+          .insert(recipe)
+          .values({
+            id: input.id,
+            userId,
+            groupId: input.groupId,
+            title: input.content.title,
+            content: input.content,
+            origin: "manual",
+            sourceUrl: null,
+          })
+          .onConflictDoNothing();
+      });
+      const saved = await getRecipe(input.id, userId);
+      if (
+        saved.userId !== userId ||
+        saved.groupId !== input.groupId ||
+        saved.origin !== "manual"
+      )
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This recipe ID has already been used. Start a new recipe.",
+        });
+      return saved;
+    }),
   copy: protectedProcedure
     .input(idInput.extend({ newId: z.uuid(), groupId: z.uuid().nullable() }))
     .mutation(({ input, ctx }) =>

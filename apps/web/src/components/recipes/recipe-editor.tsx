@@ -12,12 +12,14 @@ export function RecipeEditor({
   error,
   onSave,
   onCancel,
+  saveLabel = "Save changes",
 }: {
   content: RecipeContent;
   pending: boolean;
   error?: string;
   onSave: (content: RecipeContent) => void;
   onCancel: () => void;
+  saveLabel?: string;
 }) {
   const [validation, setValidation] = useState("");
 
@@ -72,7 +74,7 @@ export function RecipeEditor({
           </button>
 
           <button type="submit" className="button button-primary">
-            {pending ? "Saving..." : "Save changes"}
+            {pending ? "Saving..." : saveLabel}
           </button>
         </div>
       </fieldset>

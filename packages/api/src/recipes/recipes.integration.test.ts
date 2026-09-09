@@ -175,6 +175,64 @@ describe("recipes API with PostgreSQL", () => {
     expect(await owner.recipes.list()).toHaveLength(0);
   });
 
+  it("saves manual recipes without AI, validates content and protects collections", async () => {
+    const owner = caller(ids[0]);
+    const other = caller(ids[1]);
+    const input = { id: randomUUID(), groupId: null, content: sampleRecipe };
+    vi.mocked(generateRecipe).mockClear();
+    vi.mocked(generateRecipe).mockRejectedValue(new Error("AI unavailable"));
+    const saved = await owner.recipes.createManual(input);
+    expect(saved).toMatchObject({
+      origin: "manual",
+      sourceUrl: null,
+      content: sampleRecipe,
+    });
+    expect((await owner.recipes.createManual(input)).id).toBe(saved.id);
+    expect(
+      (await owner.recipes.list()).filter((r) => r.id === saved.id),
+    ).toHaveLength(1);
+    await expect(other.recipes.get({ id: saved.id })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    await expect(other.recipes.createManual(input)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    await expect(
+      appRouter
+        .createCaller({ auth: null, session: null })
+        .recipes.createManual(input),
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    for (const content of [
+      { ...sampleRecipe, title: " " },
+      { ...sampleRecipe, ingredients: [] },
+      { ...sampleRecipe, steps: [] },
+    ]) {
+      await expect(
+        owner.recipes.createManual({ ...input, id: randomUUID(), content }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+    const target = await owner.groups.create({ name: "Manual recipe test" });
+    const sharedInput = { ...input, id: randomUUID(), groupId: target.id };
+    await expect(other.recipes.createManual(sharedInput)).rejects.toMatchObject(
+      { code: "NOT_FOUND" },
+    );
+    const invite = await owner.groups.invite({ groupId: target.id });
+    await other.groups.acceptInvite({ token: invite.token });
+    const shared = await other.recipes.createManual(sharedInput);
+    expect((await owner.recipes.get({ id: shared.id })).content).toEqual(
+      sampleRecipe,
+    );
+    await expect(
+      owner.recipes.createManual({ ...input, groupId: target.id }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(generateRecipe).not.toHaveBeenCalled();
+    await owner.groups.delete({
+      groupId: target.id,
+      name: "Manual recipe test",
+    });
+    await owner.recipes.delete({ id: saved.id });
+  });
+
   it("persists personal favourites and rejects inaccessible recipes", async () => {
     const owner = caller(ids[0]);
     const other = caller(ids[1]);

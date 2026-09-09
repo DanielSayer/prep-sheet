@@ -1,4 +1,4 @@
-import { ArrowRight, Link2, LoaderCircle, Sparkles } from "lucide-react";
+import { ArrowRight, LoaderCircle, Pencil, Sparkles } from "lucide-react";
 import type { SubmitEvent } from "react";
 
 export function ComposerForm({
@@ -7,12 +7,16 @@ export function ComposerForm({
   disabled,
   onChange,
   onSubmit,
+  onManual,
+  manualDisabled,
 }: {
   input: string;
   pending: boolean;
   disabled: boolean;
   onChange: (value: string) => void;
   onSubmit: (event: SubmitEvent) => void;
+  onManual: () => void;
+  manualDisabled: boolean;
 }) {
   return (
     <form className="composer" onSubmit={onSubmit}>
@@ -30,9 +34,14 @@ export function ComposerForm({
       />
 
       <div className="composer-toolbar">
-        <span>
-          <Link2 size={17} /> Recipes, links & bright ideas
-        </span>
+        <button
+          type="button"
+          className="composer-manual text-button"
+          disabled={manualDisabled}
+          onClick={onManual}
+        >
+          <Pencil size={16} aria-hidden="true" /> Enter manually
+        </button>
 
         <button
           type="submit"

@@ -103,12 +103,13 @@
   gap: 15px;
   padding-top: 12px;
 }
-.composer-toolbar > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 12px;
-  color: #78816d;
+.composer-toolbar .composer-manual {
+  min-height: 44px;
+  font-size: 14px;
+  color: var(--muted-ink);
+}
+.composer-toolbar .composer-manual:hover {
+  color: var(--ink);
 }
 .idea-chips {
   display: flex;

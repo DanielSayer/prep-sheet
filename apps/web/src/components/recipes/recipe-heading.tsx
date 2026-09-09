@@ -30,7 +30,9 @@ export function RecipeHeading({
         <p>
           {recipe.origin === "generated"
             ? "AI-generated recipe. Give it a read before you cook."
-            : "Saved from a recipe you found."}
+            : recipe.origin === "manual"
+              ? "Entered manually."
+              : "Saved from a recipe you found."}
 
           {recipe.sourceUrl && (
             <>

@@ -56,7 +56,7 @@ export function RecipeFields({ content }: { content: RecipeContent }) {
         />
 
         <InputField
-          label="Prep minutes"
+          label="Prep (min)"
           name="prepMinutes"
           type="number"
           min={0}
@@ -65,7 +65,7 @@ export function RecipeFields({ content }: { content: RecipeContent }) {
         />
 
         <InputField
-          label="Cook minutes"
+          label="Cook (min)"
           name="cookMinutes"
           type="number"
           min={0}
@@ -74,7 +74,7 @@ export function RecipeFields({ content }: { content: RecipeContent }) {
         />
 
         <InputField
-          label="Total elapsed minutes"
+          label="Total (min)"
           name="totalMinutes"
           type="number"
           min={0}
