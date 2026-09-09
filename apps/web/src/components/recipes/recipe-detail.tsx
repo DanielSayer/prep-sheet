@@ -121,7 +121,9 @@ export function RecipeDetail({ id }: { id: string }) {
               onEdit={() => setEditing(true)}
               onDelete={() => setConfirming(true)}
             />
-            {!editing && <RecipeOrganise key={id} recipe={recipe.data} />}
+            {!editing && (
+              <RecipeOrganise key={`organise-${id}`} recipe={recipe.data} />
+            )}
 
             {confirming && (
               <DeleteConfirmation
@@ -144,7 +146,7 @@ export function RecipeDetail({ id }: { id: string }) {
                 onCancel={() => setEditing(false)}
               />
             ) : (
-              <RecipeBody key={id} content={recipe.data.content} />
+              <RecipeBody key={`body-${id}`} content={recipe.data.content} />
             )}
           </>
         )}
