@@ -12,6 +12,8 @@
       "!**/tmp",
       "!**/.next",
       "!**/dist",
+      "!**/.output",
+      "!**/.wxt",
       "!**/.turbo",
       "!**/.nx",
       "!**/dev-dist",
