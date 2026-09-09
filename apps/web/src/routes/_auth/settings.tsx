@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Tag, Trash2 } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { Puzzle, Tag, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { ConnectedExtensions } from "@/components/connected-extensions";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
 import { useTRPC } from "@/utils/trpc";
 
@@ -46,88 +47,94 @@ function Settings() {
       </div>
       <div className="settings-layout">
         <nav aria-label="Settings">
-          <Link to="/settings" aria-current="page">
+          <a href="#tags-heading">
             <Tag size={17} /> Tags
-          </Link>
+          </a>
+          <a href="#extensions-heading">
+            <Puzzle size={17} /> Extensions
+          </a>
         </nav>
-        <section aria-labelledby="tags-heading">
-          <h2 id="tags-heading">Your tags</h2>
-          <p className="settings-intro">
-            New recipes are tagged automatically using these choices. Tags and
-            favourites are personal, including in group collections. You can
-            adjust tags on any recipe.
-          </p>
-          <form
-            className="tag-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              create.mutate({ name, description });
-            }}
-          >
-            <label>
-              Tag name
-              <input
-                required
-                maxLength={40}
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="e.g. Lunchbox"
-              />
-            </label>
-            <label>
-              When to use it <span className="muted">optional</span>
-              <input
-                maxLength={300}
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder="e.g. Easy to pack and eat cold"
-              />
-            </label>
-            <button
-              className="button button-primary"
-              type="submit"
-              disabled={create.isPending || !name.trim()}
+        <div>
+          <section aria-labelledby="tags-heading">
+            <h2 id="tags-heading">Your tags</h2>
+            <p className="settings-intro">
+              New recipes are tagged automatically using these choices. Tags and
+              favourites are personal, including in group collections. You can
+              adjust tags on any recipe.
+            </p>
+            <form
+              className="tag-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                create.mutate({ name, description });
+              }}
             >
-              {create.isPending ? "Adding..." : "Add tag"}
-            </button>
-          </form>
-          <ErrorNotice
-            message={create.error?.message || remove.error?.message}
-          />
-          <LoadingState pending={tags.isPending}>
+              <label>
+                Tag name
+                <input
+                  required
+                  maxLength={40}
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="e.g. Lunchbox"
+                />
+              </label>
+              <label>
+                When to use it <span className="muted">optional</span>
+                <input
+                  maxLength={300}
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  placeholder="e.g. Easy to pack and eat cold"
+                />
+              </label>
+              <button
+                className="button button-primary"
+                type="submit"
+                disabled={create.isPending || !name.trim()}
+              >
+                {create.isPending ? "Adding..." : "Add tag"}
+              </button>
+            </form>
             <ErrorNotice
-              message={tags.error?.message}
-              retry={() => void tags.refetch()}
+              message={create.error?.message || remove.error?.message}
             />
-            <ul className="settings-tags">
-              {tags.data?.map((tag) => (
-                <li key={tag.id}>
-                  <div>
-                    <strong>{tag.name}</strong>
-                    <p>{tag.description}</p>
-                  </div>
-                  {tag.userId ? (
-                    <button
-                      type="button"
-                      className="icon-button"
-                      aria-label={`Delete ${tag.name} tag`}
-                      disabled={remove.isPending}
-                      onClick={() => remove.mutate({ id: tag.id })}
-                    >
-                      <Trash2 size={17} />
-                    </button>
-                  ) : (
-                    <span className="built-in">Built in</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </LoadingState>
-          <p className="muted">
-            Deleting a custom tag removes it from your recipes. Existing recipes
-            keep their tags when you add new choices.
-          </p>
-        </section>
+            <LoadingState pending={tags.isPending}>
+              <ErrorNotice
+                message={tags.error?.message}
+                retry={() => void tags.refetch()}
+              />
+              <ul className="settings-tags">
+                {tags.data?.map((tag) => (
+                  <li key={tag.id}>
+                    <div>
+                      <strong>{tag.name}</strong>
+                      <p>{tag.description}</p>
+                    </div>
+                    {tag.userId ? (
+                      <button
+                        type="button"
+                        className="icon-button"
+                        aria-label={`Delete ${tag.name} tag`}
+                        disabled={remove.isPending}
+                        onClick={() => remove.mutate({ id: tag.id })}
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                    ) : (
+                      <span className="built-in">Built in</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </LoadingState>
+            <p className="muted">
+              Deleting a custom tag removes it from your recipes. Existing
+              recipes keep their tags when you add new choices.
+            </p>
+          </section>
+          <ConnectedExtensions />
+        </div>
       </div>
     </main>
   );

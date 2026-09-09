@@ -31,7 +31,8 @@ p {
   line-height: 1.55;
   margin: 0 0 24px;
 }
-a {
+a,
+button {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -44,11 +45,38 @@ a {
   color: #fff;
   text-decoration: none;
   font-weight: 800;
+  font-family: inherit;
+  font-size: 15px;
+  width: 100%;
+  cursor: pointer;
 }
-a:hover {
+a:hover,
+button:hover {
   background: #426331;
 }
-a:focus-visible {
+a:focus-visible,
+button:focus-visible {
   outline: 3px solid #263e33;
   outline-offset: 4px;
+}
+button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+.secondary {
+  margin-top: 12px;
+  background: transparent;
+  color: #263e33;
+  border-color: transparent;
+  justify-content: center;
+}
+.secondary:hover {
+  background: #edeedc;
+}
+.account {
+  overflow-wrap: anywhere;
+}
+.error {
+  margin-top: 16px;
+  color: #a32d25;
 }

@@ -2,7 +2,7 @@
 
 Build a Chrome and Edge extension that captures a recipe from the page the user has opened, lets them choose a collection, and saves it directly to Prep Sheet. The popup handles connection, collection selection, progress and the saved recipe link.
 
-Part 1 is implemented. Authentication, recipe capture and saving remain planned. See [README.md](./README.md) for local setup and build commands.
+Parts 1 and 2 are implemented. Automated account-flow checks pass; real Chrome/Edge login verification remains in part 6. Recipe capture and saving remain planned. See [README.md](./README.md) for setup and [AUTH.md](./AUTH.md) for the credential design.
 
 ## 1. App setup
 
@@ -14,12 +14,12 @@ Part 1 is implemented. Authentication, recipe capture and saving remain planned.
 
 ## 2. Connect an account
 
-- [ ] Add a **Connect to Prep Sheet** flow that opens the website and reuses its existing Better Auth and Discord login.
-- [ ] Implement an explicit extension authorisation handoff using a short-lived, single-use code bound to the initiating extension with state and PKCE. Validate the extension ID and callback destination.
-- [ ] Choose how extension credentials integrate with Better Auth. Prefer a revocable, narrowly scoped extension credential over copying the website's session cookie. Define expiry, renewal and server-side storage before implementation.
-- [ ] Keep credentials in extension-only storage, restrict content-script access and keep credentials out of page messages, URLs and logs. Include no server secrets or OpenAI keys in the extension bundle.
-- [ ] Show the connected account, handle expired or revoked access, and support disconnecting. Add website controls to revoke connected extensions.
-- [ ] Configure exact trusted origins and API access rules without weakening existing website auth checks.
+- [x] Add a **Connect to Prep Sheet** flow that opens the website and reuses its existing Better Auth and Discord login.
+- [x] Implement an explicit extension authorisation handoff using a short-lived, single-use code bound to the initiating extension with state and PKCE. Validate the extension ID and callback destination.
+- [x] Choose how extension credentials integrate with Better Auth. Prefer a revocable, narrowly scoped extension credential over copying the website's session cookie. Define expiry, renewal and server-side storage before implementation.
+- [x] Keep credentials in extension-only storage, restrict content-script access and keep credentials out of page messages, URLs and logs. Include no server secrets or OpenAI keys in the extension bundle.
+- [x] Show the connected account, handle expired or revoked access, and support disconnecting. Add website controls to revoke connected extensions.
+- [x] Configure exact trusted origins and API access rules without weakening existing website auth checks.
 
 ## 3. Capture the loaded recipe
 

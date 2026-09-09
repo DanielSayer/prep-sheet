@@ -14,7 +14,8 @@ export default defineConfig({
       name: development ? "Prep Sheet (development)" : "Prep Sheet",
       description: "Save recipes from your browser to Prep Sheet.",
       key,
-      permissions: ["activeTab", "scripting"],
+      permissions: ["activeTab", "scripting", "identity", "storage"],
+      minimum_chrome_version: "116",
       host_permissions: [`${origin}/*`],
       action: { default_title: "Prep Sheet" },
     };
