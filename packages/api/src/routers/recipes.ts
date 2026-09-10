@@ -7,22 +7,13 @@ import {
 } from "@prep-sheet/db/schema/recipe";
 import { recipeTag, tag } from "@prep-sheet/db/schema/tag";
 import { TRPCError } from "@trpc/server";
-import {
-  and,
-  count,
-  desc,
-  eq,
-  getTableColumns,
-  gte,
-  inArray,
-  isNull,
-  or,
-  sql,
-} from "drizzle-orm";
+import { and, desc, eq, getTableColumns, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { accessibleRecipe, lockGroup, requireGroup } from "../groups/access";
 import { protectedProcedure, router } from "../index";
 import { generateRecipe } from "../recipes/generate";
+import { persistRecipe } from "../recipes/persist";
+import { checkRecipeUsage } from "../recipes/usage";
 import { availableTags } from "./tags";
 
 const idInput = z.object({ id: z.uuid() });
@@ -198,59 +189,28 @@ export const recipesRouter = router({
           });
         return existing;
       }
-      const [usage] = await db
-        .select({ total: count() })
-        .from(recipe)
-        .where(
-          and(
-            eq(recipe.userId, userId),
-            gte(recipe.createdAt, new Date(Date.now() - 86400000)),
-          ),
-        );
-      if (usage && usage.total >= 50)
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message:
-            "You've saved 50 recipes today. Come back tomorrow for more.",
-        });
+      await db.transaction((tx) => checkRecipeUsage(tx, userId));
       const { tagIds = [], ...result } = await generateRecipe(
         input.input,
         await availableTags(userId),
       );
       await db.transaction(async (tx) => {
+        await checkRecipeUsage(tx, userId);
         if (input.groupId) {
           await lockGroup(tx, input.groupId);
           await requireGroup(tx, input.groupId, userId);
         }
-        const inserted = await tx
-          .insert(recipe)
-          .values({
+        await persistRecipe(
+          tx,
+          {
             id: input.id,
             userId,
             groupId: input.groupId ?? null,
             title: result.content.title,
             ...result,
-          })
-          .onConflictDoNothing()
-          .returning({ id: recipe.id });
-        if (inserted.length && tagIds.length) {
-          const valid = await tx
-            .select({ id: tag.id })
-            .from(tag)
-            .where(
-              and(
-                inArray(tag.id, tagIds),
-                or(isNull(tag.userId), eq(tag.userId, userId)),
-              ),
-            );
-          if (valid.length)
-            await tx
-              .insert(recipeTag)
-              .values(
-                valid.map((t) => ({ userId, recipeId: input.id, tagId: t.id })),
-              )
-              .onConflictDoNothing();
-        }
+          },
+          tagIds,
+        );
       });
       return getRecipe(input.id, userId);
     }),

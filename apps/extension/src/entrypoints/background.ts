@@ -1,4 +1,9 @@
 import {
+  collectionsSchema,
+  importInputSchema,
+  importStatusSchema,
+} from "@prep-sheet/api/import-contract";
+import {
   type Connection,
   connectionSchema,
   credentialSchema,
@@ -10,9 +15,24 @@ import { captureResultSchema } from "../lib/capture-contract";
 import { prepSheetOrigin } from "../lib/config";
 import { extractRecipe } from "../lib/extract-recipe";
 
-const commandSchema = z.strictObject({
-  kind: z.enum(["status", "connect", "disconnect", "capture"]),
-});
+const commandSchema = z.discriminatedUnion("kind", [
+  z.strictObject({
+    kind: z.enum([
+      "status",
+      "connect",
+      "disconnect",
+      "capture",
+      "recover-capture",
+      "collections",
+      "recover-import",
+      "reset-import",
+    ]),
+  }),
+  z.strictObject({
+    kind: z.literal("save-import"),
+    input: importInputSchema.omit({ id: true }),
+  }),
+]);
 const storedCredentialSchema = credentialSchema.extend({
   origin: z.literal(prepSheetOrigin),
 });
@@ -31,6 +51,68 @@ export default defineBackground(() => {
   ]);
   let connecting = false;
   let message = "";
+  let saving: Promise<unknown> | undefined;
+
+  async function importCommand(command: z.infer<typeof commandSchema>) {
+    await ready;
+    const stored = storedCredentialSchema.parse(
+      (await browser.storage.local.get("credential")).credential,
+    );
+    const key = `import:${prepSheetOrigin}:${stored.account.id}`;
+    async function call(action: string, body: unknown) {
+      const response = await api(action, body, stored.token);
+      const value: unknown = await response.json();
+      if (!response.ok) {
+        const error = z.object({ error: z.string() }).safeParse(value);
+        throw new Error(
+          error.success
+            ? error.data.error
+            : "Couldn't reach Prep Sheet. Try again.",
+        );
+      }
+      return value;
+    }
+    if (command.kind === "collections")
+      return collectionsSchema.parse(await call("collections", {}));
+    const pending = importInputSchema.safeParse(
+      (await browser.storage.local.get(key))[key],
+    );
+    if (command.kind === "reset-import") {
+      if (pending.success) {
+        // Server tombstones unknown IDs so late network requests cannot create duplicates.
+        z.object({ ok: z.literal(true) }).parse(
+          await call("discard-import", pending.data),
+        );
+      }
+      await browser.storage.local.remove(key);
+      return null;
+    }
+    if (command.kind === "recover-import") {
+      if (!pending.success) return null;
+      // Re-submit the persisted request after a lost HTTP response or worker suspension.
+      return importStatusSchema.parse(await call("import", pending.data));
+    }
+    if (command.kind !== "save-import")
+      throw new Error("Invalid import command");
+    if (pending.success) {
+      const status = importStatusSchema.parse(
+        await call("import", pending.data),
+      );
+      const same =
+        pending.data.content === command.input.content &&
+        pending.data.sourceUrl === command.input.sourceUrl &&
+        pending.data.groupId === command.input.groupId;
+      if (same || status.kind === "queued" || status.kind === "processing")
+        return status;
+    }
+    const input = importInputSchema.parse({
+      ...command.input,
+      id: crypto.randomUUID(),
+    });
+    // Persist before the first network request. The popup never needs to keep work alive.
+    await browser.storage.local.set({ [key]: input });
+    return importStatusSchema.parse(await call("import", input));
+  }
 
   async function api(action: string, body: unknown, token?: string) {
     return fetch(`${prepSheetOrigin}/api/extensions/${action}`, {
@@ -140,8 +222,37 @@ export default defineBackground(() => {
       return false;
     const command = commandSchema.safeParse(value);
     if (!command.success) return false;
+    if (
+      ["collections", "recover-import", "save-import", "reset-import"].includes(
+        command.data.kind,
+      )
+    ) {
+      const run = (saving ?? Promise.resolve())
+        .catch(() => {})
+        .then(() => importCommand(command.data));
+      saving = run;
+      void run
+        .then((data) => respond({ ok: true, data }))
+        .catch((error: unknown) =>
+          respond({
+            ok: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : "Couldn't import. Try again.",
+          }),
+        );
+      return true;
+    }
+    if (command.data.kind === "recover-capture") {
+      void ready
+        .then(() => browser.storage.local.get("capture"))
+        .then((stored) => respond(stored.capture ?? null));
+      return true;
+    }
     if (command.data.kind === "capture") {
       void (async () => {
+        await ready;
         const [tab] = await browser.tabs.query({
           active: true,
           currentWindow: true,
@@ -158,7 +269,10 @@ export default defineBackground(() => {
           world: "ISOLATED",
           func: extractRecipe,
         });
-        return captureResultSchema.parse(injection?.result);
+        const result = captureResultSchema.parse(injection?.result);
+        if (result.kind === "captured")
+          await browser.storage.local.set({ capture: result });
+        return result;
       })()
         .then(respond)
         .catch(() => respond({ kind: "error", code: "unavailable" }));

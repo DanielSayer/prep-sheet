@@ -2,7 +2,7 @@
 
 Build a Chrome and Edge extension that captures a recipe from the page the user has opened, lets them choose a collection, and saves it directly to Prep Sheet. The popup handles connection, collection selection, progress and the saved recipe link.
 
-Parts 1 to 3 are implemented. Automated account and capture checks pass; real Chrome/Edge installation and login verification remain in part 6. Capture was checked against the loaded Kitchen Sanctuary butter chicken page. Processing and saving remain planned. See [README.md](./README.md) for setup and [AUTH.md](./AUTH.md) for the credential design.
+Parts 1 to 4 are implemented. Automated account and capture checks pass; real Chrome/Edge installation and login verification remain in part 6. Capture was checked against the loaded Kitchen Sanctuary butter chicken page. Imports use a PostgreSQL queue and a separate server worker. See [README.md](./README.md) for setup and [AUTH.md](./AUTH.md) for the credential design.
 
 ## 1. App setup
 
@@ -31,12 +31,12 @@ Parts 1 to 3 are implemented. Automated account and capture checks pass; real Ch
 
 ## 4. Process and save through the API
 
-- [ ] Add an authenticated import operation accepting captured content and its source URL separately. Reuse the existing recipe schema, generation rules, tags and persistence logic.
-- [ ] Preserve the original source link and mark the recipe as imported. Validate the source URL without requiring another page download.
-- [ ] Load the user's personal and group collections for the popup. Enforce membership and write permissions on the server, including immediately before saving.
-- [ ] Apply existing usage limits and add payload validation and appropriate rate limits for extension requests.
-- [ ] Make retries idempotent so closing the popup or repeating a request cannot create duplicate recipes or repeat AI work unnecessarily.
-- [ ] Decide how imports complete and expose status across popup closure and service-worker suspension. Keep long-running AI work on the server and let the extension recover the result.
+- [x] Add an authenticated import operation accepting captured content and its source URL separately. Reuse the existing recipe schema, generation rules, tags and persistence logic.
+- [x] Preserve the original source link and mark the recipe as imported. Validate the source URL without requiring another page download.
+- [x] Load the user's personal and group collections for the popup. Enforce membership and write permissions on the server, including immediately before saving.
+- [x] Apply existing usage limits and add payload validation and appropriate rate limits for extension requests.
+- [x] Make retries idempotent so closing the popup or repeating a request cannot create duplicate recipes or repeat AI work unnecessarily.
+- [x] Decide how imports complete and expose status across popup closure and service-worker suspension. Keep long-running AI work on the server and let the extension recover the result.
 
 ## 5. Popup experience
 

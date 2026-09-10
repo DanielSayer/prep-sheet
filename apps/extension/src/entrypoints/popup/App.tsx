@@ -62,7 +62,7 @@ export function App() {
             <br />
             {connection.account.email}
           </p>
-          <Capture />
+          <Capture key={connection.account.id} connected />
           <a
             className="secondary"
             href={prepSheetOrigin}

@@ -17,6 +17,7 @@ const resultSchema = z.object({
 export async function generateRecipe(
   input: string,
   tags: { id: string; name: string; description: string }[] = [],
+  capturedSourceUrl?: string,
 ) {
   if (!env.OPENAI_API_KEY)
     throw new TRPCError({
@@ -24,9 +25,9 @@ export async function generateRecipe(
       message:
         "Recipe creation needs an OpenAI API key. Add OPENAI_API_KEY to apps/web/.env and restart the server.",
     });
-  let sourceUrl: string | null = null;
+  let sourceUrl: string | null = capturedSourceUrl ?? null;
   let content = input;
-  if (/^(https?:\/\/|www\.)/i.test(input)) {
+  if (!capturedSourceUrl && /^(https?:\/\/|www\.)/i.test(input)) {
     try {
       sourceUrl = recipeUrl(
         input.startsWith("www.") ? `https://${input}` : input,

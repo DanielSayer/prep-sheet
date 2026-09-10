@@ -152,3 +152,10 @@ pre {
   max-height: 220px;
   overflow-y: auto;
 }
+.import fieldset {
+  margin: 16px 0;
+}
+.saved {
+  margin-top: 16px;
+  overflow-wrap: anywhere;
+}

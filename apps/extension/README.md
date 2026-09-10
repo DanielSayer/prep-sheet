@@ -2,7 +2,7 @@
 
 Chrome and Edge Manifest V3 app built with [WXT](https://wxt.dev/), React and TypeScript. WXT handles entrypoint bundling, development reloads, manifests and ZIP packaging. The workspace uses the repository's React and TypeScript catalog versions.
 
-Parts 1 to 3 are implemented. The popup connects an account, displays it, supports disconnecting and captures recipes from the loaded tab. Processing and saving remain planned. See [TODO.md](./TODO.md) and [AUTH.md](./AUTH.md).
+Parts 1 to 4 are implemented. The popup connects an account, captures recipes from the loaded tab, selects a personal or group collection, and saves through a durable server queue. See [TODO.md](./TODO.md) and [AUTH.md](./AUTH.md).
 
 ## Local development
 
@@ -59,11 +59,33 @@ Never add server secrets, database credentials or OpenAI keys to extension setti
 
 ## Capture a loaded recipe
 
-Open a recipe, finish any browser challenge, then click **Capture recipe** in the extension. Capture works locally even when signed out. If several recipes are found, choose one and expand **Preview captured recipe** to inspect it. Captured content stays in popup memory and is cleared when the popup closes. Nothing is uploaded or saved yet.
+Open a recipe, finish any browser challenge, then click **Capture recipe** in the extension. Capture works locally even when signed out. If several recipes are found, choose one and expand **Preview captured recipe** to inspect it. The latest capture stays in trusted extension local storage across popup closure and browser restart. Nothing is uploaded until you choose **Save recipe**.
 
 The worker accepts capture commands only from the extension popup and injects a self-contained function into the active tab's top frame in the isolated world. It does not download the source page, access cookies, read form values, or pass extension credentials into the tab. JSON-LD capture allows only recipe names, ingredients, instructions, yield and times. When metadata is missing or invalid, capture reads visible recipe cards or a main/article region with ingredients and instructions, skipping forms, hidden content, account widgets, navigation and comments. Pages without a suitable region produce an error.
 
-Capture limits are 1,000,000 characters of JSON-LD input, 32,000 characters per recipe, ten recipes and 128,000 characters for the response, with traversal limits for deeply nested or unusually large pages. Oversized captures return an error instead of silently truncating ingredients or instructions. Both the worker and popup validate the response. Source links use the loaded HTTP(S) URL with query strings and fragments removed to avoid carrying account tokens or tracking parameters; sites whose recipe identity exists only in a query string are not fully supported yet. Page text remains untrusted and must be treated as recipe data, never instructions, by the future import API.
+Capture limits are 1,000,000 characters of JSON-LD input, 32,000 characters per recipe, ten recipes and 128,000 characters for the response, with traversal limits for deeply nested or unusually large pages. Oversized captures return an error instead of silently truncating ingredients or instructions. Both the worker and popup validate the response. Source links use the loaded HTTP(S) URL with query strings and fragments removed to avoid carrying account tokens or tracking parameters; sites whose recipe identity exists only in a query string are not fully supported yet. Page text remains untrusted and must be treated as recipe data, never instructions, by the import API.
+
+## Process and save
+
+After applying the database schema, run the server worker in a separate terminal from the repository root:
+
+```sh
+pnpm worker:imports
+```
+
+This command reads server settings from `apps/web/.env`, including the database and OpenAI configuration. Keep the website running too. The worker needs the installed workspace dependencies, including the root `tsx` runner. A deployment must run this command under a process supervisor alongside the website, with the same database and server environment. A request-only or serverless website deployment is insufficient without a separately hosted worker. No deployment is configured by this change.
+
+Choose a recipe, choose **My recipes** or a group, then **Save recipe**. All group members currently have recipe write access. Processing continues on the server if the popup closes or the browser worker suspends. Reopen the popup to recover its status and the saved recipe link. Starting another import is blocked until the current attempt finishes or the server records an unaccepted request as discarded. The discard record prevents a late network submission from creating a recipe after you move on. Discarded attempts count towards the daily allowance. If access to a group changes, start another import and choose an available collection.
+
+The extension stores one pending request per account and website origin before sending it. Network retries reuse its UUID and exact content. The server rejects that UUID with different content, source or collection, and does not generate or save it again. A failed attempt keeps its ID terminal. **Start another import** explicitly creates a fresh attempt on the next save, which may use AI again.
+
+Jobs move through queued, processing, ready and saved states. The worker commits a claim before calling AI, checkpoints the generated result, then saves the recipe and tags in one transaction with a final group-membership check. Workers claim queued jobs with PostgreSQL row locks and skip locked rows. Ready jobs resume saving without another AI call. If a worker dies during processing, the next running worker marks its unresolved claim failed after three minutes. It does not automatically repeat a call whose result may have been lost. Queued jobs remain queued while no worker is running.
+
+The existing 50-per-24-hour allowance counts saved recipes plus pending and failed import attempts, without counting a saved import twice. Active jobs keep their reservation even after 24 hours. Admissions are serialised per account. New imports are also limited to five per minute, and authenticated collection/import/status requests to 60 per minute per account. Identical retries do not reserve another import attempt.
+
+Captured text is limited to 32,000 characters and source URLs to 4,096. The server accepts bounded JSON bodies up to 200,000 bytes for imports and 4,096 bytes for collection/status calls. It validates HTTP(S) links and rejects credentials, query strings, fragments and nonstandard ports. It never downloads the source URL. The original captured source link and imported status are persisted; query-only recipe identities remain unsupported.
+
+Server input text is cleared after processing or failure, and checkpointed output is cleared on save or permission failure. Job IDs, request fingerprints, source URLs, destinations and terminal status remain until account deletion so old retries cannot recreate a deleted recipe. Local captures remain until replaced or extension data is removed. Pending request text remains per account until replaced or **Start another import** clears it. Disconnect revokes credentials but preserves recoverable work for reconnection to that account. A previously accepted job continues after disconnect or credential revocation; future API calls require a valid credential.
 
 ## Code layout
 
@@ -80,6 +102,10 @@ Static builds request `activeTab`, `scripting`, `identity`, `storage` and the co
 
 ## Verification so far
 
-Type checking, local builds and Chrome/Edge ZIP packaging pass. Account authentication has automated server and worker tests. Capture tests cover metadata graphs, instruction sections, multiple recipes, visible-text fallback, privacy exclusions, challenge pages, size limits, unsupported pages, sender restrictions and invalid injection responses. The current extractor captured one Butter Chicken recipe from Kitchen Sanctuary's already-loaded DOM without refetching the page. Browser extension installation, real Chrome/Edge identity flows and recipe import still need end-to-end checks.
+Type checking, local builds and Chrome/Edge ZIP packaging pass. Account authentication has automated server and worker tests. Capture tests cover metadata graphs, instruction sections, multiple recipes, visible-text fallback, privacy exclusions, challenge pages, size limits, unsupported pages, sender restrictions and invalid injection responses. The current extractor captured one Butter Chicken recipe from Kitchen Sanctuary's already-loaded DOM without refetching the page. Browser extension installation, real Chrome/Edge identity flows and the full installed-extension import flow still need end-to-end checks.
 
 The popup was also checked in a browser preview with simulated worker responses at 360px and 320px, including capture progress, expanded preview, keyboard recipe selection, long titles and challenge recovery. A scrollbar-related horizontal overflow was fixed. These UI checks do not verify installed-extension injection or permissions.
+
+Step 4 verification: the full automated suite passes 98 tests with seven opt-in live tests skipped. New PostgreSQL tests exercise authenticated admission, scopes, revocation, exact origins, body validation, account isolation, personal/group saves, membership removal during generation, concurrent requests/workers, valid tag persistence, usage reservations, rate limits, terminal failures and checkpoint recovery. Generation tests confirm no source-page fetch even when captured text starts with a URL. Worker tests cover storage-before-network, response loss, service-worker restart simulation, account-bound recovery and refusing reset while processing.
+
+Website and extension type checks, the website production build, Biome checks and both browser packages pass. The dedicated worker command starts against the local database. Actual popup components were previewed with simulated worker responses, checking collection radio buttons by keyboard, processing, saved-result recovery after reload and group-access failure recovery. Layout widths of 360px and 320px were checked, with no horizontal overflow. These checks do not establish installed Chrome/Edge login, injection or a real AI import. Those end-to-end checks remain in part 6.

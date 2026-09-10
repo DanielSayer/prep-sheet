@@ -1,16 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { browser } from "wxt/browser";
 import {
   type CaptureResult,
   captureErrors,
   captureResultSchema,
 } from "../../lib/capture-contract";
+import { Import } from "./Import";
 
 type State = { kind: "idle" } | { kind: "loading" } | CaptureResult;
 
-export function Capture() {
+export function Capture({ connected = false }: { connected?: boolean }) {
   const [state, setState] = useState<State>({ kind: "idle" });
   const [selected, setSelected] = useState(0);
+  useEffect(() => {
+    void browser.runtime
+      .sendMessage({ kind: "recover-capture" })
+      .then((value: unknown) => {
+        const result = captureResultSchema.safeParse(value);
+        if (result.success) setState(result.data);
+      })
+      .catch(() => {});
+  }, []);
   async function capture() {
     setState({ kind: "loading" });
     setSelected(0);
@@ -29,6 +39,7 @@ export function Capture() {
   return (
     <section className="capture" aria-label="Capture recipe">
       <button
+        className={state.kind === "captured" ? "secondary" : undefined}
         type="button"
         disabled={state.kind === "loading"}
         onClick={() => void capture()}
@@ -77,9 +88,11 @@ export function Capture() {
                 {new URL(state.sourceUrl).hostname}{" "}
                 <span aria-hidden="true">↗</span>
               </a>
-              <p className="capture-note" role="status">
-                Captured on this device. Saving isn't available yet.
-              </p>
+              {!connected && (
+                <p className="capture-note" role="status">
+                  Connect your account to save this recipe.
+                </p>
+              )}
               <details>
                 <summary>Preview captured recipe</summary>
                 <pre>{recipe.content}</pre>
@@ -87,6 +100,12 @@ export function Capture() {
             </div>
           )}
         </>
+      )}
+      {connected && (
+        <Import
+          content={recipe?.content}
+          sourceUrl={state.kind === "captured" ? state.sourceUrl : undefined}
+        />
       )}
     </section>
   );

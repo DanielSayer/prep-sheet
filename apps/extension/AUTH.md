@@ -2,7 +2,7 @@
 
 ## Credential design
 
-Better Auth owns website sessions and Discord login. Extension access uses a separate opaque bearer token. Website cookies are never copied or accepted by extension endpoints. Tokens grant `account:read collections:read recipes:import`. Currently only account checks and disconnect are implemented. Part 4 must enforce these scopes on its separate collection/import endpoints. Existing website tRPC and Better Auth endpoints do not accept extension credentials.
+Better Auth owns website sessions and Discord login. Extension access uses a separate opaque bearer token. Website cookies are never copied or accepted by extension endpoints. Tokens grant `account:read collections:read recipes:import`. Collection endpoints enforce `collections:read`; import and status endpoints enforce `recipes:import`. Existing website tRPC and Better Auth endpoints do not accept extension credentials.
 
 A token lasts 30 days. There is no refresh token or silent renewal. Expired or revoked access requires another explicit connection. Disconnect revokes on the server before deleting local storage. A network failure preserves the token so revocation can be retried. Website Settings lists active connections and revokes them individually. Revocation is checked on each extension request.
 
@@ -27,7 +27,7 @@ On a non-production localhost website, the development ID `kjmnecmcpdklkaaiklbfo
 
 Each callback must equal `https://<id>.chromiumapp.org/prep-sheet` exactly. Wildcards, extra query parameters, fragments and alternate paths are rejected. Discord continues to use the website's existing `/api/auth/callback/discord` redirect.
 
-The dedicated `/api/extensions` endpoints allow only exact `chrome-extension://<allowed-id>` origins for token exchange, account checks and disconnect. Website validation, approval, listing and revocation require the exact `BETTER_AUTH_URL` origin. All except request validation also require a Better Auth session. No extension origins are added to Better Auth's trusted origins, and no credentialed cross-origin cookie access is enabled. JSON bodies are limited to 4 KiB, including streamed bodies. Token-bearing fetches omit cookies and reject redirects.
+The dedicated `/api/extensions` endpoints allow only exact `chrome-extension://<allowed-id>` origins for token exchange, account checks and disconnect. Website validation, approval, listing and revocation require the exact `BETTER_AUTH_URL` origin. All except request validation also require a Better Auth session. No extension origins are added to Better Auth's trusted origins, and no credentialed cross-origin cookie access is enabled. Account JSON bodies are limited to 4 KiB, including streamed bodies. The API package handles collection, import and status requests with the same exact origin and credential boundary; import bodies allow 200,000 bytes with a separate 32,000-character content limit. Token-bearing fetches omit cookies and reject redirects.
 
 ## Verification
 
@@ -35,6 +35,16 @@ PostgreSQL tests cover a real Better Auth test session, consent, concurrent repl
 
 Run `node node_modules/vitest/vitest.mjs run packages/auth/src/extensions.test.ts apps/extension/src/lib/background.test.ts` from the root. Tests create and remove their own database users and credentials.
 
-Website and extension type checks, the website production build, and both browser ZIP packages pass. The full test suite has 66 passing and 7 skipped tests, including 12 new server/worker tests. Website approval and Settings have been inspected at desktop and mobile widths. The built popup was previewed at 320px and 360px with simulated signed-out/connected responses. Actual unpacked Chrome/Edge installation, Discord round-trip login, popup closure during identity login and browser restart still need manual end-to-end verification. Recipe capture and saving are not implemented by this step.
+Website and extension type checks, the website production build, and both browser ZIP packages pass. At the end of part 2, the full test suite had 66 passing and 7 skipped tests, including 12 new server/worker tests. Website approval and Settings have been inspected at desktop and mobile widths. The built popup was previewed at 320px and 360px with simulated signed-out/connected responses. Actual unpacked Chrome/Edge installation, Discord round-trip login, popup closure during identity login and browser restart still need manual end-to-end verification. That part-2 verification predates capture and importing; current verification is in README.md.
 
 Browser API references: [identity](https://developer.chrome.com/docs/extensions/reference/api/identity), [storage access](https://developer.chrome.com/docs/extensions/reference/api/storage), [service worker lifetime](https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/lifecycle).
+
+## Durable import access
+
+POST `/api/extensions/collections` returns the personal collection and groups the account belongs to. POST `/api/extensions/import` accepts `{ id, content, sourceUrl, groupId }` and returns queued, processing, saved or failed status. POST `/api/extensions/import-status` accepts `{ id }`. POST `/api/extensions/discard-import` accepts the original import input and refuses active jobs; a missing ID is retained as a discarded attempt. All import operations require `recipes:import`, and status is account-private. A saved group recipe link also requires current membership. Preflight permits only configured extension origins, POST and the content/authorization headers. Responses are non-cacheable and never include captured content or tokens.
+
+The API only commits durable work; it does not run AI in a request handler. The separately supervised worker processes accepted jobs even after the authorising credential expires or is revoked. Group membership is checked at admission, before generation and under the existing group lock immediately before insertion. Personal imports always belong to the authenticated account. Existing website tRPC still uses only Better Auth sessions.
+
+Imports reserve the shared daily allowance and have per-account database-backed admission and request limits. UUIDs are bound to an account and a SHA-256 fingerprint of content, source and destination. Concurrent replays share one job. Completed and failed IDs are retained, including after recipe deletion. See README for worker startup, interrupted-call behaviour and local/server retention.
+
+The popup and worker exchange only fixed validated commands. The worker writes a pending request before its first network call and binds it to account and website origin in trusted local storage. Recovering a request cannot select another account's pending work. Reset uses `discard-import` before clearing an uncertain attempt. Under the account lock, the server rejects an active job or records a missing ID as a terminal failed job. Late submissions therefore cannot revive an abandoned request. No page script receives the credential or import/status operations.

@@ -8,9 +8,9 @@ type Listener = (
 ) => boolean;
 const fake = vi.hoisted(() => ({
   addListener: vi.fn<(listener: Listener) => void>(),
-  get: vi.fn<() => Promise<{ credential?: unknown }>>(),
-  set: vi.fn<() => Promise<void>>(),
-  remove: vi.fn<() => Promise<void>>(),
+  get: vi.fn<(key: string) => Promise<Record<string, unknown>>>(),
+  set: vi.fn<(value: Record<string, unknown>) => Promise<void>>(),
+  remove: vi.fn<(key: string) => Promise<void>>(),
   setAccessLevel: vi.fn<() => Promise<void>>(),
   launch: vi.fn<() => Promise<string>>(),
   query: vi.fn(),
@@ -96,6 +96,84 @@ describe("extension worker credential isolation", () => {
     expect(
       listener()({ kind: "fetch", token: "secret" }, sender, vi.fn()),
     ).toBe(false);
+  });
+  it("persists before sending, recovers the same ID after suspension and isolates accounts", async () => {
+    const storage: Record<string, unknown> = { credential };
+    fake.get.mockImplementation(async (key) => ({ [key]: storage[key] }));
+    fake.set.mockImplementation(async (value) => {
+      Object.assign(storage, value);
+    });
+    fake.remove.mockImplementation(async (key) => {
+      delete storage[key];
+    });
+    const command = {
+      kind: "save-import",
+      input: {
+        content: "Soup ingredients and instructions. ".repeat(5),
+        sourceUrl: "https://recipes.test/soup",
+        groupId: null,
+      },
+    };
+    const key = `import:http://localhost:3001:${credential.account.id}`;
+    fetchMock.mockImplementationOnce(async () => {
+      expect(storage[key]).toBeDefined();
+      throw new Error("Connection lost after submission");
+    });
+    const first = await new Promise((resolve) =>
+      listener()(command, sender, resolve),
+    );
+    expect(first).toMatchObject({ ok: false });
+    const stored = z.object({ id: z.uuid() }).parse(storage[key]);
+    background.main(); // New worker globals; durable storage survives.
+    fetchMock.mockImplementation(async (_url, options) => {
+      const body = z
+        .object({ id: z.uuid() })
+        .parse(JSON.parse(String(options?.body)));
+      expect(body.id).toBe(stored.id);
+      return Response.json({
+        kind: "saved",
+        id: body.id,
+        recipeId: body.id,
+        title: "Soup",
+      });
+    });
+    expect(await send("recover-import")).toMatchObject({
+      ok: true,
+      data: { kind: "saved", id: stored.id },
+    });
+    expect(
+      await new Promise((resolve) => listener()(command, sender, resolve)),
+    ).toMatchObject({ ok: true, data: { kind: "saved", id: stored.id } });
+    expect(storage[key]).toEqual(expect.objectContaining({ id: stored.id }));
+    storage.credential = {
+      ...credential,
+      account: { ...credential.account, id: "other" },
+    };
+    expect(await send("recover-import")).toEqual({ ok: true, data: null });
+    expect(listener()(command, { ...sender, tab: {} }, vi.fn())).toBe(false);
+  });
+  it("keeps a pending ID while processing and requires a terminal result before starting another", async () => {
+    const key = `import:http://localhost:3001:${credential.account.id}`;
+    const pending = {
+      id: crypto.randomUUID(),
+      content: "Soup recipe. ".repeat(10),
+      sourceUrl: "https://recipes.test/soup",
+      groupId: null,
+    };
+    fake.get.mockImplementation(async (name) => ({
+      [name]: name === "credential" ? credential : pending,
+    }));
+    fetchMock.mockResolvedValue(
+      Response.json(
+        { error: "Your import is still processing." },
+        { status: 409 },
+      ),
+    );
+    expect(await send("reset-import")).toMatchObject({ ok: false });
+    expect(fake.remove).not.toHaveBeenCalled();
+    fetchMock.mockResolvedValue(Response.json({ ok: true }));
+    expect(await send("reset-import")).toEqual({ ok: true, data: null });
+    expect(fake.remove).toHaveBeenCalledWith(key);
   });
   it("captures only the active top frame in the isolated world without accessing credentials or the API", async () => {
     fake.query.mockResolvedValue([
