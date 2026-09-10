@@ -44,51 +44,51 @@ export function App() {
   }, [send]);
   useEffect(() => {
     if (connection?.kind !== "connecting") return;
-    const timer = setInterval(() => void send("status"), 1500);
-    return () => clearInterval(timer);
-  }, [connection?.kind, send]);
+    const timer = setTimeout(() => void send("status"), 1500);
+    return () => clearTimeout(timer);
+  }, [connection, send]);
   return (
     <main>
       <p className="brand">Prep Sheet</p>
-      <h1>
-        {connection?.kind === "connected"
-          ? "You're connected."
-          : "Your recipes, within reach."}
-      </h1>
       {connection?.kind === "connected" ? (
         <>
-          <p className="account">
-            <strong>{connection.account.name}</strong>
-            <br />
-            {connection.account.email}
-          </p>
-          <Capture key={connection.account.id} connected />
-          <a
-            className="secondary"
-            href={prepSheetOrigin}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Open Prep Sheet <span aria-hidden="true">↗</span>
-          </a>
-          <button
-            className="secondary"
-            disabled={busy}
-            onClick={() => void send("disconnect")}
-            type="button"
-          >
-            Disconnect
-          </button>
+          <Capture
+            key={connection.account.id}
+            accountId={connection.account.id}
+            onReconnect={() => void send("connect")}
+          />
+          <footer>
+            <p className="account">{connection.account.email}</p>
+            <a
+              className="secondary"
+              href={prepSheetOrigin}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Prep Sheet <span aria-hidden="true">↗</span>
+            </a>
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={() => void send("disconnect")}
+              type="button"
+            >
+              Disconnect
+            </button>
+          </footer>
         </>
       ) : connection?.kind === "connecting" ? (
         <p role="status">
           Finish connecting in the Prep Sheet window. You can close this popup
           and reopen it afterwards.
         </p>
+      ) : !connection && !error ? (
+        <p role="status">Checking your account...</p>
       ) : (
         <>
+          <h1>Save recipes from your browser</h1>
           <p>
-            Connect your account to get ready to save recipes from your browser.
+            Connect your Prep Sheet account to save a recipe to your collection.
           </p>
           {connection?.kind === "disconnected" && connection.message && (
             <p role="status">{connection.message}</p>
@@ -102,7 +102,7 @@ export function App() {
           </button>
         </>
       )}
-      {connection?.kind !== "connected" && <Capture />}
+      {connection?.kind === "disconnected" && <Capture />}
       {error && (
         <>
           <p className="error" role="alert">

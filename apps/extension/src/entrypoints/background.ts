@@ -14,6 +14,7 @@ import { z } from "zod";
 import { captureResultSchema } from "../lib/capture-contract";
 import { prepSheetOrigin } from "../lib/config";
 import { extractRecipe } from "../lib/extract-recipe";
+import { pendingSchema } from "../lib/popup-contract";
 
 const commandSchema = z.discriminatedUnion("kind", [
   z.strictObject({
@@ -26,11 +27,26 @@ const commandSchema = z.discriminatedUnion("kind", [
       "collections",
       "recover-import",
       "reset-import",
+      "pending-import",
+      "destinations",
     ]),
+    accountId: z.string().optional(),
   }),
   z.strictObject({
     kind: z.literal("save-import"),
     input: importInputSchema.omit({ id: true }),
+    title: z.string().max(300).optional(),
+    accountId: z.string().optional(),
+  }),
+  z.strictObject({
+    kind: z.literal("select-collection"),
+    groupId: z.uuid().nullable(),
+    accountId: z.string().optional(),
+  }),
+  z.strictObject({
+    kind: z.literal("select-recipe"),
+    sourceUrl: z.string(),
+    selected: z.number().int().min(0).max(9),
   }),
 ]);
 const storedCredentialSchema = credentialSchema.extend({
@@ -42,6 +58,16 @@ const encode = (bytes: Uint8Array) =>
     .replace(/\//g, "_")
     .replace(/=+$/, "");
 const random = () => encode(crypto.getRandomValues(new Uint8Array(32)));
+
+function requestInput({
+  id,
+  content,
+  sourceUrl,
+  groupId,
+}: z.infer<typeof pendingSchema>) {
+  return { id, content, sourceUrl, groupId };
+}
+class ReconnectError extends Error {}
 
 export default defineBackground(() => {
   // Content scripts cannot read either store. Only the worker handles tokens.
@@ -55,12 +81,35 @@ export default defineBackground(() => {
 
   async function importCommand(command: z.infer<typeof commandSchema>) {
     await ready;
-    const stored = storedCredentialSchema.parse(
+    const credential = storedCredentialSchema.safeParse(
       (await browser.storage.local.get("credential")).credential,
     );
+    if (
+      !credential.success ||
+      Date.parse(credential.data.expiresAt) <= Date.now()
+    )
+      throw new ReconnectError(
+        "Your connection expired. Connect again to recover your work.",
+      );
+    const stored = credential.data;
+    if (
+      "accountId" in command &&
+      command.accountId &&
+      command.accountId !== stored.account.id
+    )
+      throw new ReconnectError(
+        "The connected account changed. Reopen the popup to continue.",
+      );
     const key = `import:${prepSheetOrigin}:${stored.account.id}`;
+    const preferenceKey = `collection:${prepSheetOrigin}:${stored.account.id}`;
+    const collectionsKey = `collections:${prepSheetOrigin}:${stored.account.id}`;
     async function call(action: string, body: unknown) {
       const response = await api(action, body, stored.token);
+      if (response.status === 401) {
+        throw new ReconnectError(
+          "Your access has ended. Connect again to recover your work.",
+        );
+      }
       const value: unknown = await response.json();
       if (!response.ok) {
         const error = z.object({ error: z.string() }).safeParse(value);
@@ -74,14 +123,47 @@ export default defineBackground(() => {
     }
     if (command.kind === "collections")
       return collectionsSchema.parse(await call("collections", {}));
-    const pending = importInputSchema.safeParse(
+    if (
+      command.kind === "destinations" ||
+      command.kind === "select-collection"
+    ) {
+      const collections = collectionsSchema.parse(
+        await call("collections", {}),
+      );
+      const previous = z
+        .uuid()
+        .nullable()
+        .safeParse(
+          (await browser.storage.local.get(preferenceKey))[preferenceKey],
+        );
+      const wanted =
+        command.kind === "select-collection"
+          ? command.groupId
+          : previous.success
+            ? previous.data
+            : null;
+      const valid = collections.some((item) => item.id === wanted);
+      if (!valid && command.kind === "select-collection")
+        throw new Error(
+          "That collection is no longer available. Reload collections and choose another.",
+        );
+      const groupId = valid ? wanted : null;
+      await browser.storage.local.set({
+        [preferenceKey]: groupId,
+        [collectionsKey]: collections,
+      });
+      return { collections, groupId, changed: !valid && wanted !== null };
+    }
+    const pending = pendingSchema.safeParse(
       (await browser.storage.local.get(key))[key],
     );
+    if (command.kind === "pending-import")
+      return pending.success ? pending.data : null;
     if (command.kind === "reset-import") {
       if (pending.success) {
         // Server tombstones unknown IDs so late network requests cannot create duplicates.
         z.object({ ok: z.literal(true) }).parse(
-          await call("discard-import", pending.data),
+          await call("discard-import", requestInput(pending.data)),
         );
       }
       await browser.storage.local.remove(key);
@@ -90,27 +172,37 @@ export default defineBackground(() => {
     if (command.kind === "recover-import") {
       if (!pending.success) return null;
       // Re-submit the persisted request after a lost HTTP response or worker suspension.
-      return importStatusSchema.parse(await call("import", pending.data));
+      return importStatusSchema.parse(
+        await call("import", requestInput(pending.data)),
+      );
     }
     if (command.kind !== "save-import")
       throw new Error("Invalid import command");
     if (pending.success) {
       const status = importStatusSchema.parse(
-        await call("import", pending.data),
+        await call("import", requestInput(pending.data)),
       );
-      const same =
-        pending.data.content === command.input.content &&
-        pending.data.sourceUrl === command.input.sourceUrl &&
-        pending.data.groupId === command.input.groupId;
-      if (same || status.kind === "queued" || status.kind === "processing")
-        return status;
+      // A new attempt always requires the explicit, race-safe reset command.
+      return status;
     }
     const input = importInputSchema.parse({
       ...command.input,
       id: crypto.randomUUID(),
     });
     // Persist before the first network request. The popup never needs to keep work alive.
-    await browser.storage.local.set({ [key]: input });
+    const cached = collectionsSchema.safeParse(
+      (await browser.storage.local.get(collectionsKey))[collectionsKey],
+    );
+    const collection = cached.success
+      ? cached.data.find((item) => item.id === input.groupId)
+      : undefined;
+    await browser.storage.local.set({
+      [key]: {
+        ...input,
+        title: command.title,
+        collectionName: collection?.name,
+      },
+    });
     return importStatusSchema.parse(await call("import", input));
   }
 
@@ -223,9 +315,15 @@ export default defineBackground(() => {
     const command = commandSchema.safeParse(value);
     if (!command.success) return false;
     if (
-      ["collections", "recover-import", "save-import", "reset-import"].includes(
-        command.data.kind,
-      )
+      [
+        "collections",
+        "destinations",
+        "select-collection",
+        "pending-import",
+        "recover-import",
+        "save-import",
+        "reset-import",
+      ].includes(command.data.kind)
     ) {
       const run = (saving ?? Promise.resolve())
         .catch(() => {})
@@ -236,6 +334,7 @@ export default defineBackground(() => {
         .catch((error: unknown) =>
           respond({
             ok: false,
+            reconnect: error instanceof ReconnectError,
             error:
               error instanceof Error
                 ? error.message
@@ -244,10 +343,38 @@ export default defineBackground(() => {
         );
       return true;
     }
+    if (command.data.kind === "select-recipe") {
+      const selection = command.data;
+      void ready.then(async () => {
+        const stored = await browser.storage.local.get("capture");
+        const capture = captureResultSchema.safeParse(stored.capture);
+        if (
+          capture.success &&
+          capture.data.kind === "captured" &&
+          capture.data.sourceUrl === selection.sourceUrl &&
+          capture.data.recipes[selection.selected]
+        ) {
+          await browser.storage.local.set({
+            captureSelection: {
+              sourceUrl: selection.sourceUrl,
+              selected: selection.selected,
+            },
+          });
+        }
+        respond(null);
+      });
+      return true;
+    }
     if (command.data.kind === "recover-capture") {
       void ready
         .then(() => browser.storage.local.get("capture"))
-        .then((stored) => respond(stored.capture ?? null));
+        .then(async (stored) => {
+          const selection = await browser.storage.local.get("captureSelection");
+          respond({
+            capture: stored.capture ?? null,
+            selection: selection.captureSelection ?? null,
+          });
+        });
       return true;
     }
     if (command.data.kind === "capture") {
@@ -271,7 +398,10 @@ export default defineBackground(() => {
         });
         const result = captureResultSchema.parse(injection?.result);
         if (result.kind === "captured")
-          await browser.storage.local.set({ capture: result });
+          await browser.storage.local.set({
+            capture: result,
+            captureSelection: { sourceUrl: result.sourceUrl, selected: 0 },
+          });
         return result;
       })()
         .then(respond)

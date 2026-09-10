@@ -2,7 +2,7 @@
 
 Build a Chrome and Edge extension that captures a recipe from the page the user has opened, lets them choose a collection, and saves it directly to Prep Sheet. The popup handles connection, collection selection, progress and the saved recipe link.
 
-Parts 1 to 4 are implemented. Automated account and capture checks pass; real Chrome/Edge installation and login verification remain in part 6. Capture was checked against the loaded Kitchen Sanctuary butter chicken page. Imports use a PostgreSQL queue and a separate server worker. See [README.md](./README.md) for setup and [AUTH.md](./AUTH.md) for the credential design.
+Parts 1 to 5 are implemented. Automated account and capture checks pass; real Chrome/Edge installation and login verification remain in part 6. Capture was checked against the loaded Kitchen Sanctuary butter chicken page. Imports use a PostgreSQL queue and a separate server worker. See [README.md](./README.md) for setup and [AUTH.md](./AUTH.md) for the credential design.
 
 ## 1. App setup
 
@@ -40,11 +40,11 @@ Parts 1 to 4 are implemented. Automated account and capture checks pass; real Ch
 
 ## 5. Popup experience
 
-- [ ] Build signed-out, loading, ready, importing, success and error states using Prep Sheet's visual style.
-- [ ] Show the detected recipe title, a collection picker and one primary **Save recipe** action.
-- [ ] Remember the last valid collection per account and recover if access changes.
-- [ ] Keep progress recoverable when the popup closes. On success, link to the saved recipe.
-- [ ] Provide specific recovery for unavailable recipes, expired login, changed group access and processing failures. Check keyboard access and compact popup layout.
+- [x] Build signed-out, loading, ready, importing, success and error states using Prep Sheet's visual style.
+- [x] Show the detected recipe title, a collection picker and one primary **Save recipe** action.
+- [x] Remember the last valid collection per account and recover if access changes.
+- [x] Keep progress recoverable when the popup closes. On success, link to the saved recipe.
+- [x] Provide specific recovery for unavailable recipes, expired login, changed group access and processing failures. Check keyboard access and compact popup layout.
 
 ## 6. Verify and release
 

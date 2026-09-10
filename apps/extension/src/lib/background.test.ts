@@ -175,6 +175,152 @@ describe("extension worker credential isolation", () => {
     expect(await send("reset-import")).toEqual({ ok: true, data: null });
     expect(fake.remove).toHaveBeenCalledWith(key);
   });
+  it("remembers validated collections per account and recovers stale access without changing pending work", async () => {
+    const groupId = crypto.randomUUID();
+    const storage: Record<string, unknown> = { credential };
+    fake.get.mockImplementation(async (key) => ({ [key]: storage[key] }));
+    fake.set.mockImplementation(async (value) => {
+      Object.assign(storage, value);
+    });
+    fetchMock.mockImplementation(async () =>
+      Response.json([
+        { id: null, name: "My recipes" },
+        { id: groupId, name: "Family" },
+      ]),
+    );
+    const select = () =>
+      new Promise((resolve) =>
+        listener()(
+          { kind: "select-collection", groupId, accountId: "test" },
+          sender,
+          resolve,
+        ),
+      );
+    expect(await select()).toMatchObject({ ok: true, data: { groupId } });
+    background.main();
+    expect(await send("destinations")).toMatchObject({
+      data: { groupId, changed: false },
+    });
+    storage.credential = {
+      ...credential,
+      account: { ...credential.account, id: "other" },
+    };
+    expect(await send("destinations")).toMatchObject({
+      data: { groupId: null },
+    });
+    expect(await select()).toMatchObject({ ok: false, reconnect: true });
+    storage.credential = credential;
+    const key = "import:http://localhost:3001:test";
+    storage[key] = {
+      id: crypto.randomUUID(),
+      content: "Recipe ".repeat(20),
+      sourceUrl: "https://recipes.test/soup",
+      groupId,
+      title: "Soup",
+      collectionName: "Family",
+    };
+    fetchMock.mockImplementation(async () =>
+      Response.json([{ id: null, name: "My recipes" }]),
+    );
+    expect(await send("destinations")).toMatchObject({
+      data: { groupId: null, changed: true },
+    });
+    expect(await send("pending-import")).toMatchObject({
+      data: { groupId, title: "Soup", collectionName: "Family" },
+    });
+    expect(await select()).toMatchObject({ ok: false });
+  });
+  it("retains pending identity through revoked access and requires reset even for a changed terminal payload", async () => {
+    const pending = {
+      id: crypto.randomUUID(),
+      content: "Recipe ".repeat(20),
+      sourceUrl: "https://recipes.test/soup",
+      groupId: null,
+      title: "Soup",
+      collectionName: "My recipes",
+    };
+    fake.get.mockImplementation(async (key) => ({
+      [key]: key === "credential" ? credential : pending,
+    }));
+    fetchMock.mockImplementation(
+      async () => new Response(null, { status: 401 }),
+    );
+    expect(await send("recover-import")).toMatchObject({
+      ok: false,
+      reconnect: true,
+    });
+    expect(fake.remove).not.toHaveBeenCalled();
+    fetchMock.mockImplementation(async (_url, options) => {
+      expect(JSON.parse(String(options?.body))).toEqual({
+        id: pending.id,
+        content: pending.content.trim(),
+        sourceUrl: pending.sourceUrl,
+        groupId: null,
+      });
+      return Response.json({
+        kind: "failed",
+        id: pending.id,
+        message: "Processing failed",
+      });
+    });
+    expect(await send("recover-import")).toMatchObject({
+      data: { kind: "failed", id: pending.id },
+    });
+    expect(
+      await new Promise((resolve) =>
+        listener()(
+          {
+            kind: "save-import",
+            input: {
+              content: "A different recipe ".repeat(10),
+              sourceUrl: pending.sourceUrl,
+              groupId: null,
+            },
+          },
+          sender,
+          resolve,
+        ),
+      ),
+    ).toMatchObject({ data: { kind: "failed", id: pending.id } });
+    expect(fake.set).not.toHaveBeenCalled();
+  });
+  it("restores the selected recipe and rejects selections outside the captured page", async () => {
+    const capture = {
+      kind: "captured",
+      sourceUrl: "https://recipes.test/soup",
+      recipes: [
+        { title: "Soup", content: "Ingredients", format: "text" },
+        { title: "Bread", content: "Instructions", format: "text" },
+      ],
+    };
+    const storage: Record<string, unknown> = { capture };
+    fake.get.mockImplementation(async (key) => ({ [key]: storage[key] }));
+    fake.set.mockImplementation(async (value) => {
+      Object.assign(storage, value);
+    });
+    await new Promise((resolve) =>
+      listener()(
+        { kind: "select-recipe", sourceUrl: capture.sourceUrl, selected: 1 },
+        sender,
+        resolve,
+      ),
+    );
+    background.main();
+    expect(await send("recover-capture")).toMatchObject({
+      capture,
+      selection: { selected: 1 },
+    });
+    await new Promise((resolve) =>
+      listener()(
+        { kind: "select-recipe", sourceUrl: "https://other.test", selected: 0 },
+        sender,
+        resolve,
+      ),
+    );
+    expect(await send("recover-capture")).toMatchObject({
+      selection: { selected: 1 },
+    });
+  });
   it("captures only the active top frame in the isolated world without accessing credentials or the API", async () => {
     fake.query.mockResolvedValue([
       { id: 42, url: "https://recipes.test/soup" },

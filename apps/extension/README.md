@@ -59,7 +59,7 @@ Never add server secrets, database credentials or OpenAI keys to extension setti
 
 ## Capture a loaded recipe
 
-Open a recipe, finish any browser challenge, then click **Capture recipe** in the extension. Capture works locally even when signed out. If several recipes are found, choose one and expand **Preview captured recipe** to inspect it. The latest capture stays in trusted extension local storage across popup closure and browser restart. Nothing is uploaded until you choose **Save recipe**.
+Open a recipe, finish any browser challenge, then click **Capture recipe** in the extension. Capture works locally even when signed out. If several recipes are found, choose one and expand **Preview captured recipe** to inspect it. The latest capture and selected recipe stay in trusted extension local storage across popup closure and browser restart. Nothing is uploaded until you choose **Save recipe**.
 
 The worker accepts capture commands only from the extension popup and injects a self-contained function into the active tab's top frame in the isolated world. It does not download the source page, access cookies, read form values, or pass extension credentials into the tab. JSON-LD capture allows only recipe names, ingredients, instructions, yield and times. When metadata is missing or invalid, capture reads visible recipe cards or a main/article region with ingredients and instructions, skipping forms, hidden content, account widgets, navigation and comments. Pages without a suitable region produce an error.
 
@@ -90,7 +90,7 @@ Server input text is cleared after processing or failure, and checkpointed outpu
 ## Code layout
 
 - `wxt.config.ts` and `config/`: build settings, public identity and manifest permissions.
-- `src/entrypoints/popup/`: starter React popup and local fonts/styles.
+- `src/entrypoints/popup/`: React popup, recovery controls and local fonts/styles.
 - `src/entrypoints/background.ts`: account connection, protected credential storage and authenticated account requests.
 - `src/lib/extract-recipe.ts`: self-contained DOM extractor injected with `scripting.executeScript` only after a capture click. There is no persistent content script or page-message listener.
 - `src/lib/capture-contract.ts`: validated capture responses, size limits and recovery messages.
@@ -109,3 +109,11 @@ The popup was also checked in a browser preview with simulated worker responses 
 Step 4 verification: the full automated suite passes 98 tests with seven opt-in live tests skipped. New PostgreSQL tests exercise authenticated admission, scopes, revocation, exact origins, body validation, account isolation, personal/group saves, membership removal during generation, concurrent requests/workers, valid tag persistence, usage reservations, rate limits, terminal failures and checkpoint recovery. Generation tests confirm no source-page fetch even when captured text starts with a URL. Worker tests cover storage-before-network, response loss, service-worker restart simulation, account-bound recovery and refusing reset while processing.
 
 Website and extension type checks, the website production build, Biome checks and both browser packages pass. The dedicated worker command starts against the local database. Actual popup components were previewed with simulated worker responses, checking collection radio buttons by keyboard, processing, saved-result recovery after reload and group-access failure recovery. Layout widths of 360px and 320px were checked, with no horizontal overflow. These checks do not establish installed Chrome/Edge login, injection or a real AI import. Those end-to-end checks remain in part 6.
+
+## Popup experience
+
+The popup shows one primary Save recipe action after capture. Collection choices use keyboard-accessible radio buttons. It remembers the last valid choice per account and website origin in trusted local storage, validates it against the current collection list on reopen, and explains when a removed collection falls back to My recipes. A changed destination never rewrites a pending request.
+
+Pending imports retain their recipe title and collection name as local display context, separate from the server request. While an attempt exists, the popup shows that attempt rather than another captured page. Processing can be recovered without loading collections first. Collection failures offer Reload collections; expired access offers Reconnect account; uncertain submissions offer Check import again. Failed attempts require Start another import before a new save. Reset still requires the server discard acknowledgement. A failed recapture preserves the previous usable recipe.
+
+Step 5 verification: 106 automated tests pass, with seven opt-in live tests skipped. This includes PostgreSQL server tests, worker persistence/account-isolation checks and React recovery tests. The actual popup components were rendered in headless Edge with simulated worker responses at 360px and 320px. Checks covered long titles and collection names, signed-out, importing, saved, expired-access, group-access and collection-loading errors, expanded previews, keyboard selection, focus retention, Tab to Save recipe and no horizontal overflow. Website/extension type checks, Biome, the website build and Chrome/Edge ZIP builds pass. Installed-extension login, injection and a real AI import remain unverified and belong to step 6.

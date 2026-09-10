@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { browser } from "wxt/browser";
+import { z } from "zod";
 import {
   type CaptureResult,
   captureErrors,
@@ -9,47 +10,91 @@ import { Import } from "./Import";
 
 type State = { kind: "idle" } | { kind: "loading" } | CaptureResult;
 
-export function Capture({ connected = false }: { connected?: boolean }) {
+export function Capture({
+  accountId,
+  onReconnect = () => {},
+}: {
+  accountId?: string;
+  onReconnect?: () => void;
+}) {
+  const connected = !!accountId;
+  const [busy, setBusy] = useState(false);
+  const [locked, setLocked] = useState(connected);
+  const [captureError, setCaptureError] = useState("");
   const [state, setState] = useState<State>({ kind: "idle" });
   const [selected, setSelected] = useState(0);
   useEffect(() => {
     void browser.runtime
       .sendMessage({ kind: "recover-capture" })
       .then((value: unknown) => {
-        const result = captureResultSchema.safeParse(value);
-        if (result.success) setState(result.data);
+        const stored = z
+          .object({
+            capture: captureResultSchema.nullable(),
+            selection: z
+              .object({
+                sourceUrl: z.string(),
+                selected: z.number().int().min(0).max(9),
+              })
+              .nullable(),
+          })
+          .parse(value);
+        if (stored.capture) {
+          setState(stored.capture);
+          if (
+            stored.capture.kind === "captured" &&
+            stored.selection?.sourceUrl === stored.capture.sourceUrl &&
+            stored.capture.recipes[stored.selection.selected]
+          )
+            setSelected(stored.selection.selected);
+        }
       })
       .catch(() => {});
   }, []);
   async function capture() {
+    const previous = state;
+    setCaptureError("");
     setState({ kind: "loading" });
-    setSelected(0);
     try {
-      setState(
-        captureResultSchema.parse(
-          await browser.runtime.sendMessage({ kind: "capture" }),
-        ),
+      const result = captureResultSchema.parse(
+        await browser.runtime.sendMessage({ kind: "capture" }),
       );
+      if (result.kind === "error" && previous.kind === "captured") {
+        setState(previous);
+        setCaptureError(captureErrors[result.code]);
+      } else {
+        setState(result);
+        setSelected(0);
+      }
     } catch {
-      setState({ kind: "error", code: "unavailable" });
+      setState(previous);
+      setCaptureError(captureErrors.unavailable);
     }
   }
   const recipe =
     state.kind === "captured" ? state.recipes[selected] : undefined;
   return (
     <section className="capture" aria-label="Capture recipe">
-      <button
-        className={state.kind === "captured" ? "secondary" : undefined}
-        type="button"
-        disabled={state.kind === "loading"}
-        onClick={() => void capture()}
-      >
-        {state.kind === "loading"
-          ? "Reading recipe..."
-          : state.kind === "idle"
-            ? "Capture recipe"
-            : "Capture again"}
-      </button>
+      {!locked && (
+        <button
+          className={
+            state.kind === "captured" || !connected ? "secondary" : undefined
+          }
+          type="button"
+          disabled={busy || state.kind === "loading"}
+          onClick={() => void capture()}
+        >
+          {state.kind === "loading"
+            ? "Reading recipe..."
+            : state.kind === "idle"
+              ? "Capture recipe"
+              : "Capture again"}
+        </button>
+      )}
+      {captureError && (
+        <p className="error" role="alert">
+          {captureError}
+        </p>
+      )}
       {state.kind === "loading" && (
         <p role="status">Reading the page you have open.</p>
       )}
@@ -58,10 +103,10 @@ export function Capture({ connected = false }: { connected?: boolean }) {
           {captureErrors[state.code]}
         </p>
       )}
-      {state.kind === "captured" && (
+      {state.kind === "captured" && !locked && (
         <>
           {state.recipes.length > 1 && (
-            <fieldset>
+            <fieldset disabled={busy}>
               <legend>Choose a recipe</legend>
               {state.recipes.map((item, index) => (
                 <label className="recipe-choice" key={`${index}-${item.title}`}>
@@ -69,7 +114,20 @@ export function Capture({ connected = false }: { connected?: boolean }) {
                     type="radio"
                     name="recipe"
                     checked={selected === index}
-                    onChange={() => setSelected(index)}
+                    onChange={() => {
+                      setSelected(index);
+                      void browser.runtime
+                        .sendMessage({
+                          kind: "select-recipe",
+                          sourceUrl: state.sourceUrl,
+                          selected: index,
+                        })
+                        .catch(() =>
+                          setCaptureError(
+                            "Couldn't remember this selection. Try again.",
+                          ),
+                        );
+                    }}
                   />
                   <span>{item.title}</span>
                 </label>
@@ -88,11 +146,6 @@ export function Capture({ connected = false }: { connected?: boolean }) {
                 {new URL(state.sourceUrl).hostname}{" "}
                 <span aria-hidden="true">↗</span>
               </a>
-              {!connected && (
-                <p className="capture-note" role="status">
-                  Connect your account to save this recipe.
-                </p>
-              )}
               <details>
                 <summary>Preview captured recipe</summary>
                 <pre>{recipe.content}</pre>
@@ -101,8 +154,13 @@ export function Capture({ connected = false }: { connected?: boolean }) {
           )}
         </>
       )}
-      {connected && (
+      {accountId && (
         <Import
+          accountId={accountId}
+          onReconnect={onReconnect}
+          onLocked={setLocked}
+          onBusy={setBusy}
+          title={recipe?.title}
           content={recipe?.content}
           sourceUrl={state.kind === "captured" ? state.sourceUrl : undefined}
         />
