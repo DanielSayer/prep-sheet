@@ -6,10 +6,12 @@ import {
 import { browser } from "wxt/browser";
 import { defineBackground } from "wxt/utils/define-background";
 import { z } from "zod";
+import { captureResultSchema } from "../lib/capture-contract";
 import { prepSheetOrigin } from "../lib/config";
+import { extractRecipe } from "../lib/extract-recipe";
 
-const commandSchema = z.object({
-  kind: z.enum(["status", "connect", "disconnect"]),
+const commandSchema = z.strictObject({
+  kind: z.enum(["status", "connect", "disconnect", "capture"]),
 });
 const storedCredentialSchema = credentialSchema.extend({
   origin: z.literal(prepSheetOrigin),
@@ -138,6 +140,30 @@ export default defineBackground(() => {
       return false;
     const command = commandSchema.safeParse(value);
     if (!command.success) return false;
+    if (command.data.kind === "capture") {
+      void (async () => {
+        const [tab] = await browser.tabs.query({
+          active: true,
+          currentWindow: true,
+        });
+        if (
+          tab?.id === undefined ||
+          !tab.url ||
+          !/^https?:\/\//.test(tab.url)
+        ) {
+          return { kind: "error", code: "unsupported" };
+        }
+        const [injection] = await browser.scripting.executeScript({
+          target: { tabId: tab.id, frameIds: [0] },
+          world: "ISOLATED",
+          func: extractRecipe,
+        });
+        return captureResultSchema.parse(injection?.result);
+      })()
+        .then(respond)
+        .catch(() => respond({ kind: "error", code: "unavailable" }));
+      return true;
+    }
     void (async () => {
       await ready;
       if (command.data.kind === "connect") {

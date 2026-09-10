@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { browser } from "wxt/browser";
 import { z } from "zod";
 import { prepSheetOrigin } from "../../lib/config";
+import { Capture } from "./Capture";
 
 const responseSchema = z.discriminatedUnion("ok", [
   z.object({ ok: z.literal(true), state: connectionSchema }),
@@ -61,8 +62,13 @@ export function App() {
             <br />
             {connection.account.email}
           </p>
-          <p>Recipe capture is coming next.</p>
-          <a href={prepSheetOrigin} target="_blank" rel="noreferrer">
+          <Capture />
+          <a
+            className="secondary"
+            href={prepSheetOrigin}
+            target="_blank"
+            rel="noreferrer"
+          >
             Open Prep Sheet <span aria-hidden="true">↗</span>
           </a>
           <button
@@ -96,6 +102,7 @@ export function App() {
           </button>
         </>
       )}
+      {connection?.kind !== "connected" && <Capture />}
       {error && (
         <>
           <p className="error" role="alert">

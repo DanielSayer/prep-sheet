@@ -13,9 +13,13 @@ const fake = vi.hoisted(() => ({
   remove: vi.fn<() => Promise<void>>(),
   setAccessLevel: vi.fn<() => Promise<void>>(),
   launch: vi.fn<() => Promise<string>>(),
+  query: vi.fn(),
+  executeScript: vi.fn(),
 }));
 vi.mock("wxt/browser", () => ({
   browser: {
+    tabs: { query: fake.query },
+    scripting: { executeScript: fake.executeScript },
     runtime: {
       id: "kjmnecmcpdklkaaiklbfoialfdiamabj",
       getURL: (path: string) =>
@@ -92,6 +96,66 @@ describe("extension worker credential isolation", () => {
     expect(
       listener()({ kind: "fetch", token: "secret" }, sender, vi.fn()),
     ).toBe(false);
+  });
+  it("captures only the active top frame in the isolated world without accessing credentials or the API", async () => {
+    fake.query.mockResolvedValue([
+      { id: 42, url: "https://recipes.test/soup" },
+    ]);
+    const result = {
+      kind: "captured",
+      sourceUrl: "https://recipes.test/soup",
+      recipes: [
+        {
+          title: "Soup",
+          content: "Ingredients and instructions",
+          format: "text",
+        },
+      ],
+    };
+    fake.executeScript.mockResolvedValue([{ result }]);
+    expect(await send("capture")).toEqual(result);
+    expect(fake.query).toHaveBeenCalledWith({
+      active: true,
+      currentWindow: true,
+    });
+    expect(fake.executeScript).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target: { tabId: 42, frameIds: [0] },
+        world: "ISOLATED",
+        func: expect.any(Function),
+      }),
+    );
+    expect(fake.get).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(
+      listener()({ kind: "capture" }, { ...sender, tab: {} }, vi.fn()),
+    ).toBe(false);
+    expect(listener()({ kind: "capture", tabId: 123 }, sender, vi.fn())).toBe(
+      false,
+    );
+  });
+  it("handles restricted pages, injection failures and malformed capture results", async () => {
+    fake.query.mockResolvedValue([{ id: 42, url: "chrome://settings" }]);
+    expect(await send("capture")).toEqual({
+      kind: "error",
+      code: "unsupported",
+    });
+    expect(fake.executeScript).not.toHaveBeenCalled();
+    fake.query.mockResolvedValue([
+      { id: 42, url: "https://recipes.test/soup" },
+    ]);
+    fake.executeScript.mockRejectedValue(new Error("Permission denied"));
+    expect(await send("capture")).toEqual({
+      kind: "error",
+      code: "unavailable",
+    });
+    fake.executeScript.mockResolvedValue([
+      { result: { kind: "captured", recipes: [] } },
+    ]);
+    expect(await send("capture")).toEqual({
+      kind: "error",
+      code: "unavailable",
+    });
   });
   it("returns only account information to the popup and omits website cookies", async () => {
     fake.get.mockResolvedValue({ credential });

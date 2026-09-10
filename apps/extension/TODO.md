@@ -2,7 +2,7 @@
 
 Build a Chrome and Edge extension that captures a recipe from the page the user has opened, lets them choose a collection, and saves it directly to Prep Sheet. The popup handles connection, collection selection, progress and the saved recipe link.
 
-Parts 1 and 2 are implemented. Automated account-flow checks pass; real Chrome/Edge login verification remains in part 6. Recipe capture and saving remain planned. See [README.md](./README.md) for setup and [AUTH.md](./AUTH.md) for the credential design.
+Parts 1 to 3 are implemented. Automated account and capture checks pass; real Chrome/Edge installation and login verification remain in part 6. Capture was checked against the loaded Kitchen Sanctuary butter chicken page. Processing and saving remain planned. See [README.md](./README.md) for setup and [AUTH.md](./AUTH.md) for the credential design.
 
 ## 1. App setup
 
@@ -23,11 +23,11 @@ Parts 1 and 2 are implemented. Automated account-flow checks pass; real Chrome/E
 
 ## 3. Capture the loaded recipe
 
-- [ ] On user action, read recipe JSON-LD from the active page, falling back to relevant visible recipe text. Capture its title and source URL.
-- [ ] Handle multiple recipes, missing metadata and unsupported pages with a clear choice or error.
-- [ ] Treat all page content as untrusted. Validate messages, cap payload sizes and exclude unrelated forms, cookies and account data.
-- [ ] Detect pages still showing a browser challenge and ask the user to finish opening the recipe before retrying.
-- [ ] Test Kitchen Sanctuary's butter chicken page first. Capture the already-loaded recipe rather than fetching the blocked URL again.
+- [x] On user action, read recipe JSON-LD from the active page, falling back to relevant visible recipe text. Capture its title and source URL.
+- [x] Handle multiple recipes, missing metadata and unsupported pages with a clear choice or error.
+- [x] Treat all page content as untrusted. Validate messages, cap payload sizes and exclude unrelated forms, cookies and account data.
+- [x] Detect pages still showing a browser challenge and ask the user to finish opening the recipe before retrying.
+- [x] Test Kitchen Sanctuary's butter chicken page first. Capture the already-loaded recipe rather than fetching the blocked URL again. The extractor returned one Butter Chicken recipe from the live loaded DOM; installed-extension checks remain in part 6.
 
 ## 4. Process and save through the API
 
