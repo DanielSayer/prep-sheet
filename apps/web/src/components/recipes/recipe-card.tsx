@@ -7,6 +7,7 @@ import { recipeTimeSummary } from "./recipe-time";
 
 export function RecipeCard({
   recipe,
+  selection,
 }: {
   recipe: {
     id: string;
@@ -15,29 +16,49 @@ export function RecipeCard({
     isFavourite: boolean;
     rating: number | null;
   };
+  selection?: { selected: boolean; toggle: () => void };
 }) {
   const time = recipeTimeSummary(recipe.content);
 
   return (
-    <article className="recipe-card">
+    <article className="recipe-card" data-selected={selection?.selected}>
       <div className="recipe-card-top">
-        <BookOpen size={26} />
-        <FavouriteButton
-          id={recipe.id}
-          title={recipe.title}
-          isFavourite={recipe.isFavourite}
-        />
+        {selection ? (
+          <label className="recipe-select">
+            <input
+              type="checkbox"
+              checked={selection.selected}
+              onChange={selection.toggle}
+            />
+            <span>
+              Select<span className="sr-only"> {recipe.title}</span>
+            </span>
+          </label>
+        ) : (
+          <>
+            <BookOpen size={26} />
+            <FavouriteButton
+              id={recipe.id}
+              title={recipe.title}
+              isFavourite={recipe.isFavourite}
+            />
+          </>
+        )}
       </div>
 
       <h2>
-        <Link
-          to="/recipes/$recipeId"
-          params={{ recipeId: recipe.id }}
-          state={{ fromRecipeCollection: true }}
-          className="recipe-card-link"
-        >
-          {recipe.title}
-        </Link>
+        {selection ? (
+          recipe.title
+        ) : (
+          <Link
+            to="/recipes/$recipeId"
+            params={{ recipeId: recipe.id }}
+            state={{ fromRecipeCollection: true }}
+            className="recipe-card-link"
+          >
+            {recipe.title}
+          </Link>
+        )}
       </h2>
       <p>
         {recipe.content.description ||
@@ -49,12 +70,14 @@ export function RecipeCard({
           <Clock size={15} />
           {time}
         </span>
-        <RatingControl
-          id={recipe.id}
-          title={recipe.title}
-          rating={recipe.rating}
-          compact
-        />
+        {!selection && (
+          <RatingControl
+            id={recipe.id}
+            title={recipe.title}
+            rating={recipe.rating}
+            compact
+          />
+        )}
       </div>
     </article>
   );

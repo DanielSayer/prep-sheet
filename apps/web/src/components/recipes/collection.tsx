@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, Link } from "@tanstack/react-router";
-import { Heart, Plus, Search, Star } from "lucide-react";
+import { Heart, Plus, Search, Star, Tags as TagsIcon, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
 import { useTRPC } from "@/utils/trpc";
 import { CollectionSelect, useCollection } from "../groups/collection-context";
+import { BulkTagDialog } from "./bulk-tag-dialog";
 import { EmptyCollection } from "./empty-collection";
 import { RecipeCard } from "./recipe-card";
 import { filterAndSortRecipes, type RecipeSort } from "./recipe-list";
@@ -29,11 +31,25 @@ export function Collection() {
   );
   const filterCount =
     activeTags.length + Number(favouritesOnly) + Number(unratedOnly);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkDialog, setBulkDialog] = useState(false);
+  const [selectedRecipeIds, setSelectedRecipeIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    void groupId;
+    setBulkMode(false);
+    setBulkDialog(false);
+    setSelectedRecipeIds([]);
+  }, [groupId]);
 
   const recipes = filterAndSortRecipes(
     query.isError ? [] : (query.data ?? []),
     { search, favouritesOnly, unratedOnly, tagIds: activeTags, sort },
   );
+  const visibleIds = recipes.map((recipe) => recipe.id);
+  const allVisibleSelected =
+    visibleIds.length > 0 &&
+    visibleIds.every((id) => selectedRecipeIds.includes(id));
 
   const updateFilters = (next: {
     q?: string;
@@ -71,9 +87,20 @@ export function Collection() {
 
       <CollectionSelect />
       <div className="collection-toolbar">
-        <span>
-          {recipes.length} {recipes.length === 1 ? "recipe" : "recipes"}
-        </span>
+        <div className="collection-count">
+          <span>
+            {recipes.length} {recipes.length === 1 ? "recipe" : "recipes"}
+          </span>
+          {!bulkMode && query.isSuccess && query.data.length > 0 && (
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => setBulkMode(true)}
+            >
+              <TagsIcon size={17} aria-hidden="true" /> Tag recipes
+            </button>
+          )}
+        </div>
 
         <div className="collection-toolbar-controls">
           <SortDropdown
@@ -94,6 +121,61 @@ export function Collection() {
           </label>
         </div>
       </div>
+
+      {bulkMode && (
+        <section className="bulk-tag-bar" aria-label="Bulk tagging">
+          <div>
+            <strong>
+              {selectedRecipeIds.length}{" "}
+              {selectedRecipeIds.length === 1 ? "recipe" : "recipes"} selected
+            </strong>
+            <span className="muted">
+              {selectedRecipeIds.length > 100
+                ? "Choose no more than 100 recipes at a time."
+                : "Choose up to 100 recipes from the cards below."}
+            </span>
+          </div>
+          <div className="bulk-tag-bar-actions">
+            <button
+              type="button"
+              className="text-button"
+              disabled={visibleIds.length === 0}
+              onClick={() =>
+                setSelectedRecipeIds((current) =>
+                  allVisibleSelected
+                    ? current.filter((id) => !visibleIds.includes(id))
+                    : [...new Set([...current, ...visibleIds])],
+                )
+              }
+            >
+              {allVisibleSelected ? "Clear shown" : "Select all shown"}
+            </button>
+            <button
+              type="button"
+              className="button button-small button-primary"
+              disabled={
+                selectedRecipeIds.length === 0 ||
+                selectedRecipeIds.length > 100 ||
+                !tags.data?.length
+              }
+              onClick={() => setBulkDialog(true)}
+            >
+              Choose tags
+            </button>
+            <button
+              type="button"
+              className="icon-button"
+              aria-label="Cancel bulk tagging"
+              onClick={() => {
+                setBulkMode(false);
+                setSelectedRecipeIds([]);
+              }}
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </section>
+      )}
 
       <section
         className="collection-tag-filters"
@@ -178,10 +260,38 @@ export function Collection() {
 
         <div className="recipe-grid">
           {recipes.map((recipe) => (
-            <RecipeCard key={recipe.id} recipe={recipe} />
+            <RecipeCard
+              key={recipe.id}
+              recipe={recipe}
+              selection={
+                bulkMode
+                  ? {
+                      selected: selectedRecipeIds.includes(recipe.id),
+                      toggle: () =>
+                        setSelectedRecipeIds((current) =>
+                          current.includes(recipe.id)
+                            ? current.filter((id) => id !== recipe.id)
+                            : [...current, recipe.id],
+                        ),
+                    }
+                  : undefined
+              }
+            />
           ))}
         </div>
       </LoadingState>
+      {bulkDialog && (
+        <BulkTagDialog
+          recipeIds={selectedRecipeIds}
+          tags={tags.data ?? []}
+          onClose={() => setBulkDialog(false)}
+          onApplied={() => {
+            setBulkDialog(false);
+            setBulkMode(false);
+            setSelectedRecipeIds([]);
+          }}
+        />
+      )}
     </main>
   );
 }

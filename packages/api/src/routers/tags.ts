@@ -6,6 +6,11 @@ import { and, asc, eq, isNull, or } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure, router } from "../index";
 
+const tagDetailsInput = z.object({
+  name: z.string().trim().min(1).max(40),
+  description: z.string().trim().max(300).default(""),
+});
+
 const defaults = (
   [
     [
@@ -49,12 +54,7 @@ export const tagsRouter = router({
     availableTags(ctx.session.user.id),
   ),
   create: protectedProcedure
-    .input(
-      z.object({
-        name: z.string().trim().min(1).max(40),
-        description: z.string().trim().max(300).default(""),
-      }),
-    )
+    .input(tagDetailsInput)
     .mutation(async ({ ctx, input }) => {
       const available = await availableTags(ctx.session.user.id);
       if (
@@ -78,6 +78,33 @@ export const tagsRouter = router({
         throw new TRPCError({
           code: "CONFLICT",
           message: "A tag with that name already exists.",
+        });
+      return saved;
+    }),
+  update: protectedProcedure
+    .input(tagDetailsInput.extend({ id: z.uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const available = await availableTags(ctx.session.user.id);
+      if (
+        available.some(
+          (candidate) =>
+            candidate.id !== input.id &&
+            candidate.name.toLowerCase() === input.name.toLowerCase(),
+        )
+      )
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "A tag with that name already exists.",
+        });
+      const [saved] = await db
+        .update(tag)
+        .set({ name: input.name, description: input.description })
+        .where(and(eq(tag.id, input.id), eq(tag.userId, ctx.session.user.id)))
+        .returning();
+      if (!saved)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Custom tag not found.",
         });
       return saved;
     }),

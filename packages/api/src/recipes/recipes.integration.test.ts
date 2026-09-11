@@ -75,9 +75,38 @@ describe("recipes API with PostgreSQL", () => {
       name: "Lunchbox",
       description: "Easy to pack",
     });
+    const renamed = await owner.tags.update({
+      id: custom.id,
+      name: "Lunch kit",
+      description: "Easy to pack and eat cold",
+    });
+    expect(renamed).toMatchObject({
+      name: "Lunch kit",
+      description: "Easy to pack and eat cold",
+    });
+    await expect(
+      owner.tags.create({ name: " lunch KIT " }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(
+      owner.tags.update({ ...renamed, name: builtIn.name }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(
+      other.tags.update({
+        id: custom.id,
+        name: "Not mine",
+        description: "",
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      owner.tags.update({
+        id: builtIn.id,
+        name: "Built in edit",
+        description: "",
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(
       owner.tags.create({ name: " lunchBOX " }),
-    ).rejects.toMatchObject({ code: "CONFLICT" });
+    ).resolves.toMatchObject({ name: "lunchBOX" });
     expect((await other.tags.list()).some((t) => t.id === custom.id)).toBe(
       false,
     );
@@ -99,7 +128,11 @@ describe("recipes API with PostgreSQL", () => {
     expect(generateRecipe).toHaveBeenLastCalledWith(
       "Make lunch",
       expect.arrayContaining([
-        expect.objectContaining({ id: custom.id, description: "Easy to pack" }),
+        expect.objectContaining({
+          id: custom.id,
+          name: "Lunch kit",
+          description: "Easy to pack and eat cold",
+        }),
       ]),
     );
     expect((await owner.recipes.get({ id })).tagIds).toEqual([custom.id]);
@@ -122,6 +155,45 @@ describe("recipes API with PostgreSQL", () => {
       groupId: null,
     });
     expect((await owner.recipes.get(copied)).tagIds).toEqual([custom.id]);
+    expect(
+      (await owner.recipes.taggingList()).filter((item) =>
+        [id, copied.id].includes(item.id),
+      ),
+    ).toHaveLength(2);
+    await owner.recipes.setTags({
+      recipeIds: [id, copied.id],
+      tagIds: [custom.id],
+      operation: "remove",
+    });
+    expect((await owner.recipes.get({ id })).tagIds).toEqual([]);
+    expect((await owner.recipes.get(copied)).tagIds).toEqual([]);
+    await owner.recipes.setTags({
+      recipeIds: [id, copied.id, copied.id],
+      tagIds: [custom.id, builtIn.id],
+      operation: "add",
+    });
+    expect((await owner.recipes.get({ id })).tagIds).toEqual(
+      expect.arrayContaining([custom.id, builtIn.id]),
+    );
+    await expect(
+      owner.recipes.setTags({
+        recipeIds: [id],
+        tagIds: [foreign.id],
+        operation: "add",
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      other.recipes.setTags({
+        recipeIds: [id],
+        tagIds: [foreign.id],
+        operation: "add",
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await owner.recipes.setTags({
+      recipeIds: [id, copied.id],
+      tagIds: [builtIn.id],
+      operation: "remove",
+    });
     await owner.tags.delete({ id: custom.id });
     expect((await owner.recipes.get({ id })).tagIds).toEqual([]);
     expect((await owner.recipes.get(copied)).tagIds).toEqual([]);

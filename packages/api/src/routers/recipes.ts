@@ -7,7 +7,17 @@ import {
 } from "@prep-sheet/db/schema/recipe";
 import { recipeTag, tag } from "@prep-sheet/db/schema/tag";
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, getTableColumns, isNull, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  getTableColumns,
+  inArray,
+  isNull,
+  or,
+  sql,
+} from "drizzle-orm";
 import { z } from "zod";
 import { accessibleRecipe, lockGroup, requireGroup } from "../groups/access";
 import { protectedProcedure, router } from "../index";
@@ -81,6 +91,18 @@ export const recipesRouter = router({
         )
         .orderBy(desc(recipe.createdAt));
     }),
+  taggingList: protectedProcedure.query(({ ctx }) =>
+    db
+      .select({
+        id: recipe.id,
+        title: recipe.title,
+        groupId: recipe.groupId,
+        tagIds: tagsOf(ctx.session.user.id),
+      })
+      .from(recipe)
+      .where(accessibleRecipe(ctx.session.user.id))
+      .orderBy(asc(recipe.title)),
+  ),
   get: protectedProcedure
     .input(idInput)
     .query(({ input, ctx }) => getRecipe(input.id, ctx.session.user.id)),
@@ -116,6 +138,70 @@ export const recipesRouter = router({
             ),
           );
       return { success: true };
+    }),
+  setTags: protectedProcedure
+    .input(
+      z.object({
+        recipeIds: z.array(z.uuid()).min(1).max(100),
+        tagIds: z.array(z.uuid()).min(1).max(105),
+        operation: z.enum(["add", "remove"]),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.user.id;
+      const recipeIds = [...new Set(input.recipeIds)];
+      const tagIds = [...new Set(input.tagIds)];
+      const [recipes, tags] = await Promise.all([
+        db
+          .select({ id: recipe.id })
+          .from(recipe)
+          .where(and(inArray(recipe.id, recipeIds), accessibleRecipe(userId))),
+        db
+          .select({ id: tag.id })
+          .from(tag)
+          .where(
+            and(
+              inArray(tag.id, tagIds),
+              or(isNull(tag.userId), eq(tag.userId, userId)),
+            ),
+          ),
+      ]);
+      if (recipes.length !== recipeIds.length)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "One or more recipes could not be found.",
+        });
+      if (tags.length !== tagIds.length)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "One or more tags could not be found.",
+        });
+
+      if (input.operation === "add") {
+        await db
+          .insert(recipeTag)
+          .values(
+            recipeIds.flatMap((recipeId) =>
+              tagIds.map((tagId) => ({ userId, recipeId, tagId })),
+            ),
+          )
+          .onConflictDoNothing();
+      } else {
+        await db
+          .delete(recipeTag)
+          .where(
+            and(
+              eq(recipeTag.userId, userId),
+              inArray(recipeTag.recipeId, recipeIds),
+              inArray(recipeTag.tagId, tagIds),
+            ),
+          );
+      }
+      return {
+        success: true,
+        recipeCount: recipeIds.length,
+        tagCount: tagIds.length,
+      };
     }),
   setFavourite: protectedProcedure
     .input(idInput.extend({ isFavourite: z.boolean() }))
