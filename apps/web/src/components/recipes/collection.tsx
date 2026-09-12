@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, Link } from "@tanstack/react-router";
-import { Heart, Plus, Search, Star, Tags as TagsIcon, X } from "lucide-react";
+import { Heart, Plus, Search, Star, Tags as TagsIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
 import { useTRPC } from "@/utils/trpc";
@@ -94,7 +94,7 @@ export function Collection() {
           {!bulkMode && query.isSuccess && query.data.length > 0 && (
             <button
               type="button"
-              className="text-button"
+              className="button button-small button-outline"
               onClick={() => setBulkMode(true)}
             >
               <TagsIcon size={17} aria-hidden="true" /> Tag recipes
@@ -125,14 +125,14 @@ export function Collection() {
       {bulkMode && (
         <section className="bulk-tag-bar" aria-label="Bulk tagging">
           <div>
-            <strong>
+            <strong aria-live="polite">
               {selectedRecipeIds.length}{" "}
               {selectedRecipeIds.length === 1 ? "recipe" : "recipes"} selected
             </strong>
             <span className="muted">
               {selectedRecipeIds.length > 100
                 ? "Choose no more than 100 recipes at a time."
-                : "Choose up to 100 recipes from the cards below."}
+                : "Click cards to select up to 100 recipes."}
             </span>
           </div>
           <div className="bulk-tag-bar-actions">
@@ -148,7 +148,7 @@ export function Collection() {
                 )
               }
             >
-              {allVisibleSelected ? "Clear shown" : "Select all shown"}
+              {allVisibleSelected ? "Deselect all" : "Select all"}
             </button>
             <button
               type="button"
@@ -164,14 +164,14 @@ export function Collection() {
             </button>
             <button
               type="button"
-              className="icon-button"
+              className="bulk-tag-cancel text-button"
               aria-label="Cancel bulk tagging"
               onClick={() => {
                 setBulkMode(false);
                 setSelectedRecipeIds([]);
               }}
             >
-              <X size={18} />
+              Cancel
             </button>
           </div>
         </section>

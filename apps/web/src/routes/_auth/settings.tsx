@@ -219,13 +219,18 @@ function Settings() {
                     ) : (
                       <>
                         <div>
-                          <strong>{tag.name}</strong>
+                          <div className="tag-row-heading">
+                            <strong>{tag.name}</strong>
+                            {!tag.userId && (
+                              <span className="built-in">Built in</span>
+                            )}
+                          </div>
                           <p>{tag.description}</p>
                         </div>
                         <div className="tag-row-actions">
                           <button
                             type="button"
-                            className="text-button"
+                            className="button button-small button-outline"
                             onClick={() => setApplyTag(tag)}
                           >
                             <Tags size={16} aria-hidden="true" /> Add to recipes
@@ -258,9 +263,7 @@ function Settings() {
                                 <Trash2 size={17} />
                               </button>
                             </>
-                          ) : (
-                            <span className="built-in">Built in</span>
-                          )}
+                          ) : null}
                         </div>
                       </>
                     )}

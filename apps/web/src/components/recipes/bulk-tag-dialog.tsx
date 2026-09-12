@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search } from "lucide-react";
+import { Check, Search } from "lucide-react";
 import { type ComponentProps, useState } from "react";
 import { toast } from "sonner";
 import { useTRPC } from "@/utils/trpc";
@@ -162,30 +162,33 @@ export function ApplyTagDialog({
                   )
                 }
               >
-                {everyShownSelected ? "Clear shown" : "Select all shown"}
+                {everyShownSelected ? "Deselect all" : "Select all"}
               </button>
             </div>
             <ul className="bulk-recipe-list">
               {shown.map((recipe) => (
                 <li key={recipe.id}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      disabled={update.isPending}
-                      checked={selected.includes(recipe.id)}
-                      onChange={() =>
-                        setSelected((current) =>
-                          current.includes(recipe.id)
-                            ? current.filter((id) => id !== recipe.id)
-                            : [...current, recipe.id],
-                        )
-                      }
-                    />
+                  <button
+                    type="button"
+                    className="bulk-recipe-choice"
+                    disabled={update.isPending}
+                    aria-pressed={selected.includes(recipe.id)}
+                    onClick={() =>
+                      setSelected((current) =>
+                        current.includes(recipe.id)
+                          ? current.filter((id) => id !== recipe.id)
+                          : [...current, recipe.id],
+                      )
+                    }
+                  >
                     <span>
                       <strong>{recipe.title}</strong>
                       <small>{collectionName(recipe.groupId)}</small>
                     </span>
-                  </label>
+                    <span className="recipe-selection-mark" aria-hidden="true">
+                      {selected.includes(recipe.id) && <Check size={18} />}
+                    </span>
+                  </button>
                 </li>
               ))}
             </ul>

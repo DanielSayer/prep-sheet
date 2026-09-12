@@ -1,6 +1,6 @@
 import type { RecipeContent } from "@prep-sheet/db/recipe-content";
 import { Link } from "@tanstack/react-router";
-import { BookOpen, Clock } from "lucide-react";
+import { BookOpen, Check, Clock } from "lucide-react";
 import { FavouriteButton } from "./favourite-button";
 import { RatingControl } from "./rating-control";
 import { recipeTimeSummary } from "./recipe-time";
@@ -22,18 +22,23 @@ export function RecipeCard({
 
   return (
     <article className="recipe-card" data-selected={selection?.selected}>
+      {selection && (
+        <button
+          type="button"
+          className="recipe-card-select"
+          aria-label={`Select ${recipe.title}`}
+          aria-pressed={selection.selected}
+          onClick={selection.toggle}
+        />
+      )}
       <div className="recipe-card-top">
         {selection ? (
-          <label className="recipe-select">
-            <input
-              type="checkbox"
-              checked={selection.selected}
-              onChange={selection.toggle}
-            />
-            <span>
-              Select<span className="sr-only"> {recipe.title}</span>
+          <>
+            <BookOpen size={26} />
+            <span className="recipe-selection-mark" aria-hidden="true">
+              {selection.selected && <Check size={20} />}
             </span>
-          </label>
+          </>
         ) : (
           <>
             <BookOpen size={26} />
