@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
 import { useTRPC } from "@/utils/trpc";
 import { CollectionSelect, useCollection } from "../groups/collection-context";
+import { AddRecipesButton } from "../shopping/add-recipes";
 import { BulkTagDialog } from "./bulk-tag-dialog";
 import { EmptyCollection } from "./empty-collection";
 import { RecipeCard } from "./recipe-card";
@@ -97,7 +98,7 @@ export function Collection() {
               className="button button-small button-outline"
               onClick={() => setBulkMode(true)}
             >
-              <TagsIcon size={17} aria-hidden="true" /> Tag recipes
+              <TagsIcon size={17} aria-hidden="true" /> Select recipes
             </button>
           )}
         </div>
@@ -123,7 +124,7 @@ export function Collection() {
       </div>
 
       {bulkMode && (
-        <section className="bulk-tag-bar" aria-label="Bulk tagging">
+        <section className="bulk-tag-bar" aria-label="Selected recipes">
           <div>
             <strong aria-live="polite">
               {selectedRecipeIds.length}{" "}
@@ -135,7 +136,7 @@ export function Collection() {
                 : "Click cards to select up to 100 recipes."}
             </span>
           </div>
-          <div className="bulk-tag-bar-actions">
+          <div className="recipe-selection-actions">
             <button
               type="button"
               className="text-button"
@@ -152,7 +153,19 @@ export function Collection() {
             </button>
             <button
               type="button"
-              className="button button-small button-primary"
+              className="bulk-tag-cancel text-button"
+              aria-label="Cancel recipe selection"
+              onClick={() => {
+                setBulkMode(false);
+                setSelectedRecipeIds([]);
+              }}
+            >
+              Cancel
+            </button>
+            <AddRecipesButton recipeIds={selectedRecipeIds} />
+            <button
+              type="button"
+              className="button button-small button-outline"
               disabled={
                 selectedRecipeIds.length === 0 ||
                 selectedRecipeIds.length > 100 ||
@@ -160,18 +173,7 @@ export function Collection() {
               }
               onClick={() => setBulkDialog(true)}
             >
-              Choose tags
-            </button>
-            <button
-              type="button"
-              className="bulk-tag-cancel text-button"
-              aria-label="Cancel bulk tagging"
-              onClick={() => {
-                setBulkMode(false);
-                setSelectedRecipeIds([]);
-              }}
-            >
-              Cancel
+              Tag recipes
             </button>
           </div>
         </section>

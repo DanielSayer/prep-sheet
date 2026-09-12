@@ -1,0 +1,91 @@
+import { describe, expect, it } from "vitest";
+import {
+  categoriseGrocery,
+  combinedQuantity,
+  generateShoppingPlan,
+  parseGrocery,
+} from "./shopping-plan";
+
+describe("shopping categories", () => {
+  it.each([
+    ["2 onions", "Produce"],
+    ["200g chicken breasts", "Meat & seafood"],
+    ["oat milk", "Dairy & eggs"],
+    ["toilet paper", "Cleaning & household"],
+    ["dishwashing liquid", "Cleaning & household"],
+    ["frozen peas", "Frozen"],
+    ["ice cream", "Frozen"],
+    ["wholemeal bread", "Bakery"],
+    ["chicken stock", "Pantry"],
+    ["fish sauce", "Pantry"],
+    ["peanut butter", "Pantry"],
+    ["coconut milk", "Pantry"],
+    ["bread flour", "Pantry"],
+    ["garlic salt", "Pantry"],
+    ["olive oil, for the chicken", "Pantry"],
+    ["eggplant", "Produce"],
+    ["dried basil", "Pantry"],
+    ["mystery grocery", "Other"],
+  ])("classifies %s as %s", (text, category) =>
+    expect(categoriseGrocery(text)).toBe(category),
+  );
+});
+describe("conservative grocery totals", () => {
+  it("keeps familiar fractions readable", () => {
+    expect(combinedQuantity(["1/3 cup flour"])).toBe("⅓ cup");
+    expect(combinedQuantity(["1/2 tsp salt"])).toBe("½ tsp");
+  });
+  it.each([
+    [["200 g plain flour", "0.5kg plain flour"], "700 g"],
+    [["250 ml milk", "1 litre milk"], "1250 ml"],
+    [["1 onion, diced", "2 onions"], "3"],
+    [["½ cup flour", "1 1/2 cups flour"], "2 cups"],
+    [["1½ tbsp olive oil", "1/2 tablespoon olive oil"], "2 tbsp"],
+    [["2 tsp sugar", "1 teaspoon sugar"], "3 tsp"],
+  ])("adds compatible lines %j", (lines, total) =>
+    expect(combinedQuantity(lines)).toBe(total),
+  );
+  it.each([
+    "1-2 onions",
+    "2 x 400g tins tomatoes",
+    "400 g tin tomatoes",
+    "salt to taste",
+    "1 onion or shallot",
+    "2 bunches coriander",
+    "1/0 cup flour",
+    "200 g flour plus extra",
+    "about 1 cup milk",
+  ])("preserves ambiguous line %s", (text) =>
+    expect(parseGrocery(text)).toBeNull(),
+  );
+  it("keeps different units and ingredients separate", () => {
+    expect(combinedQuantity(["200g flour", "1 cup flour"])).toBeNull();
+    expect(combinedQuantity(["1 red onion", "1 brown onion"])).toBeNull();
+    expect(
+      combinedQuantity(["100g chicken breasts", "100g chicken thighs"]),
+    ).toBeNull();
+    expect(combinedQuantity(["1 tbsp oil", "3 tsp oil"])).toBeNull();
+  });
+  it("accounts for every source exactly once and only merges safe matches", () => {
+    const items = [
+      "200g plain flour",
+      "0.5kg plain flour",
+      "1 cup plain flour",
+      "2 tins tomatoes",
+      "1 tin tomatoes",
+      "1 red onion",
+      "2 onions",
+      "laundry detergent",
+    ].map((text, index) => ({ id: String(index), text }));
+    const plan = generateShoppingPlan(items);
+    expect(plan.groups).toHaveLength(7);
+    expect(plan.groups.flatMap((group) => group.itemIds).sort()).toEqual(
+      items.map((item) => item.id),
+    );
+    expect(
+      plan.groups.find(
+        (group) => group.name === "Plain flour" && group.itemIds.length === 2,
+      )?.itemIds,
+    ).toEqual(["0", "1"]);
+  });
+});

@@ -1,0 +1,269 @@
+import {
+  combinedQuantity,
+  shoppingCategories,
+} from "@prep-sheet/db/shopping-plan";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, ShoppingBasket } from "lucide-react";
+import { useTRPC } from "@/utils/trpc";
+import { ErrorNotice, LoadingState } from "../feedback";
+
+export function GenerateListButton({
+  disabled = false,
+  mode = "generate",
+}: {
+  disabled?: boolean;
+  mode?: "generate" | "update" | "open";
+}) {
+  const trpc = useTRPC();
+  const client = useQueryClient();
+  const navigate = useNavigate();
+  const generate = useMutation(
+    trpc.shopping.generate.mutationOptions({
+      onSuccess: async () => {
+        await client.invalidateQueries({ queryKey: trpc.shopping.pathKey() });
+        await navigate({ to: "/shopping/generated" });
+      },
+    }),
+  );
+  return (
+    <div className="shopping-generate-action">
+      <button
+        type="button"
+        className="button button-primary"
+        disabled={disabled || generate.isPending}
+        onClick={() =>
+          mode === "open"
+            ? void navigate({ to: "/shopping/generated" })
+            : generate.mutate()
+        }
+      >
+        <ShoppingBasket size={18} />
+        {generate.isPending
+          ? "Generating..."
+          : mode === "open"
+            ? "Open shopping list"
+            : mode === "update"
+              ? "Update shopping list"
+              : "Generate shopping list"}
+      </button>
+      <ErrorNotice
+        message={generate.error?.message}
+        retry={() => generate.mutate()}
+      />
+    </div>
+  );
+}
+
+export function ShoppingListAction({
+  hasNeeded,
+  disabled,
+}: {
+  hasNeeded: boolean;
+  disabled: boolean;
+}) {
+  const trpc = useTRPC();
+  const plan = useQuery(trpc.shopping.generated.queryOptions());
+  if (plan.isPending || plan.isError)
+    return (
+      <div className="shopping-generate-action">
+        <button type="button" className="button button-primary" disabled>
+          {plan.isPending
+            ? "Loading shopping list..."
+            : "Shopping list unavailable"}
+        </button>
+        <ErrorNotice
+          message={plan.error?.message}
+          retry={() => void plan.refetch()}
+        />
+      </div>
+    );
+  const mode = !plan.data ? "generate" : plan.data.stale ? "update" : "open";
+  return (
+    <GenerateListButton
+      mode={mode}
+      disabled={disabled || (mode !== "open" && !hasNeeded)}
+    />
+  );
+}
+
+export function GeneratedShoppingList() {
+  const trpc = useTRPC();
+  const client = useQueryClient();
+  const query = useQuery(trpc.shopping.generated.queryOptions());
+  const check = useMutation(
+    trpc.shopping.checkGroup.mutationOptions({
+      onSuccess: () =>
+        client.invalidateQueries({ queryKey: trpc.shopping.pathKey() }),
+    }),
+  );
+  const plan = query.data;
+  const current = new Map(plan?.items.map((item) => [item.id, item]));
+  const rows =
+    plan?.content.groups
+      .map((group, index) => {
+        const items = group.itemIds.flatMap((id) => {
+          const item = current.get(id);
+          return item && item.status !== "owned" ? [item] : [];
+        });
+        const needed = items.filter((item) => item.status === "needed");
+        const bought = items.length > 0 && !needed.length;
+        const quantity = combinedQuantity(
+          (bought ? items : needed).map((item) => item.text),
+        );
+        return { ...group, index, items, bought, quantity };
+      })
+      .filter((row) => row.items.length) ?? [];
+  const remaining = rows.filter((row) => !row.bought).length;
+  const renderRow = (row: (typeof rows)[number]) => (
+    <li className="generated-shopping-row" key={row.index}>
+      <label className="shopping-check">
+        <input
+          type="checkbox"
+          checked={row.bought}
+          disabled={plan?.stale || check.isPending}
+          onChange={() => {
+            if (plan)
+              check.mutate({
+                planId: plan.id,
+                groupIndex: row.index,
+                bought: !row.bought,
+              });
+          }}
+          aria-label={`${row.bought ? "Mark needed" : "Mark bought"}: ${row.name}`}
+        />
+        <span className={row.bought ? "shopping-bought" : ""}>
+          <strong>{row.name}</strong>
+          {row.quantity && (
+            <span className="generated-quantity">{row.quantity}</span>
+          )}
+        </span>
+      </label>
+      <details className="generated-sources">
+        <summary>
+          {row.items.length === 1
+            ? "Source"
+            : `${row.items.length} original items`}
+        </summary>
+        <ul>
+          {row.items.map((item) => (
+            <li key={item.id}>
+              <span>
+                {item.text}
+                {item.status === "bought" ? " · Bought" : ""}
+              </span>
+              {item.recipeId ? (
+                <Link
+                  to="/recipes/$recipeId"
+                  params={{ recipeId: item.recipeId }}
+                >
+                  {item.recipeTitle}
+                </Link>
+              ) : (
+                <small>Other groceries</small>
+              )}
+            </li>
+          ))}
+        </ul>
+      </details>
+    </li>
+  );
+  return (
+    <main id="main-content" className="shopping-page page-width">
+      <Link to="/shopping" className="back-link">
+        <ArrowLeft size={17} />
+        Edit ingredients
+      </Link>
+      <div className="page-heading">
+        <div>
+          <h1>
+            Your shopping trip<span className="title-dot">.</span>
+          </h1>
+          <p>Grouped by aisle, with matching quantities combined.</p>
+        </div>
+        {plan && (
+          <GenerateListButton
+            mode="update"
+            disabled={!plan.items.some((item) => item.status === "needed")}
+          />
+        )}
+      </div>
+      <LoadingState
+        pending={query.isPending}
+        label="Loading your generated list..."
+      >
+        <ErrorNotice
+          message={query.error?.message}
+          retry={() => void query.refetch()}
+        />
+        {query.isSuccess && !plan && (
+          <div className="shopping-empty">
+            <ShoppingBasket size={36} />
+            <h2>No generated list yet</h2>
+            <p>
+              Choose recipes and groceries, then generate your shopping list.
+            </p>
+            <Link className="button button-primary" to="/shopping">
+              Choose ingredients
+            </Link>
+          </div>
+        )}
+        {plan && (
+          <>
+            {plan.stale && (
+              <div className="shopping-stale" role="status">
+                <strong>Your ingredients have changed.</strong>
+                <p>
+                  Generate again to update the groups and quantities before
+                  ticking items off.
+                </p>
+              </div>
+            )}
+            <div className="shopping-summary">
+              <strong role="status">
+                {remaining} {remaining === 1 ? "item" : "items"} to buy
+              </strong>
+              <span className="muted">
+                Check an item here to mark its ingredients bought.
+              </span>
+            </div>
+            <ErrorNotice
+              message={check.error?.message}
+              retry={() => {
+                if (check.variables) check.mutate(check.variables);
+              }}
+            />
+            {shoppingCategories.map((category) => {
+              const categoryRows = rows.filter(
+                (row) => row.category === category && !row.bought,
+              );
+              return categoryRows.length ? (
+                <section className="shopping-group" key={category}>
+                  <div className="shopping-group-heading">
+                    <h2>{category}</h2>
+                  </div>
+                  <ul>{categoryRows.map(renderRow)}</ul>
+                </section>
+              ) : null;
+            })}
+            {!remaining && !plan.stale && (
+              <p className="shopping-empty">
+                Everything on this list is bought.
+              </p>
+            )}
+            {rows.some((row) => row.bought) && (
+              <details className="shopping-completed">
+                <summary>
+                  Bought · {rows.filter((row) => row.bought).length}
+                </summary>
+                <section className="shopping-group">
+                  <ul>{rows.filter((row) => row.bought).map(renderRow)}</ul>
+                </section>
+              </details>
+            )}
+          </>
+        )}
+      </LoadingState>
+    </main>
+  );
+}

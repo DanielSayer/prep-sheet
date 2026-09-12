@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { BookOpen, CookingPot, Plus } from "lucide-react";
+import { BookOpen, CookingPot, Plus, ShoppingBasket } from "lucide-react";
 import UserMenu from "./user-menu";
 
 export default function Header() {
@@ -24,6 +24,9 @@ export default function Header() {
 
         <Link to="/recipes" activeProps={{ className: "active" }}>
           <BookOpen size={18} /> Collections
+        </Link>
+        <Link to="/shopping" activeProps={{ className: "active" }}>
+          <ShoppingBasket size={18} /> Shopping list
         </Link>
       </nav>
 

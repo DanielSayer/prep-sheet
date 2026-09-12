@@ -5,6 +5,7 @@ import {
   DropdownMenuTrigger,
 } from "@prep-sheet/ui/components/dropdown-menu";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { AddRecipesButton } from "../shopping/add-recipes";
 
 export function RecipeHeading({
   recipe,
@@ -48,6 +49,11 @@ export function RecipeHeading({
             </>
           )}
         </p>
+        {!editing && (
+          <div className="recipe-shopping-action">
+            <AddRecipesButton recipeIds={[recipe.id]} />
+          </div>
+        )}
       </div>
 
       {!editing && (

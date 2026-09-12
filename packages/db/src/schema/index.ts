@@ -3,4 +3,5 @@ export * from "./extension";
 export * from "./group";
 export * from "./import";
 export * from "./recipe";
+export * from "./shopping";
 export * from "./tag";
