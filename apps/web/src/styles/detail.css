@@ -199,3 +199,90 @@
     gap: 22px;
   }
 }
+.cooking-history {
+  margin: 0 0 24px;
+  padding: 20px;
+  border: 1px solid var(--ink);
+  border-radius: 14px;
+  background: #fffdf5;
+}
+.cooking-history-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.cooking-history h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.cooking-history-heading p {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+.cooking-entry-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+}
+.cooking-entry-form label {
+  display: grid;
+  gap: 6px;
+  font-weight: 800;
+}
+.cooking-entry-form label .muted {
+  font-size: 12px;
+  font-weight: 400;
+}
+.cooking-entry-form input,
+.cooking-entry-form textarea,
+.cooking-date-filter input {
+  padding: 10px;
+  border: 1px solid var(--ink);
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  min-width: 0;
+  max-width: 100%;
+}
+.cooking-entry-form input {
+  width: 200px;
+}
+.cooking-entry-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+.cooking-entry-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.cooking-entries {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.cooking-entries li {
+  padding: 16px 0;
+  border-top: 1px solid #d9d5c8;
+}
+.cooking-entries p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.cooking-history summary {
+  cursor: pointer;
+  margin: 16px 0;
+}
+.cooking-date-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  font-weight: 800;
+}

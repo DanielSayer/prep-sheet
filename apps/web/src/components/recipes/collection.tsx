@@ -31,7 +31,11 @@ export function Collection() {
     tags.data?.some((tag) => tag.id === id),
   );
   const filterCount =
-    activeTags.length + Number(favouritesOnly) + Number(unratedOnly);
+    activeTags.length +
+    Number(favouritesOnly) +
+    Number(unratedOnly) +
+    Number(!!filters.neverCooked) +
+    Number(!!filters.cookedBefore);
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkDialog, setBulkDialog] = useState(false);
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<string[]>([]);
@@ -45,7 +49,15 @@ export function Collection() {
 
   const recipes = filterAndSortRecipes(
     query.isError ? [] : (query.data ?? []),
-    { search, favouritesOnly, unratedOnly, tagIds: activeTags, sort },
+    {
+      search,
+      favouritesOnly,
+      unratedOnly,
+      neverCooked: filters.neverCooked,
+      cookedBefore: filters.cookedBefore,
+      tagIds: activeTags,
+      sort,
+    },
   );
   const visibleIds = recipes.map((recipe) => recipe.id);
   const allVisibleSelected =
@@ -56,6 +68,8 @@ export function Collection() {
     q?: string;
     favourites?: boolean;
     unrated?: boolean;
+    neverCooked?: boolean;
+    cookedBefore?: string;
     tags?: string;
     sort?: RecipeSort;
   }) =>
@@ -205,6 +219,32 @@ export function Collection() {
           <Star size={17} />
           Show unrated
         </button>
+        <button
+          type="button"
+          className="organise-action"
+          aria-pressed={!!filters.neverCooked}
+          onClick={() =>
+            updateFilters({
+              neverCooked: filters.neverCooked ? undefined : true,
+              cookedBefore: undefined,
+            })
+          }
+        >
+          Never cooked
+        </button>
+        <label className="cooking-date-filter">
+          Last cooked before
+          <input
+            type="date"
+            value={filters.cookedBefore ?? ""}
+            onChange={(event) =>
+              updateFilters({
+                cookedBefore: event.target.value || undefined,
+                neverCooked: undefined,
+              })
+            }
+          />
+        </label>
         <TagChoices
           tags={tags.data ?? []}
           selected={activeTags}
@@ -223,6 +263,8 @@ export function Collection() {
               updateFilters({
                 favourites: undefined,
                 unrated: undefined,
+                neverCooked: undefined,
+                cookedBefore: undefined,
                 tags: undefined,
               });
             }}
@@ -248,12 +290,15 @@ export function Collection() {
             searching={!!search}
             favouritesOnly={favouritesOnly}
             unratedOnly={unratedOnly}
+            cookingFiltered={!!filters.neverCooked || !!filters.cookedBefore}
             tagged={activeTags.length > 0}
             onClear={() => {
               updateFilters({
                 q: undefined,
                 favourites: undefined,
                 unrated: undefined,
+                neverCooked: undefined,
+                cookedBefore: undefined,
                 tags: undefined,
               });
             }}

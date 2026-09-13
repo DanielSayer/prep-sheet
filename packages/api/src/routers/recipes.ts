@@ -2,6 +2,7 @@ import { db } from "@prep-sheet/db";
 import { recipeContentSchema } from "@prep-sheet/db/recipe-content";
 import {
   recipe,
+  recipeCooking,
   recipeFavourite,
   recipeRating,
 } from "@prep-sheet/db/schema/recipe";
@@ -49,12 +50,20 @@ const tagsOf = (userId: string) => sql<string[]>`coalesce((
   where ${recipeTag.recipeId} = ${recipe.id} and ${recipeTag.userId} = ${userId}
 ), '[]'::json)`;
 
+const cookingSummary = (userId: string) => ({
+  cookedCount: sql<number>`(select count(*)::int from ${recipeCooking} where ${recipeCooking.recipeId} = ${recipe}.${sql.identifier("id")} and ${recipeCooking.userId} = ${userId})`,
+  lastCookedOn: sql<
+    string | null
+  >`(select max(${recipeCooking.cookedOn})::text from ${recipeCooking} where ${recipeCooking.recipeId} = ${recipe}.${sql.identifier("id")} and ${recipeCooking.userId} = ${userId})`,
+});
+
 export async function getRecipe(id: string, userId: string) {
   const [result] = await db
     .select({
       ...getTableColumns(recipe),
       isFavourite: favouriteOf(userId),
       rating: ratingOf(userId),
+      ...cookingSummary(userId),
       tagIds: tagsOf(userId),
     })
     .from(recipe)
@@ -64,6 +73,76 @@ export async function getRecipe(id: string, userId: string) {
 }
 
 export const recipesRouter = router({
+  cookingHistory: protectedProcedure
+    .input(idInput)
+    .query(async ({ input, ctx }) => {
+      await getRecipe(input.id, ctx.session.user.id);
+      return db
+        .select({
+          id: recipeCooking.id,
+          cookedOn: recipeCooking.cookedOn,
+          note: recipeCooking.note,
+        })
+        .from(recipeCooking)
+        .where(
+          and(
+            eq(recipeCooking.recipeId, input.id),
+            eq(recipeCooking.userId, ctx.session.user.id),
+          ),
+        )
+        .orderBy(
+          sql`${recipeCooking.cookedOn} desc nulls last`,
+          desc(recipeCooking.createdAt),
+          desc(recipeCooking.id),
+        );
+    }),
+  saveCooking: protectedProcedure
+    .input(
+      idInput.extend({
+        entryId: z.uuid(),
+        cookedOn: z.iso.date().nullable(),
+        note: z.string().trim().max(5000),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.user.id;
+      await getRecipe(input.id, userId);
+      const [saved] = await db
+        .insert(recipeCooking)
+        .values({
+          id: input.entryId,
+          recipeId: input.id,
+          userId,
+          cookedOn: input.cookedOn,
+          note: input.note,
+        })
+        .onConflictDoUpdate({
+          target: recipeCooking.id,
+          set: { cookedOn: input.cookedOn, note: input.note },
+          setWhere: and(
+            eq(recipeCooking.userId, userId),
+            eq(recipeCooking.recipeId, input.id),
+          ),
+        })
+        .returning({ id: recipeCooking.id });
+      if (!saved) throw missing();
+      return saved;
+    }),
+  deleteCooking: protectedProcedure
+    .input(idInput.extend({ entryId: z.uuid() }))
+    .mutation(async ({ input, ctx }) => {
+      await getRecipe(input.id, ctx.session.user.id);
+      await db
+        .delete(recipeCooking)
+        .where(
+          and(
+            eq(recipeCooking.id, input.entryId),
+            eq(recipeCooking.recipeId, input.id),
+            eq(recipeCooking.userId, ctx.session.user.id),
+          ),
+        );
+      return { success: true };
+    }),
   list: protectedProcedure
     .input(z.object({ groupId: z.uuid().nullable().optional() }).optional())
     .query(async ({ ctx, input }) => {
@@ -78,6 +157,7 @@ export const recipesRouter = router({
           createdAt: recipe.createdAt,
           isFavourite: favouriteOf(ctx.session.user.id),
           rating: ratingOf(ctx.session.user.id),
+          ...cookingSummary(ctx.session.user.id),
           tagIds: tagsOf(ctx.session.user.id),
         })
         .from(recipe)

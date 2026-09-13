@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 import { Collection } from "@/components/recipes/collection";
 import { type RecipeSort, recipeSorts } from "@/components/recipes/recipe-list";
 
@@ -6,6 +7,8 @@ export type CollectionSearch = {
   q?: string;
   favourites?: boolean;
   unrated?: boolean;
+  neverCooked?: boolean;
+  cookedBefore?: string;
   tags?: string;
   sort?: RecipeSort;
 };
@@ -20,6 +23,11 @@ export const Route = createFileRoute("/_auth/recipes/")({
         : undefined,
     unrated:
       search.unrated === true || search.unrated === "true" ? true : undefined,
+    neverCooked:
+      search.neverCooked === true || search.neverCooked === "true"
+        ? true
+        : undefined,
+    cookedBefore: z.iso.date().safeParse(search.cookedBefore).data,
     tags:
       typeof search.tags === "string" && search.tags ? search.tags : undefined,
     sort: recipeSorts.includes(search.sort as RecipeSort)

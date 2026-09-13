@@ -3,6 +3,7 @@ import { sortableRecipeMinutes } from "./recipe-time";
 
 export const recipeSorts = [
   "newest",
+  "last-cooked",
   "highest-rated",
   "name",
   "cooking-time",
@@ -17,6 +18,8 @@ export type CollectionRecipe = {
   createdAt: Date | string;
   isFavourite: boolean;
   rating: number | null;
+  cookedCount: number;
+  lastCookedOn: string | null;
   tagIds: string[];
 };
 
@@ -24,6 +27,8 @@ type RecipeFilters = {
   search: string;
   favouritesOnly: boolean;
   unratedOnly: boolean;
+  neverCooked?: boolean;
+  cookedBefore?: string;
   tagIds: string[];
   sort: RecipeSort;
 };
@@ -35,6 +40,14 @@ const byName = new Intl.Collator(undefined, {
 
 function compareRecipes(sort: RecipeSort) {
   return (left: CollectionRecipe, right: CollectionRecipe) => {
+    if (sort === "last-cooked") {
+      if (left.lastCookedOn === null && right.lastCookedOn !== null) return 1;
+      if (left.lastCookedOn !== null && right.lastCookedOn === null) return -1;
+      return (
+        (right.lastCookedOn ?? "").localeCompare(left.lastCookedOn ?? "") ||
+        byName.compare(left.title, right.title)
+      );
+    }
     if (sort === "name") return byName.compare(left.title, right.title);
 
     if (sort === "highest-rated") {
@@ -80,6 +93,10 @@ export function filterAndSortRecipes(
             ingredient.toLocaleLowerCase().includes(search),
           )) &&
         (!filters.favouritesOnly || recipe.isFavourite) &&
+        (!filters.neverCooked || recipe.cookedCount === 0) &&
+        (!filters.cookedBefore ||
+          (recipe.lastCookedOn !== null &&
+            recipe.lastCookedOn < filters.cookedBefore)) &&
         (!filters.unratedOnly || recipe.rating === null) &&
         filters.tagIds.every((id) => recipe.tagIds.includes(id)),
     )

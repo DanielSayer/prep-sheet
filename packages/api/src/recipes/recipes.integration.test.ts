@@ -4,6 +4,7 @@ import { user } from "@prep-sheet/db/schema/auth";
 import { group, groupInvite } from "@prep-sheet/db/schema/group";
 import {
   recipe,
+  recipeCooking,
   recipeFavourite,
   recipeRating,
 } from "@prep-sheet/db/schema/recipe";
@@ -58,6 +59,102 @@ describe("recipes API with PostgreSQL", () => {
     await db.delete(recipe).where(inArray(recipe.userId, ids));
     await db.delete(user).where(inArray(user.id, ids));
     await db.$client.end();
+  });
+  it("keeps cooking history private, validates dates, retries safely and cascades deletion", async () => {
+    const owner = caller(ids[0]);
+    const member = caller(ids[1]);
+    const outsider = caller(ids[3]);
+    const target = await owner.groups.create({ name: "Cooking history test" });
+    const invite = await owner.groups.invite({ groupId: target.id });
+    await member.groups.acceptInvite({ token: invite.token });
+    const id = randomUUID();
+    await owner.recipes.createManual({
+      id,
+      groupId: target.id,
+      content: sampleRecipe,
+    });
+    const entry = {
+      id,
+      entryId: randomUUID(),
+      cookedOn: "2026-09-01",
+      note: "Less salt next time",
+    };
+    await owner.recipes.saveCooking(entry);
+    await owner.recipes.saveCooking(entry);
+    await owner.recipes.saveCooking({
+      id,
+      entryId: randomUUID(),
+      cookedOn: null,
+      note: "",
+    });
+    expect(await owner.recipes.cookingHistory({ id })).toHaveLength(2);
+    expect(await owner.recipes.get({ id })).toMatchObject({
+      cookedCount: 2,
+      lastCookedOn: "2026-09-01",
+    });
+    expect(
+      (await owner.recipes.list({ groupId: target.id })).find(
+        (r) => r.id === id,
+      ),
+    ).toMatchObject({ cookedCount: 2, lastCookedOn: "2026-09-01" });
+    expect(await member.recipes.cookingHistory({ id })).toEqual([]);
+    expect(await member.recipes.get({ id })).toMatchObject({
+      cookedCount: 0,
+      lastCookedOn: null,
+    });
+    expect(
+      (await member.recipes.list({ groupId: target.id })).find(
+        (r) => r.id === id,
+      ),
+    ).toMatchObject({ cookedCount: 0, lastCookedOn: null });
+    await expect(
+      member.recipes.saveCooking({ ...entry, note: "Hijacked" }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await member.recipes.deleteCooking({ id, entryId: entry.entryId });
+    expect((await owner.recipes.cookingHistory({ id }))[0]?.note).toBe(
+      entry.note,
+    );
+    await expect(outsider.recipes.cookingHistory({ id })).rejects.toMatchObject(
+      { code: "NOT_FOUND" },
+    );
+    await expect(
+      outsider.recipes.saveCooking({ ...entry, entryId: randomUUID() }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      outsider.recipes.deleteCooking({ id, entryId: entry.entryId }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      owner.recipes.saveCooking({ ...entry, cookedOn: "2026-02-30" }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      owner.recipes.saveCooking({ ...entry, note: "x".repeat(5001) }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await owner.recipes.saveCooking({
+      ...entry,
+      cookedOn: "2026-08-01",
+      note: "Updated",
+    });
+    expect(await owner.recipes.get({ id })).toMatchObject({
+      lastCookedOn: "2026-08-01",
+      content: sampleRecipe,
+    });
+    const copyId = randomUUID();
+    await owner.recipes.copy({ id, newId: copyId, groupId: null });
+    expect(await owner.recipes.cookingHistory({ id: copyId })).toEqual([]);
+    await owner.recipes.delete({ id: copyId });
+    await owner.recipes.deleteCooking({ id, entryId: entry.entryId });
+    expect(await owner.recipes.get({ id })).toMatchObject({
+      cookedCount: 1,
+      lastCookedOn: null,
+    });
+    await owner.recipes.delete({ id });
+    expect(
+      await db
+        .select()
+        .from(recipeCooking)
+        .where(eq(recipeCooking.recipeId, id)),
+    ).toEqual([]);
+    await db.delete(group).where(eq(group.id, target.id));
   });
   it("requires authentication", async () => {
     await expect(

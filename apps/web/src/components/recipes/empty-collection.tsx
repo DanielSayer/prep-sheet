@@ -6,12 +6,14 @@ export function EmptyCollection({
   favouritesOnly,
   unratedOnly = false,
   tagged = false,
+  cookingFiltered = false,
   onClear,
 }: {
   searching: boolean;
   favouritesOnly: boolean;
   unratedOnly?: boolean;
   tagged?: boolean;
+  cookingFiltered?: boolean;
   onClear: () => void;
 }) {
   return (
@@ -21,30 +23,38 @@ export function EmptyCollection({
       </span>
 
       <h2>
-        {tagged
-          ? "No recipes match these tags"
-          : searching
-            ? "No recipes match that search"
-            : favouritesOnly
-              ? "No favourites yet"
-              : unratedOnly
-                ? "Everything here is rated"
-                : "No recipes yet"}
+        {cookingFiltered
+          ? "No recipes match your cooking filters"
+          : tagged
+            ? "No recipes match these tags"
+            : searching
+              ? "No recipes match that search"
+              : favouritesOnly
+                ? "No favourites yet"
+                : unratedOnly
+                  ? "Everything here is rated"
+                  : "No recipes yet"}
       </h2>
 
       <p>
-        {tagged
-          ? "Try fewer tags or clear your filters."
-          : searching
-            ? "Try another name or ingredient, or clear your filters."
-            : favouritesOnly
-              ? "Save recipes as favourites to find them here."
-              : unratedOnly
-                ? "Clear the filter to see your rated recipes."
-                : "Paste a recipe or link, or describe a dish to get started."}
+        {cookingFiltered
+          ? "Try another date or clear your filters."
+          : tagged
+            ? "Try fewer tags or clear your filters."
+            : searching
+              ? "Try another name or ingredient, or clear your filters."
+              : favouritesOnly
+                ? "Save recipes as favourites to find them here."
+                : unratedOnly
+                  ? "Clear the filter to see your rated recipes."
+                  : "Paste a recipe or link, or describe a dish to get started."}
       </p>
 
-      {searching || favouritesOnly || unratedOnly || tagged ? (
+      {searching ||
+      favouritesOnly ||
+      unratedOnly ||
+      tagged ||
+      cookingFiltered ? (
         <button
           type="button"
           className="button button-outline"

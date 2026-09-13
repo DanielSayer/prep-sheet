@@ -26,6 +26,8 @@ const recipe = (
   createdAt: new Date(`2026-09-0${id}T00:00:00Z`),
   isFavourite: false,
   rating: null,
+  cookedCount: 0,
+  lastCookedOn: null,
   tagIds: [],
   ...overrides,
 });
@@ -175,5 +177,36 @@ describe("filterAndSortRecipes", () => {
         tagIds: ["quick", "vegan"],
       }).map(({ id }) => id),
     ).toEqual(["1"]);
+  });
+});
+
+describe("cooking history filters", () => {
+  const recipes = [
+    recipe("1", "Never"),
+    recipe("2", "Undated", { cookedCount: 1 }),
+    recipe("3", "Older", { cookedCount: 2, lastCookedOn: "2026-08-01" }),
+    recipe("4", "Recent", { cookedCount: 1, lastCookedOn: "2026-09-01" }),
+  ];
+  it("distinguishes never cooked from undated cooks", () => {
+    expect(
+      filterAndSortRecipes(recipes, { ...filters, neverCooked: true }).map(
+        (r) => r.id,
+      ),
+    ).toEqual(["1"]);
+  });
+  it("uses a strict date boundary and excludes unknown dates", () => {
+    expect(
+      filterAndSortRecipes(recipes, {
+        ...filters,
+        cookedBefore: "2026-09-01",
+      }).map((r) => r.id),
+    ).toEqual(["3"]);
+  });
+  it("sorts latest cooks first and unknown dates last", () => {
+    expect(
+      filterAndSortRecipes(recipes, { ...filters, sort: "last-cooked" }).map(
+        (r) => r.id,
+      ),
+    ).toEqual(["4", "3", "1", "2"]);
   });
 });

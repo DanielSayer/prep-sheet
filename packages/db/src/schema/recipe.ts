@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  date,
   index,
   integer,
   jsonb,
@@ -72,5 +73,26 @@ export const recipeRating = pgTable(
     primaryKey({ columns: [table.userId, table.recipeId] }),
     index("recipe_rating_recipe_idx").on(table.recipeId),
     check("recipe_rating_value_check", sql`${table.rating} between 1 and 5`),
+  ],
+);
+
+export const recipeCooking = pgTable(
+  "recipe_cooking",
+  {
+    id: uuid("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    recipeId: uuid("recipe_id")
+      .notNull()
+      .references(() => recipe.id, { onDelete: "cascade" }),
+    cookedOn: date("cooked_on"),
+    note: text("note").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("recipe_cooking_user_recipe_idx").on(table.userId, table.recipeId),
   ],
 );

@@ -12,6 +12,7 @@ import { ErrorNotice, LoadingState } from "@/components/feedback";
 import { authClient } from "@/lib/auth-client";
 import { useTRPC } from "@/utils/trpc";
 import { useCollection } from "../groups/collection-context";
+import { CookingHistory } from "./cooking-history";
 import { DeleteConfirmation } from "./delete-confirmation";
 import { RecipeBody } from "./recipe-body";
 import {
@@ -135,6 +136,13 @@ export function RecipeDetail({ id }: { id: string }) {
             )}
 
             <ErrorNotice message={remove.error?.message} />
+            {!editing && session?.user.id && (
+              <CookingHistory
+                key={`cooking-${session.user.id}-${id}`}
+                id={id}
+                userId={session.user.id}
+              />
+            )}
             {editing ? (
               <RecipeEditor
                 key={draftKey}
