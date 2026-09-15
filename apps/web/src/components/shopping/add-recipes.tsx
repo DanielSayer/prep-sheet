@@ -12,9 +12,11 @@ import { OrganiseDialog } from "../recipes/organise-dialog";
 export function AddRecipesButton({
   recipeIds,
   onAdded,
+  compact = false,
 }: {
   recipeIds: string[];
   onAdded?: () => void;
+  compact?: boolean;
 }) {
   const trpc = useTRPC();
   const client = useQueryClient();
@@ -55,7 +57,9 @@ export function AddRecipesButton({
           ? "Adding..."
           : recipeIds.length > 0 && !remaining.length
             ? "On your list"
-            : "Add to shopping list"}
+            : compact
+              ? "Add to list"
+              : "Add to shopping list"}
       </button>
       {recipeIds.length > 0 && !remaining.length && list.isSuccess && (
         <Link className="text-button" to="/shopping">
@@ -110,6 +114,7 @@ export function RecipePicker({ onClose }: { onClose: () => void }) {
   return (
     <OrganiseDialog
       title="Add recipes"
+      className="shopping-picker"
       onClose={() => {
         if (!add.isPending) onClose();
       }}
@@ -137,72 +142,74 @@ export function RecipePicker({ onClose }: { onClose: () => void }) {
           ]}
         />
       </div>
-      <LoadingState pending={recipes.isPending || list.isPending}>
+      <div className="shopping-picker-results">
+        <LoadingState pending={recipes.isPending || list.isPending}>
+          <ErrorNotice
+            message={
+              recipes.error?.message ||
+              list.error?.message ||
+              groups.error?.message
+            }
+            retry={() => {
+              void recipes.refetch();
+              void list.refetch();
+              void groups.refetch();
+            }}
+          />
+          {recipes.isSuccess && list.isSuccess && (
+            <div className="shopping-recipe-choices">
+              {shown.map((recipe) => (
+                <label key={recipe.id} className="shopping-recipe-choice">
+                  <input
+                    type="checkbox"
+                    disabled={add.isPending || existing.has(recipe.id)}
+                    checked={
+                      existing.has(recipe.id) ||
+                      validSelection.includes(recipe.id)
+                    }
+                    onChange={() =>
+                      setSelected((current) =>
+                        current.includes(recipe.id)
+                          ? current.filter((id) => id !== recipe.id)
+                          : [...current, recipe.id],
+                      )
+                    }
+                  />
+                  <span>
+                    <strong>{recipe.title}</strong>
+                    <small>
+                      {recipe.groupId
+                        ? (groups.data?.find(
+                            (group) => group.id === recipe.groupId,
+                          )?.name ?? "Shared collection")
+                        : "Personal collection"}
+                    </small>
+                    <small>
+                      {existing.has(recipe.id)
+                        ? "On your list"
+                        : recipe.servings
+                          ? `Original yield: ${recipe.servings}`
+                          : "Original quantities"}
+                    </small>
+                  </span>
+                </label>
+              ))}
+              {!shown.length && (
+                <p className="muted">
+                  No recipes found. Try another collection or search.
+                </p>
+              )}
+            </div>
+          )}
+        </LoadingState>
         <ErrorNotice
-          message={
-            recipes.error?.message ||
-            list.error?.message ||
-            groups.error?.message
-          }
+          message={add.error?.message}
           retry={() => {
             void recipes.refetch();
             void list.refetch();
-            void groups.refetch();
           }}
         />
-        {recipes.isSuccess && list.isSuccess && (
-          <div className="shopping-recipe-choices">
-            {shown.map((recipe) => (
-              <label key={recipe.id} className="shopping-recipe-choice">
-                <input
-                  type="checkbox"
-                  disabled={add.isPending || existing.has(recipe.id)}
-                  checked={
-                    existing.has(recipe.id) ||
-                    validSelection.includes(recipe.id)
-                  }
-                  onChange={() =>
-                    setSelected((current) =>
-                      current.includes(recipe.id)
-                        ? current.filter((id) => id !== recipe.id)
-                        : [...current, recipe.id],
-                    )
-                  }
-                />
-                <span>
-                  <strong>{recipe.title}</strong>
-                  <small>
-                    {recipe.groupId
-                      ? (groups.data?.find(
-                          (group) => group.id === recipe.groupId,
-                        )?.name ?? "Shared collection")
-                      : "Personal collection"}
-                  </small>
-                  <small>
-                    {existing.has(recipe.id)
-                      ? "On your list"
-                      : recipe.servings
-                        ? `Original yield: ${recipe.servings}`
-                        : "Original quantities"}
-                  </small>
-                </span>
-              </label>
-            ))}
-            {!shown.length && (
-              <p className="muted">
-                No recipes found. Try another collection or search.
-              </p>
-            )}
-          </div>
-        )}
-      </LoadingState>
-      <ErrorNotice
-        message={add.error?.message}
-        retry={() => {
-          void recipes.refetch();
-          void list.refetch();
-        }}
-      />
+      </div>
       <div className="organise-dialog-footer shopping-picker-footer">
         <span role="status">
           {validSelection.length} selected

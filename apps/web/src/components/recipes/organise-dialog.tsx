@@ -4,10 +4,12 @@ export function OrganiseDialog({
   title,
   onClose,
   children,
+  className = "",
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  className?: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -19,7 +21,7 @@ export function OrganiseDialog({
   return (
     <dialog
       ref={dialog}
-      className="organise-dialog"
+      className={`organise-dialog ${className}`}
       aria-labelledby={titleId}
       onCancel={(event) => {
         event.preventDefault();

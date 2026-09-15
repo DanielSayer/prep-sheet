@@ -1,13 +1,18 @@
 import type { RecipeContent } from "@prep-sheet/db/recipe-content";
-import { useState } from "react";
+import { ingredientKeys, useIngredientProgress } from "./ingredient-progress";
 
-export function RecipeBody({ content }: { content: RecipeContent }) {
-  const [checked, setChecked] = useState<Set<number>>(() => new Set());
+export function RecipeBody({
+  content,
+  progressKey,
+}: {
+  content: RecipeContent;
+  progressKey?: string;
+}) {
+  const { checked, update, storageFailed } = useIngredientProgress(progressKey);
+  const keys = ingredientKeys(content.ingredients);
+  const currentChecks = new Set(keys.filter((key) => checked.has(key)));
   return (
     <div className="recipe-body">
-      {content.description && (
-        <p className="recipe-description">{content.description}</p>
-      )}
       <dl className="recipe-meta">
         {content.servings && (
           <div>
@@ -34,37 +39,48 @@ export function RecipeBody({ content }: { content: RecipeContent }) {
           </div>
         )}
       </dl>
+      {content.description && (
+        <p className="recipe-description">{content.description}</p>
+      )}
       <div className="recipe-columns">
         <section aria-labelledby="ingredients-heading">
-          <h2 id="ingredients-heading">Ingredients</h2>
+          <h2 id="ingredients-heading" tabIndex={-1}>
+            Ingredients
+          </h2>
           <div className="ingredient-progress">
             <span>
-              {checked.size} of {content.ingredients.length} checked
+              {currentChecks.size} of {content.ingredients.length} checked
             </span>
             <button
               type="button"
               className="text-button"
-              disabled={checked.size === 0}
-              onClick={() => setChecked(new Set())}
+              disabled={currentChecks.size === 0}
+              onClick={() => update(new Set())}
             >
               Reset
             </button>
           </div>
+          {storageFailed && (
+            <p className="muted" role="status">
+              Progress cannot be saved on this device. Keep this recipe open to
+              retain your checks.
+            </p>
+          )}
           <ul className="recipe-ingredients">
             {content.ingredients.map((ingredient, index) => (
               <li key={index}>
                 <label className="ingredient-check">
                   <input
                     type="checkbox"
-                    checked={checked.has(index)}
-                    onChange={() =>
-                      setChecked((previous) => {
-                        const next = new Set(previous);
-                        if (next.has(index)) next.delete(index);
-                        else next.add(index);
-                        return next;
-                      })
-                    }
+                    checked={currentChecks.has(keys[index] ?? "")}
+                    onChange={() => {
+                      const key = keys[index];
+                      if (!key) return;
+                      const next = new Set(currentChecks);
+                      if (next.has(key)) next.delete(key);
+                      else next.add(key);
+                      update(next);
+                    }}
                   />
                   <span>{ingredient}</span>
                 </label>
@@ -73,7 +89,9 @@ export function RecipeBody({ content }: { content: RecipeContent }) {
           </ul>
         </section>
         <section aria-labelledby="method-heading">
-          <h2 id="method-heading">Method</h2>
+          <h2 id="method-heading" tabIndex={-1}>
+            Method
+          </h2>
           <ol className="recipe-method">
             {content.steps.map((step, index) => (
               <li key={index}>{step}</li>

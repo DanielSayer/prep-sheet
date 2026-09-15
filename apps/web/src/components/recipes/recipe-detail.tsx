@@ -14,6 +14,7 @@ import { useTRPC } from "@/utils/trpc";
 import { useCollection } from "../groups/collection-context";
 import { CookingHistory } from "./cooking-history";
 import { DeleteConfirmation } from "./delete-confirmation";
+import { KeepAwake } from "./keep-awake";
 import { RecipeBody } from "./recipe-body";
 import {
   readRecipeDraft,
@@ -123,7 +124,14 @@ export function RecipeDetail({ id }: { id: string }) {
               onDelete={() => setConfirming(true)}
             />
             {!editing && (
-              <RecipeOrganise key={`organise-${id}`} recipe={recipe.data} />
+              <div className="recipe-reading-tools">
+                <nav aria-label="Recipe sections">
+                  <a href="#ingredients-heading">Ingredients</a>
+                  <a href="#method-heading">Method</a>
+                  <a href="#recipe-history">History</a>
+                </nav>
+                <KeepAwake />
+              </div>
             )}
 
             {confirming && (
@@ -136,13 +144,6 @@ export function RecipeDetail({ id }: { id: string }) {
             )}
 
             <ErrorNotice message={remove.error?.message} />
-            {!editing && session?.user.id && (
-              <CookingHistory
-                key={`cooking-${session.user.id}-${id}`}
-                id={id}
-                userId={session.user.id}
-              />
-            )}
             {editing ? (
               <RecipeEditor
                 key={draftKey}
@@ -154,7 +155,27 @@ export function RecipeDetail({ id }: { id: string }) {
                 onCancel={() => setEditing(false)}
               />
             ) : (
-              <RecipeBody key={`body-${id}`} content={recipe.data.content} />
+              <RecipeBody
+                key={`body-${session?.user.id}-${id}`}
+                content={recipe.data.content}
+                progressKey={
+                  session?.user.id
+                    ? `cooking-progress:${session.user.id}:${id}`
+                    : undefined
+                }
+              />
+            )}
+            {!editing && (
+              <RecipeOrganise key={`organise-${id}`} recipe={recipe.data} />
+            )}
+            {!editing && session?.user.id && (
+              <div id="recipe-history">
+                <CookingHistory
+                  key={`cooking-${session.user.id}-${id}`}
+                  id={id}
+                  userId={session.user.id}
+                />
+              </div>
             )}
           </>
         )}

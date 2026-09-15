@@ -6,7 +6,6 @@ import { useTRPC } from "@/utils/trpc";
 import { ErrorNotice } from "../feedback";
 import { CopyRecipe } from "../groups/copy-recipe";
 import { FavouriteButton } from "./favourite-button";
-import { KeepAwake } from "./keep-awake";
 import { OrganiseDialog } from "./organise-dialog";
 import { RatingControl } from "./rating-control";
 import { TagChoices } from "./tag-choices";
@@ -42,14 +41,14 @@ export function RecipeOrganise({
   const chosen =
     tags.data?.filter((tag) => recipe.tagIds.includes(tag.id)) ?? [];
   return (
-    <section className="recipe-organise" aria-label="Organise recipe">
+    <details className="recipe-organise">
+      <summary>Organise recipe</summary>
       <RatingControl
         id={recipe.id}
         title={recipe.title}
         rating={recipe.rating}
       />
       <div className="organise-actions">
-        <KeepAwake />
         <FavouriteButton {...recipe} showLabel />
         <button
           type="button"
@@ -137,6 +136,6 @@ export function RecipeOrganise({
           <CopyRecipe id={recipe.id} sourceGroupId={recipe.groupId} />
         </OrganiseDialog>
       )}
-    </section>
+    </details>
   );
 }

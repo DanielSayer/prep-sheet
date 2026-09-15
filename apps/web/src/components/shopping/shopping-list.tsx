@@ -1,8 +1,20 @@
 import type { AppRouter } from "@prep-sheet/api/routers/index";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@prep-sheet/ui/components/dropdown-menu";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { inferRouterOutputs } from "@trpc/server";
-import { Pencil, Plus, ShoppingBasket, Trash2 } from "lucide-react";
+import {
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  ShoppingBasket,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useTRPC } from "@/utils/trpc";
@@ -137,27 +149,35 @@ function ShoppingRow({ item, userId }: { item: Item; userId: string }) {
             >
               {item.status === "needed" ? "Already have" : "Need this"}
             </button>
-            <button
-              type="button"
-              className="icon-button"
-              aria-label={`Edit ${item.text}`}
-              disabled={pending}
-              onClick={() => {
-                setDraft(item.text);
-                setEditing(true);
-              }}
-            >
-              <Pencil size={16} />
-            </button>
-            <button
-              type="button"
-              className="icon-button"
-              aria-label={`Remove ${item.text}`}
-              disabled={pending}
-              onClick={() => remove.mutate({ id: item.id })}
-            >
-              <Trash2 size={16} />
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="icon-button"
+                aria-label={`Actions for ${item.text}`}
+                disabled={pending}
+              >
+                <MoreHorizontal size={18} />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="collection-select-menu"
+                align="end"
+              >
+                <DropdownMenuItem
+                  className="collection-select-manage"
+                  onClick={() => {
+                    setDraft(item.text);
+                    setEditing(true);
+                  }}
+                >
+                  <Pencil size={16} /> Edit item
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="collection-select-manage"
+                  onClick={() => remove.mutate({ id: item.id })}
+                >
+                  <Trash2 size={16} /> Remove item
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </>
       )}
@@ -266,13 +286,24 @@ function PersonalList({ userId }: { userId: string }) {
         </div>
         <button
           type="button"
-          className="button button-primary"
+          className="button button-small button-outline"
           onClick={() => setPicker(true)}
         >
           <Plus size={18} />
           Add recipes
         </button>
       </div>
+      {list.isSuccess && (
+        <div className="shopping-trip-bar">
+          <strong role="status">
+            {needed.length} {needed.length === 1 ? "item" : "items"} to buy
+          </strong>
+          <ShoppingListAction
+            hasNeeded={needed.length > 0}
+            disabled={add.isPending || clear.isPending}
+          />
+        </div>
+      )}
       <form
         className="shopping-add-form"
         onSubmit={(e) => {
@@ -313,9 +344,7 @@ function PersonalList({ userId }: { userId: string }) {
         {list.isSuccess && (
           <>
             <div className="shopping-summary">
-              <strong role="status">
-                {needed.length} {needed.length === 1 ? "item" : "items"} to buy
-              </strong>
+              <span>Ingredients by recipe</span>
               {items.length > 0 && (
                 <button
                   type="button"
@@ -364,19 +393,6 @@ function PersonalList({ userId }: { userId: string }) {
                 </button>
               </details>
             )}
-            <div className="shopping-generate-footer">
-              <div>
-                <h2>Ready to shop?</h2>
-                <p>
-                  Group what you still need by aisle and combine matching
-                  quantities.
-                </p>
-              </div>
-              <ShoppingListAction
-                hasNeeded={needed.length > 0}
-                disabled={add.isPending || clear.isPending}
-              />
-            </div>
           </>
         )}
       </LoadingState>

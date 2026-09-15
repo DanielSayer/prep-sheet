@@ -40,12 +40,12 @@ export function GenerateListButton({
       >
         <ShoppingBasket size={18} />
         {generate.isPending
-          ? "Generating..."
+          ? "Preparing trip..."
           : mode === "open"
-            ? "Open shopping list"
+            ? "Start shopping"
             : mode === "update"
-              ? "Update shopping list"
-              : "Generate shopping list"}
+              ? "Update shopping trip"
+              : "Prepare shopping trip"}
       </button>
       <ErrorNotice
         message={generate.error?.message}
@@ -69,8 +69,8 @@ export function ShoppingListAction({
       <div className="shopping-generate-action">
         <button type="button" className="button button-primary" disabled>
           {plan.isPending
-            ? "Loading shopping list..."
-            : "Shopping list unavailable"}
+            ? "Loading shopping trip..."
+            : "Shopping trip unavailable"}
         </button>
         <ErrorNotice
           message={plan.error?.message}
@@ -190,7 +190,7 @@ export function GeneratedShoppingList() {
       </div>
       <LoadingState
         pending={query.isPending}
-        label="Loading your generated list..."
+        label="Loading your shopping trip..."
       >
         <ErrorNotice
           message={query.error?.message}
@@ -199,9 +199,9 @@ export function GeneratedShoppingList() {
         {query.isSuccess && !plan && (
           <div className="shopping-empty">
             <ShoppingBasket size={36} />
-            <h2>No generated list yet</h2>
+            <h2>No shopping trip yet</h2>
             <p>
-              Choose recipes and groceries, then generate your shopping list.
+              Choose recipes and groceries, then prepare your shopping trip.
             </p>
             <Link className="button button-primary" to="/shopping">
               Choose ingredients
@@ -214,8 +214,8 @@ export function GeneratedShoppingList() {
               <div className="shopping-stale" role="status">
                 <strong>Your ingredients have changed.</strong>
                 <p>
-                  Generate again to update the groups and quantities before
-                  ticking items off.
+                  Update your shopping trip to refresh groups and quantities
+                  before ticking items off.
                 </p>
               </div>
             )}

@@ -1,6 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, Link } from "@tanstack/react-router";
-import { Heart, Plus, Search, Star, Tags as TagsIcon } from "lucide-react";
+import {
+  Heart,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  Star,
+  Tags as TagsIcon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
 import { useTRPC } from "@/utils/trpc";
@@ -37,6 +44,7 @@ export function Collection() {
     Number(!!filters.neverCooked) +
     Number(!!filters.cookedBefore);
   const [bulkMode, setBulkMode] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [bulkDialog, setBulkDialog] = useState(false);
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<string[]>([]);
 
@@ -80,7 +88,11 @@ export function Collection() {
     });
 
   return (
-    <main id="main-content" className="collection-page page-width">
+    <main
+      id="main-content"
+      className="collection-page page-width"
+      data-selecting={bulkMode}
+    >
       <div className="page-heading">
         <div>
           <h1>
@@ -95,7 +107,10 @@ export function Collection() {
           </p>
         </div>
 
-        <Link to="/" className="button button-primary">
+        <Link
+          to="/"
+          className="button button-small button-outline collection-add"
+        >
           <Plus size={18} /> Add a recipe
         </Link>
       </div>
@@ -118,11 +133,6 @@ export function Collection() {
         </div>
 
         <div className="collection-toolbar-controls">
-          <SortDropdown
-            value={sort}
-            onValueChange={(value) => updateFilters({ sort: value })}
-          />
-
           <label className="search-box">
             <Search size={18} />
             <span className="sr-only">Search recipes</span>
@@ -134,23 +144,29 @@ export function Collection() {
               placeholder="Search names or ingredients..."
             />
           </label>
+          <button
+            type="button"
+            className="sort-trigger"
+            aria-expanded={filtersOpen}
+            aria-controls="collection-filters"
+            onClick={() => setFiltersOpen((open) => !open)}
+          >
+            <SlidersHorizontal size={16} /> Filters
+            {filterCount > 0 ? ` (${filterCount})` : ""}
+          </button>
+          <SortDropdown
+            value={sort}
+            onValueChange={(value) => updateFilters({ sort: value })}
+          />
         </div>
       </div>
 
       {bulkMode && (
         <section className="bulk-tag-bar" aria-label="Selected recipes">
-          <div>
+          <div className="selection-summary">
             <strong aria-live="polite">
-              {selectedRecipeIds.length}{" "}
-              {selectedRecipeIds.length === 1 ? "recipe" : "recipes"} selected
+              {selectedRecipeIds.length} selected
             </strong>
-            <span className="muted">
-              {selectedRecipeIds.length > 100
-                ? "Choose no more than 100 recipes at a time."
-                : "Click cards to select up to 100 recipes."}
-            </span>
-          </div>
-          <div className="recipe-selection-actions">
             <button
               type="button"
               className="text-button"
@@ -176,7 +192,12 @@ export function Collection() {
             >
               Cancel
             </button>
-            <AddRecipesButton recipeIds={selectedRecipeIds} />
+          </div>
+          {selectedRecipeIds.length > 100 && (
+            <p role="status">Choose up to 100 recipes.</p>
+          )}
+          <div className="recipe-selection-actions">
+            <AddRecipesButton recipeIds={selectedRecipeIds} compact />
             <button
               type="button"
               className="button button-small button-outline"
@@ -194,8 +215,10 @@ export function Collection() {
       )}
 
       <section
+        id="collection-filters"
+        hidden={!filtersOpen}
         className="collection-tag-filters"
-        aria-label="Match all selected tags"
+        aria-label="Recipe filters"
       >
         <button
           type="button"
@@ -255,24 +278,24 @@ export function Collection() {
             updateFilters({ tags: next.length ? next.join(",") : undefined });
           }}
         />
-        {filterCount > 0 && (
-          <button
-            type="button"
-            className="text-button"
-            onClick={() => {
-              updateFilters({
-                favourites: undefined,
-                unrated: undefined,
-                neverCooked: undefined,
-                cookedBefore: undefined,
-                tags: undefined,
-              });
-            }}
-          >
-            Clear filters
-          </button>
-        )}
       </section>
+      {filterCount > 0 && (
+        <button
+          type="button"
+          className="collection-clear-filters text-button"
+          onClick={() => {
+            updateFilters({
+              favourites: undefined,
+              unrated: undefined,
+              neverCooked: undefined,
+              cookedBefore: undefined,
+              tags: undefined,
+            });
+          }}
+        >
+          Clear filters
+        </button>
+      )}
       <ErrorNotice
         message={tags.error?.message}
         retry={() => void tags.refetch()}

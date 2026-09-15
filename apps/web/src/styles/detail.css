@@ -199,6 +199,45 @@
     gap: 22px;
   }
 }
+.recipe-reading-tools {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 8px 0;
+  margin-bottom: 18px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.recipe-reading-tools nav {
+  display: flex;
+  gap: 4px;
+}
+.recipe-reading-tools nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  border-radius: 8px;
+}
+.recipe-reading-tools nav a:hover {
+  background: #e9ecdf;
+}
+.recipe-body h2,
+#recipe-history {
+  scroll-margin-top: 125px;
+}
+.recipe-reading-tools nav a:focus-visible,
+.recipe-organise summary:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
 .cooking-history {
   margin: 0 0 24px;
   padding: 20px;
