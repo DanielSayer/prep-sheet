@@ -1,6 +1,6 @@
 .home-page {
   max-width: 1140px;
-  padding: 0 32px;
+  padding: 0 var(--page-gutter);
   margin: 0 auto;
 }
 .hero {

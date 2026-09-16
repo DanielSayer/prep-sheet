@@ -174,7 +174,13 @@
 @media (max-width: 650px) {
   .detail-page .page-heading {
     position: relative;
-    padding-right: 36px;
+    padding-right: 0;
+  }
+  .detail-page .page-heading h1 {
+    padding-right: 52px;
+  }
+  .detail-page .page-heading > div:first-child {
+    width: 100%;
   }
   .detail-page .detail-actions {
     position: absolute;
@@ -189,6 +195,16 @@
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
+  }
+  .settings-layout nav a {
+    flex: 1;
+    justify-content: center;
+  }
+  .tag-form {
+    padding: 16px;
+  }
+  .tag-form > button {
+    justify-self: stretch;
   }
   .settings-tags li,
   .tag-created-callout {
@@ -286,7 +302,7 @@
   align-items: center;
   gap: 7px;
   max-width: 100%;
-  min-height: 36px;
+  min-height: 44px;
   padding: 7px 11px;
   border: 1.5px solid var(--tag-edge);
   border-bottom-width: 3px;
@@ -460,6 +476,19 @@
   margin: 20px 0 0;
 }
 @media (max-width: 700px) {
+  .organise-dialog {
+    padding: 16px;
+  }
+  .organise-dialog-heading {
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .organise-dialog-heading .icon-button {
+    flex-shrink: 0;
+  }
+  .organise-dialog-footer {
+    flex-wrap: wrap;
+  }
   .organise-actions {
     margin-left: 0;
     order: 0;

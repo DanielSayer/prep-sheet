@@ -1,12 +1,21 @@
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@prep-sheet/ui/components/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useRouter } from "@tanstack/react-router";
-import { ChevronDown, LogIn, LogOut, Settings, UserRound } from "lucide-react";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
+import {
+  ChevronDown,
+  LogIn,
+  LogOut,
+  Settings,
+  UserRound,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 
@@ -14,6 +23,12 @@ export default function UserMenu() {
   const { data: session, isPending } = authClient.useSession();
   const queryClient = useQueryClient();
   const router = useRouter();
+  const accountActive = useRouterState({
+    select: (state) =>
+      state.location.pathname === "/settings" ||
+      state.location.pathname === "/groups" ||
+      state.location.pathname === "/login",
+  });
 
   if (isPending)
     return (
@@ -30,13 +45,28 @@ export default function UserMenu() {
         <DropdownMenuTrigger
           className="account account-trigger"
           aria-label="Account menu"
+          data-active={accountActive}
         >
           <span className="avatar">
             <UserRound size={18} />
           </span>
-          <ChevronDown size={14} aria-hidden="true" />
+          <UserRound
+            size={20}
+            className="account-mobile-icon"
+            aria-hidden="true"
+          />
+          <span className="nav-mobile-label">Account</span>
+          <ChevronDown
+            size={14}
+            className="account-chevron"
+            aria-hidden="true"
+          />
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="collection-select-menu" align="end">
+        <DropdownMenuContent
+          className="collection-select-menu account-menu"
+          align="end"
+          sideOffset={8}
+        >
           <DropdownMenuItem
             className="collection-select-manage"
             render={<Link to="/login" />}
@@ -66,31 +96,49 @@ export default function UserMenu() {
       <DropdownMenuTrigger
         className="account account-trigger"
         aria-label="Account menu"
+        data-active={accountActive}
       >
         <span className="avatar">
           {session.user.name.slice(0, 1).toUpperCase()}
         </span>
 
         <span className="account-name">{session.user.name}</span>
-        <ChevronDown size={14} aria-hidden="true" />
+        <UserRound
+          size={20}
+          className="account-mobile-icon"
+          aria-hidden="true"
+        />
+        <span className="nav-mobile-label">Account</span>
+        <ChevronDown size={14} className="account-chevron" aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="collection-select-menu"
+        className="collection-select-menu account-menu"
         align="end"
         sideOffset={8}
       >
-        <DropdownMenuItem
-          className="collection-select-manage"
-          render={<Link to="/settings" />}
-        >
-          <Settings size={16} /> Settings
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          className="collection-select-manage"
-          onClick={signOut}
-        >
-          <LogOut size={16} /> Sign out
-        </DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="account-menu-name">
+            {session.user.name}
+          </DropdownMenuLabel>
+          <DropdownMenuItem
+            className="collection-select-manage"
+            render={<Link to="/settings" />}
+          >
+            <Settings size={16} /> Settings
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="collection-select-manage"
+            render={<Link to="/groups" />}
+          >
+            <Users size={16} /> Groups
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="collection-select-manage"
+            onClick={signOut}
+          >
+            <LogOut size={16} /> Sign out
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );

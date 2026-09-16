@@ -4,7 +4,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@prep-sheet/ui/components/dropdown-menu";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { CalendarDays, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { AddRecipesButton } from "../shopping/add-recipes";
 
 export function RecipeHeading({
@@ -52,6 +53,14 @@ export function RecipeHeading({
         {!editing && (
           <div className="recipe-shopping-action">
             <AddRecipesButton recipeIds={[recipe.id]} />
+            <Link
+              className="button button-small button-outline"
+              to="/planner"
+              search={{ recipeId: recipe.id }}
+            >
+              <CalendarDays size={17} />
+              Add to meal plan
+            </Link>
           </div>
         )}
       </div>

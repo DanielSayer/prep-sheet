@@ -200,7 +200,22 @@ select:focus-visible {
 }
 @media (max-width: 600px) {
   .group-panel {
-    padding: 18px;
+    padding: 16px;
+  }
+  .group-create {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .group-create > label {
+    min-width: 0;
+  }
+  .group-actions {
+    width: 100%;
+    gap: 12px;
+  }
+  .group-actions > .button {
+    flex: 1;
   }
   .collection-select {
     width: 100%;

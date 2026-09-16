@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { db } from "@prep-sheet/db";
+import { tripIsStale } from "@prep-sheet/db/meal-planner";
 import { user } from "@prep-sheet/db/schema/auth";
+import { mealPlanner } from "@prep-sheet/db/schema/meal-planner";
 import { recipe } from "@prep-sheet/db/schema/recipe";
 import { shoppingItem, shoppingPlan } from "@prep-sheet/db/schema/shopping";
 import { generateShoppingPlan } from "@prep-sheet/db/shopping-plan";
@@ -27,12 +29,25 @@ function checkCapacity(count: number) {
         "Your list can hold up to 1,000 items. Clear some items before adding more.",
     });
 }
+async function requireCurrentMeals(tx: Database, userId: string) {
+  const [planner] = await tx
+    .select()
+    .from(mealPlanner)
+    .where(eq(mealPlanner.userId, userId));
+  if (planner?.trip && tripIsStale(planner.meals, planner.trip))
+    throw new TRPCError({
+      code: "CONFLICT",
+      message:
+        "Your meals have changed. Review meal-plan changes before updating or checking off this trip.",
+    });
+}
 
 export const shoppingRouter = router({
   generate: protectedProcedure.mutation(({ ctx }) =>
     db.transaction(async (tx) => {
       const userId = ctx.session.user.id;
       await lockList(tx, userId);
+      await requireCurrentMeals(tx, userId);
       const items = await tx
         .select()
         .from(shoppingItem)
@@ -95,6 +110,7 @@ export const shoppingRouter = router({
       db.transaction(async (tx) => {
         const userId = ctx.session.user.id;
         await lockList(tx, userId);
+        await requireCurrentMeals(tx, userId);
         const [plan] = await tx
           .select()
           .from(shoppingPlan)
@@ -145,8 +161,18 @@ export const shoppingRouter = router({
           );
       }),
     ),
-  list: protectedProcedure.query(({ ctx }) =>
-    db
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const [planner] = await db
+      .select()
+      .from(mealPlanner)
+      .where(eq(mealPlanner.userId, ctx.session.user.id));
+    const plannedSources = new Map(
+      planner?.trip?.allocations.map((allocation) => [
+        allocation.itemId,
+        allocation.key.split(":")[0] ?? null,
+      ]),
+    );
+    const items = await db
       .select()
       .from(shoppingItem)
       .where(eq(shoppingItem.userId, ctx.session.user.id))
@@ -155,8 +181,12 @@ export const shoppingRouter = router({
         asc(shoppingItem.recipeId),
         asc(shoppingItem.position),
         asc(shoppingItem.id),
-      ),
-  ),
+      );
+    return items.map((item) => ({
+      ...item,
+      plannedMealId: plannedSources.get(item.id) ?? null,
+    }));
+  }),
   recipes: protectedProcedure.query(({ ctx }) =>
     db
       .select({
@@ -238,32 +268,35 @@ export const shoppingRouter = router({
         }),
       ]),
     )
-    .mutation(async ({ ctx, input }) => {
-      const updated = await db
-        .update(shoppingItem)
-        .set(
-          input.kind === "text"
-            ? { text: input.text }
-            : { status: input.status },
-        )
-        .where(
-          and(
-            eq(shoppingItem.id, input.id),
-            eq(shoppingItem.userId, ctx.session.user.id),
-          ),
-        )
-        .returning({ id: shoppingItem.id });
-      if (!updated.length)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message:
-            "This item is no longer on your list. Refresh the list to continue.",
-        });
-    }),
-  removeItem: protectedProcedure
-    .input(itemId)
-    .mutation(async ({ ctx, input }) => {
-      await db
+    .mutation(({ ctx, input }) =>
+      db.transaction(async (tx) => {
+        await lockList(tx, ctx.session.user.id);
+        const updated = await tx
+          .update(shoppingItem)
+          .set(
+            input.kind === "text"
+              ? { text: input.text }
+              : { status: input.status },
+          )
+          .where(
+            and(
+              eq(shoppingItem.id, input.id),
+              eq(shoppingItem.userId, ctx.session.user.id),
+            ),
+          )
+          .returning({ id: shoppingItem.id });
+        if (!updated.length)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message:
+              "This item is no longer on your list. Refresh the list to continue.",
+          });
+      }),
+    ),
+  removeItem: protectedProcedure.input(itemId).mutation(({ ctx, input }) =>
+    db.transaction(async (tx) => {
+      await lockList(tx, ctx.session.user.id);
+      await tx
         .delete(shoppingItem)
         .where(
           and(
@@ -272,12 +305,13 @@ export const shoppingRouter = router({
           ),
         );
     }),
+  ),
   clear: protectedProcedure
     .input(z.object({ scope: z.enum(["bought", "all"]) }))
     .mutation(({ ctx, input }) =>
       db.transaction(async (tx) => {
         await lockList(tx, ctx.session.user.id);
-        await tx
+        const removed = await tx
           .delete(shoppingItem)
           .where(
             and(
@@ -286,11 +320,39 @@ export const shoppingRouter = router({
                 ? eq(shoppingItem.status, "bought")
                 : undefined,
             ),
-          );
-        if (input.scope === "all")
+          )
+          .returning({ id: shoppingItem.id });
+        if (input.scope === "bought") {
+          const [planner] = await tx
+            .select()
+            .from(mealPlanner)
+            .where(eq(mealPlanner.userId, ctx.session.user.id));
+          if (planner?.trip) {
+            const removedIds = new Set(removed.map((item) => item.id));
+            await tx
+              .update(mealPlanner)
+              .set({
+                trip: {
+                  ...planner.trip,
+                  allocations: planner.trip.allocations.map((allocation) =>
+                    removedIds.has(allocation.itemId)
+                      ? { ...allocation, clearedBought: true }
+                      : allocation,
+                  ),
+                },
+              })
+              .where(eq(mealPlanner.userId, ctx.session.user.id));
+          }
+        }
+        if (input.scope === "all") {
           await tx
             .delete(shoppingPlan)
             .where(eq(shoppingPlan.userId, ctx.session.user.id));
+          await tx
+            .update(mealPlanner)
+            .set({ trip: null })
+            .where(eq(mealPlanner.userId, ctx.session.user.id));
+        }
       }),
     ),
 });

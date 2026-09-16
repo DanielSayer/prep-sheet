@@ -187,7 +187,25 @@
 .detail-page .page-heading {
   margin-bottom: 18px;
 }
+.recipe-shopping-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: 12px;
+}
 @media (max-width: 700px) {
+  .recipe-shopping-action {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .recipe-shopping-action .shopping-add-action {
+    display: grid;
+    width: 100%;
+  }
+  .back-link {
+    min-height: 44px;
+    margin-bottom: 12px;
+  }
   .editor-actions > button {
     flex: 1;
   }
@@ -216,6 +234,18 @@
 .recipe-reading-tools nav {
   display: flex;
   gap: 4px;
+}
+@media (max-width: 600px) {
+  .recipe-reading-tools nav {
+    width: 100%;
+  }
+  .recipe-reading-tools nav a {
+    flex: 1;
+    justify-content: center;
+  }
+  .recipe-reading-tools .keep-awake {
+    width: 100%;
+  }
 }
 .recipe-reading-tools nav a {
   display: inline-flex;
@@ -324,4 +354,9 @@
   flex-wrap: wrap;
   font-size: 14px;
   font-weight: 800;
+}
+@media (max-width: 600px) {
+  .cooking-history {
+    padding: 16px;
+  }
 }

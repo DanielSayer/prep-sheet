@@ -19,6 +19,7 @@ import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useTRPC } from "@/utils/trpc";
 import { ErrorNotice, LoadingState } from "../feedback";
+import { TripSummary } from "../planner/plan-shop";
 import { OrganiseDialog } from "../recipes/organise-dialog";
 import { RecipePicker } from "./add-recipes";
 import { ShoppingListAction } from "./generated-list";
@@ -196,7 +197,7 @@ function ShoppingRow({ item, userId }: { item: Item; userId: string }) {
 function ItemGroups({ items, userId }: { items: Item[]; userId: string }) {
   const groups = new Map<string, Item[]>();
   for (const item of items) {
-    const key = item.recipeId ?? "other";
+    const key = item.plannedMealId ?? item.recipeId ?? "other";
     const current = groups.get(key);
     if (current) current.push(item);
     else groups.set(key, [item]);
@@ -222,7 +223,11 @@ function ItemGroups({ items, userId }: { items: Item[]; userId: string }) {
                 )}
               </h2>
               {first.servings && (
-                <p className="muted">Original yield: {first.servings}</p>
+                <p className="muted">
+                  {first.plannedMealId
+                    ? first.servings
+                    : `Original yield: ${first.servings}`}
+                </p>
               )}
             </div>
             <ul>
@@ -267,7 +272,10 @@ function PersonalList({ userId }: { userId: string }) {
     trpc.shopping.clear.mutationOptions({
       onSuccess: async () => {
         setReset(false);
-        await refresh();
+        await Promise.all([
+          refresh(),
+          client.invalidateQueries({ queryKey: trpc.planner.pathKey() }),
+        ]);
       },
     }),
   );
@@ -293,6 +301,7 @@ function PersonalList({ userId }: { userId: string }) {
           Add recipes
         </button>
       </div>
+      <TripSummary />
       {list.isSuccess && (
         <div className="shopping-trip-bar">
           <strong role="status">

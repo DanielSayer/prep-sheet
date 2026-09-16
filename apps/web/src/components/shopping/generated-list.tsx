@@ -5,8 +5,10 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ShoppingBasket } from "lucide-react";
+import { useState } from "react";
 import { useTRPC } from "@/utils/trpc";
 import { ErrorNotice, LoadingState } from "../feedback";
+import { PlanShop, TripSummary } from "../planner/plan-shop";
 
 export function GenerateListButton({
   disabled = false,
@@ -18,6 +20,8 @@ export function GenerateListButton({
   const trpc = useTRPC();
   const client = useQueryClient();
   const navigate = useNavigate();
+  const planner = useQuery(trpc.planner.get.queryOptions());
+  const [review, setReview] = useState(false);
   const generate = useMutation(
     trpc.shopping.generate.mutationOptions({
       onSuccess: async () => {
@@ -28,28 +32,48 @@ export function GenerateListButton({
   );
   return (
     <div className="shopping-generate-action">
+      {review && planner.data?.trip && (
+        <PlanShop
+          initial={planner.data.trip}
+          replace={false}
+          onClose={() => setReview(false)}
+        />
+      )}
       <button
         type="button"
         className="button button-primary"
-        disabled={disabled || generate.isPending}
+        disabled={
+          (disabled && !planner.data?.stale) ||
+          generate.isPending ||
+          planner.isPending ||
+          planner.isError
+        }
         onClick={() =>
-          mode === "open"
-            ? void navigate({ to: "/shopping/generated" })
-            : generate.mutate()
+          planner.data?.stale
+            ? setReview(true)
+            : mode === "open"
+              ? void navigate({ to: "/shopping/generated" })
+              : generate.mutate()
         }
       >
         <ShoppingBasket size={18} />
-        {generate.isPending
-          ? "Preparing trip..."
-          : mode === "open"
-            ? "Start shopping"
-            : mode === "update"
-              ? "Update shopping trip"
-              : "Prepare shopping trip"}
+        {planner.data?.stale
+          ? "Review meal changes"
+          : generate.isPending
+            ? "Preparing trip..."
+            : mode === "open"
+              ? "Start shopping"
+              : mode === "update"
+                ? "Update shopping trip"
+                : "Prepare shopping trip"}
       </button>
       <ErrorNotice
         message={generate.error?.message}
         retry={() => generate.mutate()}
+      />
+      <ErrorNotice
+        message={planner.error?.message}
+        retry={() => void planner.refetch()}
       />
     </div>
   );
@@ -91,6 +115,7 @@ export function GeneratedShoppingList() {
   const trpc = useTRPC();
   const client = useQueryClient();
   const query = useQuery(trpc.shopping.generated.queryOptions());
+  const planner = useQuery(trpc.planner.get.queryOptions());
   const check = useMutation(
     trpc.shopping.checkGroup.mutationOptions({
       onSuccess: () =>
@@ -121,7 +146,13 @@ export function GeneratedShoppingList() {
         <input
           type="checkbox"
           checked={row.bought}
-          disabled={plan?.stale || check.isPending}
+          disabled={
+            plan?.stale ||
+            planner.data?.stale ||
+            planner.isPending ||
+            planner.isError ||
+            check.isPending
+          }
           onChange={() => {
             if (plan)
               check.mutate({
@@ -188,6 +219,7 @@ export function GeneratedShoppingList() {
           />
         )}
       </div>
+      <TripSummary />
       <LoadingState
         pending={query.isPending}
         label="Loading your shopping trip..."

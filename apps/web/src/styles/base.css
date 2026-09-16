@@ -9,6 +9,12 @@
   --background: var(--paper);
   --foreground: var(--ink);
   --font-sans: "Nunito", sans-serif;
+  --page-gutter: 32px;
+  --mobile-nav-height: 0px;
+}
+html {
+  scrollbar-gutter: stable;
+  scroll-padding-bottom: calc(var(--mobile-nav-height) + 16px);
 }
 body {
   margin: 0;
@@ -58,6 +64,7 @@ p {
 }
 .app-shell {
   min-height: 100svh;
+  padding-bottom: var(--mobile-nav-height);
 }
 .skip-link {
   position: fixed;
@@ -111,7 +118,23 @@ p {
   gap: 10px;
   align-items: center;
 }
+.nav-mobile-label,
+.account-mobile-icon {
+  display: none;
+}
+.nav-account {
+  margin-left: 24px;
+}
+.account-menu {
+  min-width: 220px;
+}
+.account-menu-name {
+  padding: 10px 12px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
 .site-header nav a {
+  white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -197,6 +220,8 @@ p {
   border-radius: 50%;
 }
 .icon-button {
+  min-width: 44px;
+  min-height: 44px;
   display: inline-grid;
   place-items: center;
   padding: 10px;
