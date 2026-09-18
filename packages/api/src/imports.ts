@@ -1,15 +1,29 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { db } from "@prep-sheet/db";
 import { user } from "@prep-sheet/db/schema/auth";
 import { group, groupMember } from "@prep-sheet/db/schema/group";
 import { recipeImport } from "@prep-sheet/db/schema/import";
 import { recipe } from "@prep-sheet/db/schema/recipe";
+import { env } from "@prep-sheet/env/server";
 import { TRPCError } from "@trpc/server";
-import { and, asc, count, eq, gte, isNull, lt } from "drizzle-orm";
-import type { z } from "zod";
+import {
+  and,
+  asc,
+  count,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  lt,
+  sql,
+} from "drizzle-orm";
 import { lockGroup, requireGroup } from "./groups/access";
-import { type ImportStatus, importInputSchema } from "./import-contract";
-import { generateRecipe } from "./recipes/generate";
+import {
+  type ImportStatus,
+  importInputSchema,
+  websiteImportSchema,
+} from "./import-contract";
+import { generateRecipe, prepareRecipeInput } from "./recipes/generate";
 import { persistRecipe } from "./recipes/persist";
 import { checkRecipeUsage } from "./recipes/usage";
 import { availableTags } from "./routers/tags";
@@ -37,16 +51,18 @@ export async function importStatus(
   switch (job.state) {
     case "queued":
       return { kind: "queued", id };
+    case "fetching":
+      return { kind: "processing", id, stage: "fetching" };
     case "processing":
+      return { kind: "processing", id, stage: "generating" };
     case "ready":
-      return { kind: "processing", id };
+      return { kind: "processing", id, stage: "saving" };
     case "failed":
       return {
         kind: "failed",
         id,
         message:
-          job.error ??
-          "Import failed. Capture the recipe again to start a new attempt.",
+          job.error ?? "Import failed. Start a new attempt to try again.",
       };
     case "saved": {
       // A recovered link must not expose a recipe after membership loss or deletion.
@@ -72,13 +88,24 @@ export async function importStatus(
   }
 }
 
-function fingerprintOf(input: z.infer<typeof importInputSchema>) {
+type JobInput = {
+  id: string;
+  content: string;
+  sourceUrl: string | null;
+  groupId: string | null;
+  sourceKind: "captured" | "website";
+};
+
+function fingerprintOf(input: JobInput) {
   return createHash("sha256")
     .update(
       JSON.stringify({
         content: input.content,
         sourceUrl: input.sourceUrl,
         groupId: input.groupId,
+        ...(input.sourceKind === "website"
+          ? { sourceKind: input.sourceKind }
+          : {}),
       }),
     )
     .digest("hex");
@@ -86,6 +113,10 @@ function fingerprintOf(input: z.infer<typeof importInputSchema>) {
 
 export async function discardImport(userId: string, value: unknown) {
   const input = importInputSchema.parse(value);
+  return discardJob(userId, { ...input, sourceKind: "captured" });
+}
+
+async function discardJob(userId: string, input: JobInput) {
   const fingerprint = fingerprintOf(input);
   await db.transaction(async (tx) => {
     await tx
@@ -110,7 +141,20 @@ export async function discardImport(userId: string, value: unknown) {
         });
       return;
     }
-    await checkRecipeUsage(tx, userId);
+    const [recent] = await tx
+      .select({ total: count() })
+      .from(recipeImport)
+      .where(
+        and(
+          eq(recipeImport.userId, userId),
+          gte(recipeImport.createdAt, new Date(Date.now() - 60_000)),
+        ),
+      );
+    if ((recent?.total ?? 0) >= 60)
+      throw new TRPCError({
+        code: "TOO_MANY_REQUESTS",
+        message: "Please wait a minute before cancelling another request.",
+      });
     // A durable tombstone prevents a delayed submission from being accepted after reset.
     await tx.insert(recipeImport).values({
       id: input.id,
@@ -120,6 +164,8 @@ export async function discardImport(userId: string, value: unknown) {
       sourceUrl: input.sourceUrl,
       input: "",
       state: "failed",
+      usageReleased: true,
+      sourceKind: input.sourceKind,
       error:
         "This import was discarded. Start another import to save the recipe.",
     });
@@ -127,7 +173,32 @@ export async function discardImport(userId: string, value: unknown) {
 }
 
 export async function submitImport(userId: string, value: unknown) {
-  const input = importInputSchema.parse(value);
+  return submitJob(userId, {
+    ...importInputSchema.parse(value),
+    sourceKind: "captured",
+  });
+}
+
+function websiteInput(value: unknown): JobInput {
+  const input = websiteImportSchema.parse(value);
+  return {
+    id: input.id,
+    content: input.input,
+    groupId: input.groupId ?? null,
+    sourceUrl: null,
+    sourceKind: "website",
+  };
+}
+
+export function submitWebsiteImport(userId: string, value: unknown) {
+  return submitJob(userId, websiteInput(value));
+}
+
+export function discardWebsiteImport(userId: string, value: unknown) {
+  return discardJob(userId, websiteInput(value));
+}
+
+async function submitJob(userId: string, input: JobInput) {
   const fingerprint = fingerprintOf(input);
   await db.transaction(async (tx) => {
     // Serialize admissions and retries per account before checking the job or quota.
@@ -151,6 +222,25 @@ export async function submitImport(userId: string, value: unknown) {
     }
     if (input.groupId) await requireGroup(tx, input.groupId, userId);
     await checkRecipeUsage(tx, userId);
+    const [pending] = await tx
+      .select({ total: count() })
+      .from(recipeImport)
+      .where(
+        and(
+          eq(recipeImport.userId, userId),
+          inArray(recipeImport.state, [
+            "queued",
+            "fetching",
+            "processing",
+            "ready",
+          ]),
+        ),
+      );
+    if ((pending?.total ?? 0) >= env.AI_PENDING_PER_ACCOUNT)
+      throw new TRPCError({
+        code: "TOO_MANY_REQUESTS",
+        message: "Your recipe queue is full. Wait for an import to finish.",
+      });
     const [recent] = await tx
       .select({ total: count() })
       .from(recipeImport)
@@ -179,6 +269,7 @@ export async function submitImport(userId: string, value: unknown) {
       userId,
       groupId: input.groupId,
       input: input.content,
+      sourceKind: input.sourceKind,
       sourceUrl: input.sourceUrl,
       fingerprint,
     });
@@ -204,7 +295,7 @@ export async function processNextImport(generate = generateRecipe) {
       state: "failed",
       input: "",
       error:
-        "Processing was interrupted. Capture again to start a new attempt; this import will not run twice.",
+        "Processing was interrupted. Start a new attempt to try again; this import will not run twice.",
     })
     .where(
       and(
@@ -212,7 +303,24 @@ export async function processNextImport(generate = generateRecipe) {
         lt(recipeImport.startedAt, new Date(Date.now() - 180_000)),
       ),
     );
+  // Fetching is safe to repeat; a call that reached AI is never replayed.
+  await db
+    .update(recipeImport)
+    .set({ state: "queued", startedAt: null })
+    .where(
+      and(
+        eq(recipeImport.state, "fetching"),
+        lt(recipeImport.startedAt, new Date(Date.now() - 180_000)),
+      ),
+    );
   const job = await db.transaction(async (tx) => {
+    // Serialize claims across every worker, not just this process.
+    await tx.execute(sql`select pg_advisory_xact_lock(728193041)`);
+    const [active] = await tx
+      .select({ total: count() })
+      .from(recipeImport)
+      .where(inArray(recipeImport.state, ["fetching", "processing"]));
+    if ((active?.total ?? 0) >= env.AI_CONCURRENT_ATTEMPTS) return null;
     const [next] = await tx
       .select()
       .from(recipeImport)
@@ -221,51 +329,102 @@ export async function processNextImport(generate = generateRecipe) {
       .limit(1)
       .for("update", { skipLocked: true });
     if (!next) return null;
+    const claimToken = randomUUID();
     await tx
       .update(recipeImport)
-      .set({ state: "processing", startedAt: new Date() })
+      .set({
+        state: "fetching",
+        startedAt: new Date(),
+        workerToken: claimToken,
+      })
       .where(eq(recipeImport.id, next.id));
-    return next;
+    return { ...next, workerToken: claimToken };
   });
   if (!job) return false;
+  let generationStarted = false;
   try {
     if (job.groupId) await requireGroup(db, job.groupId, job.userId);
+    const prepared =
+      job.sourceKind === "website"
+        ? await prepareRecipeInput(job.input, job.sourceUrl ?? undefined)
+        : { content: job.input, sourceUrl: job.sourceUrl };
+    const tags = await availableTags(job.userId);
+    // Persist the exact input before crossing the AI boundary.
+    const claimed = await db
+      .update(recipeImport)
+      .set({
+        state: "processing",
+        input: prepared.content,
+        sourceUrl: prepared.sourceUrl,
+        startedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(recipeImport.id, job.id),
+          eq(recipeImport.workerToken, job.workerToken),
+          eq(recipeImport.state, "fetching"),
+        ),
+      )
+      .returning({ id: recipeImport.id });
+    if (!claimed.length) return true;
+    generationStarted = true;
     const result = await generate(
-      job.input,
-      await availableTags(job.userId),
-      job.sourceUrl,
+      prepared.content,
+      tags,
+      prepared.sourceUrl ?? undefined,
     );
-    // Checkpoint the expensive result before the save transaction. A restart can finish saving.
+    // A save failure retries this checkpoint, never generation.
     await db
       .update(recipeImport)
       .set({
         state: "ready",
         input: "",
-        generated: { content: result.content, tagIds: result.tagIds },
+        sourceUrl: result.sourceUrl,
+        generated: {
+          content: result.content,
+          tagIds: result.tagIds,
+          origin: result.origin,
+        },
       })
       .where(
-        and(eq(recipeImport.id, job.id), eq(recipeImport.state, "processing")),
+        and(
+          eq(recipeImport.id, job.id),
+          eq(recipeImport.workerToken, job.workerToken),
+          eq(recipeImport.state, "processing"),
+        ),
       );
   } catch (error) {
-    await failImport(job.id, error);
+    await failImport(job.id, job.workerToken, error, !generationStarted);
     return true;
   }
   await saveReady(job.id);
   return true;
 }
 
-async function failImport(id: string, error: unknown) {
+async function failImport(
+  id: string,
+  workerToken: string,
+  error: unknown,
+  release = false,
+) {
   await db
     .update(recipeImport)
     .set({
       state: "failed",
       input: "",
+      usageReleased: release,
       error:
         error instanceof TRPCError
           ? error.message
-          : "Processing failed. Capture again to start a new attempt.",
+          : "Processing failed. Start a new attempt to try again.",
     })
-    .where(and(eq(recipeImport.id, id), eq(recipeImport.state, "processing")));
+    .where(
+      and(
+        eq(recipeImport.id, id),
+        eq(recipeImport.workerToken, workerToken),
+        inArray(recipeImport.state, ["fetching", "processing"]),
+      ),
+    );
 }
 
 async function saveReady(id: string) {
@@ -276,12 +435,6 @@ async function saveReady(id: string) {
       .where(and(eq(recipeImport.id, id), eq(recipeImport.state, "ready")))
       .for("update");
     if (!job?.generated) return;
-    // Serialize usage conversion with admissions and website saves.
-    await tx
-      .select({ id: user.id })
-      .from(user)
-      .where(eq(user.id, job.userId))
-      .for("update");
     if (job.groupId) {
       await lockGroup(tx, job.groupId);
       try {
@@ -293,7 +446,7 @@ async function saveReady(id: string) {
             state: "failed",
             generated: null,
             error:
-              "Group access changed. Capture again and choose a collection you can write to.",
+              "Group access changed. Start a new attempt and choose a collection you can write to.",
           })
           .where(eq(recipeImport.id, id));
         return;
@@ -323,7 +476,7 @@ async function saveReady(id: string) {
         title: job.generated.content.title,
         content: job.generated.content,
         sourceUrl: job.sourceUrl,
-        origin: "imported",
+        origin: job.generated.origin ?? "imported",
       },
       job.generated.tagIds,
     );

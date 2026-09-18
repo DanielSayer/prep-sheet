@@ -4,10 +4,12 @@ import { ErrorNotice } from "@/components/feedback";
 
 export function ComposerFeedback({
   pending,
+  progress,
   error,
   saved,
 }: {
   pending: boolean;
+  progress?: string;
   error?: string;
   saved?: { id: string; title: string };
 }) {
@@ -20,7 +22,8 @@ export function ComposerFeedback({
           </span>
 
           <p>
-            Reading, organising and saving your recipe. This can take a minute.
+            {progress ??
+              "Reading, organising and saving your recipe. This can take a minute."}
           </p>
         </div>
       )}

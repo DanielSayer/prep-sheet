@@ -4,6 +4,7 @@ import type { SubmitEvent } from "react";
 export function ComposerForm({
   input,
   pending,
+  locked,
   disabled,
   onChange,
   onSubmit,
@@ -12,6 +13,7 @@ export function ComposerForm({
 }: {
   input: string;
   pending: boolean;
+  locked?: boolean;
   disabled: boolean;
   onChange: (value: string) => void;
   onSubmit: (event: SubmitEvent) => void;
@@ -28,7 +30,7 @@ export function ComposerForm({
         id="recipe-input"
         value={input}
         onChange={(event) => onChange(event.target.value)}
-        disabled={pending}
+        disabled={locked ?? pending}
         maxLength={20000}
         placeholder="Paste a recipe or link, or tell us what's for dinner..."
       />

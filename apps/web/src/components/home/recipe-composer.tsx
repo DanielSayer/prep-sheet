@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { type SubmitEvent, useEffect, useRef, useState } from "react";
 import { authClient } from "@/lib/auth-client";
@@ -8,72 +8,163 @@ import { readRecipeDraft, recipeDraftKey } from "../recipes/recipe-draft";
 import { ComposerFeedback } from "./composer-feedback";
 import { ComposerForm } from "./composer-form";
 import { IdeaChips } from "./idea-chips";
+import {
+  importDraftKey,
+  type PendingImport,
+  readPendingImport,
+  writePendingImport,
+} from "./import-draft";
 import { ManualRecipe } from "./manual-recipe";
 
-const draftKey = "prep-sheet-draft";
-
 export function RecipeComposer() {
+  const { data: session, isPending } = authClient.useSession();
+  return (
+    <AccountComposer
+      key={session?.user.id ?? "guest"}
+      userId={session?.user.id}
+      sessionPending={isPending}
+    />
+  );
+}
+
+function AccountComposer({
+  userId,
+  sessionPending,
+}: {
+  userId?: string;
+  sessionPending: boolean;
+}) {
   const [manual, setManual] = useState(false);
   const [input, setInput] = useState("");
-  const [requestId, setRequestId] = useState<string>();
-  const { groupId, available } = useCollection();
-  const previousGroup = useRef(groupId);
-  const { data: session, isPending: sessionPending } = authClient.useSession();
-  const userId = session?.user.id;
-  useEffect(() => {
-    setManual(!!userId && !!readRecipeDraft(recipeDraftKey(userId)));
-  }, [userId]);
+  const [pending, setPending] = useState<PendingImport | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [storageError, setStorageError] = useState<string>();
+  const completed = useRef<string | null>(null);
+  const { groupId, available, groups } = useCollection();
   const navigate = useNavigate();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const key = importDraftKey(userId ?? "guest");
+  const create = useMutation(trpc.recipes.create.mutationOptions());
+  const discard = useMutation(trpc.recipes.discardImport.mutationOptions());
 
-  const create = useMutation(
-    trpc.recipes.create.mutationOptions({
-      onSuccess: () => {
-        setInput("");
-        setRequestId(undefined);
-        sessionStorage.removeItem(draftKey);
+  useEffect(() => {
+    const restored = userId ? readPendingImport(key) : null;
+    setPending(restored);
+    try {
+      const guestKey = `${importDraftKey("guest")}:text`;
+      const text =
+        restored?.input ??
+        sessionStorage.getItem(`${key}:text`) ??
+        (userId ? sessionStorage.getItem(guestKey) : null) ??
+        "";
+      setInput(text);
+      if (userId && text) {
+        sessionStorage.setItem(`${key}:text`, text);
+        sessionStorage.removeItem(guestKey);
+      }
+    } catch {
+      /* Editing still works without storage. */
+    }
+    setManual(
+      !restored && !!userId && !!readRecipeDraft(recipeDraftKey(userId)),
+    );
+    setLoaded(true);
+  }, [key, userId]);
 
-        void queryClient.invalidateQueries({
-          queryKey: trpc.recipes.list.queryKey(),
-        });
+  // Re-submission also recovers a request whose response was lost. The ID is unchanged.
+  const submitted = useRef<string | null>(null);
+  useEffect(() => {
+    if (!pending || !userId || submitted.current === pending.id) return;
+    submitted.current = pending.id;
+    create.mutate(pending);
+  }, [pending, userId, create.mutate]);
+
+  const status = useQuery(
+    trpc.recipes.importStatus.queryOptions(
+      { id: pending?.id ?? "00000000-0000-4000-8000-000000000000" },
+      {
+        enabled: !!pending && !!userId,
+        retry: false,
+        refetchInterval: (query) => {
+          const kind = query.state.data?.kind;
+          return kind === "saved" || kind === "failed" ? false : 2000;
+        },
       },
-    }),
+    ),
   );
-
+  const result =
+    status.data ?? (create.data?.id === pending?.id ? create.data : undefined);
+  const terminal = result?.kind === "saved" || result?.kind === "failed";
+  const busy = !!pending && !terminal;
   useEffect(() => {
-    setInput(sessionStorage.getItem(draftKey) ?? "");
-  }, []);
-
-  useEffect(() => {
-    if (previousGroup.current === groupId) return;
-    previousGroup.current = groupId;
-    setRequestId(undefined);
-    create.reset();
-  }, [groupId, create.reset]);
+    if (result?.kind !== "saved" || completed.current === result.id) return;
+    completed.current = result.id;
+    void queryClient.invalidateQueries({
+      queryKey: trpc.recipes.list.queryKey(),
+    });
+  }, [result, queryClient, trpc]);
 
   function change(value: string) {
     setInput(value);
-    setRequestId(undefined);
-    create.reset();
-    sessionStorage.setItem(draftKey, value);
+    try {
+      sessionStorage.setItem(`${key}:text`, value);
+    } catch {
+      /* Submission checks durable storage separately. */
+    }
   }
-
   function submit(event: SubmitEvent) {
     event.preventDefault();
-
-    if (create.isPending || !available || input.trim().length < 3) return;
-
-    if (!session) {
+    if (pending || !available || input.trim().length < 3) return;
+    if (!userId) {
       void navigate({ to: "/login" });
-
       return;
     }
-
-    const id = requestId ?? crypto.randomUUID();
-    setRequestId(id);
-    create.mutate({ id, input, groupId });
+    const next = { id: crypto.randomUUID(), input: input.trim(), groupId };
+    if (!writePendingImport(key, next)) {
+      setStorageError(
+        "Allow browser storage before starting so your import can recover after a refresh.",
+      );
+      return;
+    }
+    setStorageError(undefined);
+    setPending(next);
   }
+  async function reset() {
+    if (!pending) return;
+    // Tombstone an uncertain submission before allowing another ID.
+    try {
+      await discard.mutateAsync(pending);
+      if (!writePendingImport(key, null)) {
+        setStorageError("Couldn't clear the saved import. Try again.");
+        return;
+      }
+      if (result?.kind === "saved") change("");
+      setPending(null);
+      submitted.current = null;
+      create.reset();
+      discard.reset();
+      setStorageError(undefined);
+    } catch {
+      /* Keep the pending request recoverable. */
+    }
+  }
+  const progress =
+    result?.kind === "queued"
+      ? "Your recipe is queued. You can leave this page and return later."
+      : result?.kind === "processing" && result.stage === "fetching"
+        ? "Reading the recipe page. Your progress is saved."
+        : result?.kind === "processing" && result.stage === "saving"
+          ? "Saving your recipe. Your progress is saved."
+          : "Creating your recipe. You can refresh or return later to check progress.";
+  const error =
+    storageError ??
+    discard.error?.message ??
+    (result?.kind === "failed" ? result.message : undefined) ??
+    (!terminal ? create.error?.message : undefined) ??
+    (status.error && status.error.data?.code !== "NOT_FOUND"
+      ? "Couldn't check progress. Your import is still saved; reconnect to check again."
+      : undefined);
 
   return (
     <section className="composer-section" aria-label="Add a recipe">
@@ -81,38 +172,83 @@ export function RecipeComposer() {
         <ManualRecipe onCancel={() => setManual(false)} />
       ) : (
         <>
-          {session && (
-            <CollectionSelect label="Save to" disabled={create.isPending} />
-          )}
+          {userId &&
+            (pending ? (
+              <p>
+                Save to{" "}
+                <strong>
+                  {pending.groupId
+                    ? (groups.data?.find(
+                        (group) => group.id === pending.groupId,
+                      )?.name ?? "Original group collection")
+                    : "Personal collection"}
+                </strong>
+              </p>
+            ) : (
+              <CollectionSelect label="Save to" />
+            ))}
           <ComposerForm
             input={input}
-            pending={create.isPending}
+            pending={busy}
+            locked={!!pending}
             disabled={
-              create.isPending ||
+              !!pending ||
+              !loaded ||
               !available ||
               sessionPending ||
               input.trim().length < 3
             }
             onChange={change}
             onSubmit={submit}
-            manualDisabled={create.isPending || sessionPending}
+            manualDisabled={!!pending || sessionPending}
             onManual={() => {
-              if (!session) {
+              if (!userId) {
                 void navigate({ to: "/login" });
                 return;
               }
               setManual(true);
             }}
           />
-
           <ComposerFeedback
-            pending={create.isPending}
-            error={create.error?.message}
-            saved={create.data}
+            pending={busy}
+            progress={progress}
+            error={error}
+            saved={result?.kind === "saved" ? result : undefined}
           />
-
-          <IdeaChips disabled={create.isPending} onSelect={change} />
-          <p className="composer-footnote">Less scrolling. More cooking.</p>
+          {pending && (
+            <div className="composer-toolbar">
+              {busy && create.isError && (
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={create.isPending}
+                  onClick={() => create.mutate(pending)}
+                >
+                  Check again
+                </button>
+              )}
+              {(terminal || create.isError) && (
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={discard.isPending}
+                  onClick={() => void reset()}
+                >
+                  {result?.kind === "saved"
+                    ? "Add another recipe"
+                    : terminal
+                      ? "Edit and start a new attempt"
+                      : "Cancel request"}
+                </button>
+              )}
+            </div>
+          )}
+          <IdeaChips disabled={!!pending} onSelect={change} />
+          <p className="composer-footnote">
+            {result?.kind === "failed"
+              ? "A new attempt uses your AI allowance if generation starts."
+              : "Less scrolling. More cooking."}
+          </p>
         </>
       )}
     </section>

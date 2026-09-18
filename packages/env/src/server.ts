@@ -11,6 +11,9 @@ export const env = createEnv({
     DISCORD_CLIENT_ID: z.string().optional(),
     DISCORD_CLIENT_SECRET: z.string().optional(),
     OPENAI_API_KEY: z.string().optional(),
+    AI_DAILY_ATTEMPTS: z.coerce.number().int().positive().default(50),
+    AI_PENDING_PER_ACCOUNT: z.coerce.number().int().positive().default(5),
+    AI_CONCURRENT_ATTEMPTS: z.coerce.number().int().positive().default(2),
     OPENAI_MODEL: z.string().default("gpt-5.6-luna"),
     NODE_ENV: z
       .enum(["development", "production", "test"])

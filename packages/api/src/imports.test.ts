@@ -331,13 +331,15 @@ describe("durable extension imports with PostgreSQL", () => {
   });
   it("reserves the remaining daily allowance atomically and counts it for website saves", async () => {
     await db.delete(recipeImport).where(eq(recipeImport.userId, other));
-    await db.insert(recipe).values(
+    await db.insert(recipeImport).values(
       Array.from({ length: 49 }, () => ({
         id: randomUUID(),
         userId: other,
-        title: "Usage",
-        content: sampleRecipe,
-        origin: "manual" as const,
+        fingerprint: "spent",
+        input: "",
+        sourceUrl: null,
+        state: "failed" as const,
+        createdAt: new Date(Date.now() - 120_000),
       })),
     );
     const results = await Promise.allSettled([

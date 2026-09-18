@@ -29,11 +29,13 @@ import {
   recipePermission,
   requireGroup,
 } from "../groups/access";
+import { websiteImportSchema } from "../import-contract";
+import {
+  discardWebsiteImport,
+  importStatus,
+  submitWebsiteImport,
+} from "../imports";
 import { protectedProcedure, router } from "../index";
-import { generateRecipe } from "../recipes/generate";
-import { persistRecipe } from "../recipes/persist";
-import { checkRecipeUsage } from "../recipes/usage";
-import { availableTags } from "./tags";
 
 const idInput = z.object({ id: z.uuid() });
 const owned = (id: string, userId: string) =>
@@ -391,53 +393,18 @@ export const recipesRouter = router({
       return { id: input.id, rating: input.rating };
     }),
   create: protectedProcedure
-    .input(
-      z.object({
-        id: z.uuid(),
-        input: z.string().trim().min(3).max(20000),
-        groupId: z.uuid().nullable().optional(),
-      }),
-    )
-    .mutation(async ({ input, ctx }) => {
-      const userId = ctx.session.user.id;
-      if (input.groupId) await requireGroup(db, input.groupId, userId);
-      const [existing] = await db
-        .select()
-        .from(recipe)
-        .where(owned(input.id, userId));
-      if (existing) {
-        if (existing.groupId !== (input.groupId ?? null))
-          throw new TRPCError({
-            code: "CONFLICT",
-            message: "This recipe was already saved to another collection.",
-          });
-        return existing;
-      }
-      await db.transaction((tx) => checkRecipeUsage(tx, userId));
-      const { tagIds = [], ...result } = await generateRecipe(
-        input.input,
-        await availableTags(userId),
-      );
-      await db.transaction(async (tx) => {
-        await checkRecipeUsage(tx, userId);
-        if (input.groupId) {
-          await lockGroup(tx, input.groupId);
-          await requireGroup(tx, input.groupId, userId);
-        }
-        await persistRecipe(
-          tx,
-          {
-            id: input.id,
-            userId,
-            groupId: input.groupId ?? null,
-            title: result.content.title,
-            ...result,
-          },
-          tagIds,
-        );
-      });
-      return getRecipe(input.id, userId);
-    }),
+    .input(websiteImportSchema)
+    .mutation(({ input, ctx }) =>
+      submitWebsiteImport(ctx.session.user.id, input),
+    ),
+  importStatus: protectedProcedure
+    .input(idInput)
+    .query(({ input, ctx }) => importStatus(ctx.session.user.id, input.id)),
+  discardImport: protectedProcedure
+    .input(websiteImportSchema)
+    .mutation(({ input, ctx }) =>
+      discardWebsiteImport(ctx.session.user.id, input),
+    ),
   createManual: protectedProcedure
     .input(
       idInput.extend({

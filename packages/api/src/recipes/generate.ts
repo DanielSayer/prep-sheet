@@ -25,25 +25,16 @@ export async function generateRecipe(
       message:
         "Recipe creation needs an OpenAI API key. Add OPENAI_API_KEY to apps/web/.env and restart the server.",
     });
-  let sourceUrl: string | null = capturedSourceUrl ?? null;
-  let content = input;
-  if (!capturedSourceUrl && /^(https?:\/\/|www\.)/i.test(input)) {
-    try {
-      sourceUrl = recipeUrl(
-        input.startsWith("www.") ? `https://${input}` : input,
-      ).href;
-      content = extractPage(await fetchPage(sourceUrl));
-      if (content.length < 80) throw new Error(PAGE_ERROR);
-    } catch {
-      throw new TRPCError({ code: "BAD_REQUEST", message: PAGE_ERROR });
-    }
-  }
+  const { content, sourceUrl } = await prepareRecipeInput(
+    input,
+    capturedSourceUrl,
+  );
   try {
     const { output } = await generateText({
       model: createOpenAI({ apiKey: env.OPENAI_API_KEY })(env.OPENAI_MODEL),
       output: Output.object({ schema: resultSchema }),
       maxOutputTokens: 7000,
-      maxRetries: 1,
+      maxRetries: 0,
       abortSignal: AbortSignal.timeout(90000),
       system: buildRecipeSystemPrompt(sourceUrl ? "web" : "input", tags),
       prompt: content,
@@ -84,4 +75,24 @@ export async function generateRecipe(
       cause: error,
     });
   }
+}
+
+export async function prepareRecipeInput(
+  input: string,
+  capturedSourceUrl?: string,
+) {
+  let sourceUrl: string | null = capturedSourceUrl ?? null;
+  let content = input;
+  if (!capturedSourceUrl && /^(https?:\/\/|www\.)/i.test(input)) {
+    try {
+      sourceUrl = recipeUrl(
+        input.startsWith("www.") ? `https://${input}` : input,
+      ).href;
+      content = extractPage(await fetchPage(sourceUrl));
+      if (content.length < 80) throw new Error(PAGE_ERROR);
+    } catch {
+      throw new TRPCError({ code: "BAD_REQUEST", message: PAGE_ERROR });
+    }
+  }
+  return { content, sourceUrl };
 }

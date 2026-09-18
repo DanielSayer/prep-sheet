@@ -24,7 +24,11 @@ export const importInputSchema = z.strictObject({
 });
 export const importStatusSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("queued"), id: z.uuid() }),
-  z.object({ kind: z.literal("processing"), id: z.uuid() }),
+  z.object({
+    kind: z.literal("processing"),
+    id: z.uuid(),
+    stage: z.enum(["fetching", "generating", "saving"]).optional(),
+  }),
   z.object({
     kind: z.literal("saved"),
     id: z.uuid(),
@@ -37,3 +41,9 @@ export type ImportStatus = z.infer<typeof importStatusSchema>;
 export const collectionsSchema = z.array(
   z.object({ id: z.uuid().nullable(), name: z.string() }),
 );
+
+export const websiteImportSchema = z.object({
+  id: z.uuid(),
+  input: z.string().trim().min(3).max(20000),
+  groupId: z.uuid().nullable().optional(),
+});

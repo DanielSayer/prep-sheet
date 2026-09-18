@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   integer,
   jsonb,
@@ -21,20 +22,26 @@ export const recipeImport = pgTable(
     groupId: uuid("group_id"),
     fingerprint: text("fingerprint").notNull(),
     input: text("input").notNull(),
-    sourceUrl: text("source_url").notNull(),
+    sourceUrl: text("source_url"),
+    sourceKind: text("source_kind", { enum: ["captured", "website"] })
+      .notNull()
+      .default("captured"),
+    usageReleased: boolean("usage_released").notNull().default(false),
     state: text("state", {
-      enum: ["queued", "processing", "ready", "saved", "failed"],
+      enum: ["queued", "fetching", "processing", "ready", "saved", "failed"],
     })
       .notNull()
       .default("queued"),
     generated: jsonb("generated").$type<{
       content: RecipeContent;
       tagIds: string[];
+      origin?: "imported" | "generated";
     }>(),
     error: text("error"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    workerToken: uuid("worker_token"),
     startedAt: timestamp("started_at", { withTimezone: true }),
   },
   (t) => [

@@ -100,3 +100,23 @@ Live checks use API credits. The regular test suite never makes paid AI requests
 Use a Supabase PostgreSQL connection, check the PostgreSQL version and pooling settings, and create the initial migration. Add the deployed Discord callback URL and update `BETTER_AUTH_URL`. Review sign-up and generation limits before making the app publicly reachable. Local Docker data does not automatically sync to Supabase.
 
 If localhost shows an older app after sign-in, an existing service worker from another project may be serving cached content at that port. Clear that localhost site's service worker/cache in your browser, or use a fresh query URL such as `http://localhost:3001/?prep-sheet=1` while diagnosing it.
+
+## Durable imports and AI allowance
+
+Run `pnpm worker:imports` alongside the website. Website creation and extension imports both enqueue jobs; HTTP requests never generate recipes. Supervise the worker in production and restart it on failure. Deploy the website and worker together. Stop old workers before upgrading.
+
+For an existing database, apply `packages/db/src/upgrades/reliable-imports.sql` before deploying. It only adds columns and makes the source URL nullable. New databases can use the normal `pnpm db:push` setup.
+
+Server settings, shared by every web and worker instance:
+
+- `AI_DAILY_ATTEMPTS=50`: reserved or spent attempts per account in a rolling 24-hour window. Manual saves do not spend AI allowance. Deleting a recipe does not refund an attempt.
+- `AI_PENDING_PER_ACCOUNT=5`: maximum queued, fetching, generating or saving jobs per account. New admissions also have a five-per-minute limit.
+- `AI_CONCURRENT_ATTEMPTS=2`: maximum claimed fetching/generation jobs across worker processes. A worker runs one job at a time; run multiple supervised workers to use multiple slots.
+
+The website stores the request ID, input and destination in account-scoped session storage before submission. Refreshing or returning within the same tab recovers that job, including a lost submission response. Closing the tab can remove this browser recovery record, but the server job continues. A new attempt requires an explicit reset; an uncertain request is tombstoned before its ID is forgotten.
+
+Reservations are created atomically with admission. Failures before generation release the reservation. Once generation starts, failures and uncertain outcomes remain spent. SDK retries are disabled. Successful AI output is checkpointed before saving, so save retries do not call AI again. Claims abandoned before generation can be recovered after three minutes; interrupted generation becomes terminal instead of running twice. AI calls have a 90-second timeout, and claim tokens prevent an obsolete fetch worker from overwriting a newer claim.
+
+Keep job records for usage accounting and request deduplication. Do not purge saved or failed jobs when deleting recipes. Existing extension jobs remain compatible; historical website attempts made before this upgrade have no job record.
+
+Run PostgreSQL integration tests without file parallelism when exercising the shared import queue: `pnpm test --fileParallelism=false`. Use a development/test database without live import workers.

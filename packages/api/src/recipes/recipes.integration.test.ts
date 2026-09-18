@@ -8,14 +8,19 @@ import {
   recipeFavourite,
   recipeRating,
 } from "@prep-sheet/db/schema/recipe";
+import { TRPCError } from "@trpc/server";
 import { eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { Context } from "../context";
+import { processNextImport } from "../imports";
 import { appRouter } from "../routers/index";
 import { sampleRecipe } from "./fixtures";
 import { generateRecipe } from "./generate";
 
-vi.mock("./generate", () => ({ generateRecipe: vi.fn() }));
+vi.mock("./generate", async (original) => ({
+  ...(await original<typeof import("./generate")>()),
+  generateRecipe: vi.fn(),
+}));
 
 const ids = [randomUUID(), randomUUID(), randomUUID(), randomUUID()] as const;
 function caller(id: string) {
@@ -42,6 +47,18 @@ function caller(id: string) {
     },
   };
   return appRouter.createCaller({ auth: null, session });
+}
+
+async function createAndWait(
+  api: ReturnType<typeof caller>,
+  input: Parameters<ReturnType<typeof caller>["recipes"]["create"]>[0],
+) {
+  const status = await api.recipes.create(input);
+  if (status.kind !== "saved") await processNextImport();
+  const result = await api.recipes.importStatus({ id: input.id });
+  if (result.kind === "failed")
+    throw new TRPCError({ code: "NOT_FOUND", message: result.message });
+  return api.recipes.get({ id: input.id });
 }
 
 describe("recipes API with PostgreSQL", () => {
@@ -223,7 +240,7 @@ describe("recipes API with PostgreSQL", () => {
       sourceUrl: null,
       tagIds: [custom.id, foreign.id, randomUUID()],
     });
-    await owner.recipes.create({ id, input: "Make lunch" });
+    await createAndWait(owner, { id, input: "Make lunch" });
     expect(generateRecipe).toHaveBeenLastCalledWith(
       "Make lunch",
       expect.arrayContaining([
@@ -233,6 +250,7 @@ describe("recipes API with PostgreSQL", () => {
           description: "Easy to pack and eat cold",
         }),
       ]),
+      undefined,
     );
     expect((await owner.recipes.get({ id })).tagIds).toEqual([custom.id]);
     expect(
@@ -310,9 +328,9 @@ describe("recipes API with PostgreSQL", () => {
       sourceUrl: null,
       tagIds: [],
     });
-    const saved = await owner.recipes.create({ id, input: "Make lemon pasta" });
+    const saved = await createAndWait(owner, { id, input: "Make lemon pasta" });
     expect(saved.content.ingredients).toEqual(sampleRecipe.ingredients);
-    await owner.recipes.create({ id, input: "Make lemon pasta" });
+    await createAndWait(owner, { id, input: "Make lemon pasta" });
     expect(generateRecipe).toHaveBeenCalledTimes(1);
     expect(await owner.recipes.list()).toHaveLength(1);
     expect(await other.recipes.list()).toHaveLength(0);
@@ -341,7 +359,7 @@ describe("recipes API with PostgreSQL", () => {
     );
     const owner = caller(ids[0]);
     await expect(
-      owner.recipes.create({ id: randomUUID(), input: "Make dinner" }),
+      createAndWait(owner, { id: randomUUID(), input: "Make dinner" }),
     ).rejects.toThrow();
     expect(await owner.recipes.list()).toHaveLength(0);
   });
@@ -431,7 +449,10 @@ describe("recipes API with PostgreSQL", () => {
         .select()
         .from(recipeFavourite)
         .where(eq(recipeFavourite.recipeId, id)),
-    ).toHaveLength(0);
+    ).toHaveLength(1);
+    await owner.recipes.restore({ id });
+    expect((await owner.recipes.get({ id })).isFavourite).toBe(true);
+    await owner.recipes.delete({ id });
   });
   it("persists personal ratings and rejects inaccessible recipes", async () => {
     const owner = caller(ids[0]);
@@ -464,7 +485,10 @@ describe("recipes API with PostgreSQL", () => {
     await owner.recipes.delete({ id });
     expect(
       await db.select().from(recipeRating).where(eq(recipeRating.recipeId, id)),
-    ).toHaveLength(0);
+    ).toHaveLength(1);
+    await owner.recipes.restore({ id });
+    expect((await owner.recipes.get({ id })).rating).toBe(3);
+    await owner.recipes.delete({ id });
   });
   it("validates edits before touching the database", async () => {
     await expect(
@@ -515,11 +539,11 @@ describe("recipes API with PostgreSQL", () => {
       outsider.groups.details({ groupId: friends.id }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
 
-    const personal = await owner.recipes.create({
+    const personal = await createAndWait(owner, {
       id: randomUUID(),
       input: "Personal pasta",
     });
-    const shared = await member.recipes.create({
+    const shared = await createAndWait(member, {
       id: randomUUID(),
       input: "Shared pasta",
       groupId: friends.id,
@@ -577,7 +601,7 @@ describe("recipes API with PostgreSQL", () => {
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     const calls = vi.mocked(generateRecipe).mock.calls.length;
     await expect(
-      outsider.recipes.create({
+      createAndWait(outsider, {
         id: randomUUID(),
         input: "Unauthorised import",
         groupId: friends.id,
@@ -690,7 +714,7 @@ describe("recipes API with PostgreSQL", () => {
       sourceUrl: null,
       tagIds: [],
     });
-    const saved = await member.recipes.create({
+    const saved = await createAndWait(member, {
       id: randomUUID(),
       input: "Keep this recipe",
       groupId: target.id,
@@ -705,7 +729,7 @@ describe("recipes API with PostgreSQL", () => {
       };
     });
     await expect(
-      member.recipes.create({
+      createAndWait(member, {
         id: randomUUID(),
         input: "Removed during generation",
         groupId: target.id,
@@ -752,7 +776,7 @@ describe("recipes API with PostgreSQL", () => {
       sourceUrl: null,
       tagIds: [],
     });
-    const shared = await member.recipes.create({
+    const shared = await createAndWait(member, {
       id: randomUUID(),
       input: "Shared fixture",
       groupId: target.id,

@@ -1,0 +1,199 @@
+import { randomUUID } from "node:crypto";
+import { db } from "@prep-sheet/db";
+import { user } from "@prep-sheet/db/schema/auth";
+import { recipeImport } from "@prep-sheet/db/schema/import";
+import { recipe } from "@prep-sheet/db/schema/recipe";
+import { eq } from "drizzle-orm";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
+import {
+  discardWebsiteImport,
+  importStatus,
+  processNextImport,
+  submitWebsiteImport,
+} from "./imports";
+import { sampleRecipe } from "./recipes/fixtures";
+import { checkRecipeUsage } from "./recipes/usage";
+
+const account = randomUUID();
+const input = () => ({
+  id: randomUUID(),
+  input: "Make lemon pasta",
+  groupId: null,
+});
+const output = {
+  content: sampleRecipe,
+  tagIds: [],
+  origin: "generated" as const,
+  sourceUrl: null,
+};
+
+describe("website durable imports", () => {
+  beforeAll(async () => {
+    await db.insert(user).values({
+      id: account,
+      name: "Import test",
+      email: `${account}@example.test`,
+    });
+  });
+  beforeEach(async () => {
+    await db.delete(recipeImport).where(eq(recipeImport.userId, account));
+    await db.delete(recipe).where(eq(recipe.userId, account));
+  });
+  afterAll(async () => {
+    await db.delete(recipe).where(eq(recipe.userId, account));
+    await db.delete(user).where(eq(user.id, account));
+    await db.$client.end();
+  });
+  it("reserves once for concurrent submissions, rejects changed input and saves once", async () => {
+    const item = input();
+    const results = await Promise.all(
+      Array.from({ length: 8 }, () => submitWebsiteImport(account, item)),
+    );
+    expect(results.every((result) => result.kind === "queued")).toBe(true);
+    expect(
+      await db
+        .select()
+        .from(recipeImport)
+        .where(eq(recipeImport.userId, account)),
+    ).toHaveLength(1);
+    await expect(
+      submitWebsiteImport(account, { ...item, input: "Different dinner" }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(importStatus(randomUUID(), item.id)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    const generate = vi.fn().mockResolvedValue(output);
+    await Promise.all([
+      processNextImport(generate),
+      processNextImport(generate),
+    ]);
+    expect(generate).toHaveBeenCalledTimes(1);
+    expect(await submitWebsiteImport(account, item)).toMatchObject({
+      kind: "saved",
+      id: item.id,
+    });
+    const [saved] = await db
+      .select()
+      .from(recipe)
+      .where(eq(recipe.id, item.id));
+    expect(saved).toMatchObject({ origin: "generated", sourceUrl: null });
+  });
+  it("atomically bounds the last daily reservation and retains it after deletion", async () => {
+    await db.insert(recipeImport).values(
+      Array.from({ length: 49 }, () => ({
+        id: randomUUID(),
+        userId: account,
+        input: "",
+        fingerprint: "spent",
+        state: "failed" as const,
+        createdAt: new Date(Date.now() - 120_000),
+      })),
+    );
+    const outcomes = await Promise.allSettled([
+      submitWebsiteImport(account, input()),
+      submitWebsiteImport(account, input()),
+    ]);
+    expect(
+      outcomes.filter((result) => result.status === "fulfilled"),
+    ).toHaveLength(1);
+    await processNextImport(vi.fn().mockResolvedValue(output));
+    await db.delete(recipe).where(eq(recipe.userId, account));
+    await expect(
+      db.transaction((tx) => checkRecipeUsage(tx, account)),
+    ).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
+  });
+  it("limits pending jobs and concurrent claims across workers", async () => {
+    const outcomes = await Promise.allSettled(
+      Array.from({ length: 7 }, () => submitWebsiteImport(account, input())),
+    );
+    expect(
+      outcomes.filter((result) => result.status === "fulfilled"),
+    ).toHaveLength(5);
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const generate = vi.fn(async () => {
+      await gate;
+      return output;
+    });
+    const workers = Array.from({ length: 5 }, () =>
+      processNextImport(generate),
+    );
+    try {
+      await vi.waitFor(() => expect(generate).toHaveBeenCalledTimes(2));
+      expect(await processNextImport(generate)).toBe(false);
+    } finally {
+      release();
+      await Promise.all(workers);
+    }
+    expect(generate).toHaveBeenCalledTimes(2);
+  });
+  it("retains failed AI usage, never replays it, and releases a failed fetch", async () => {
+    const item = input();
+    await submitWebsiteImport(account, item);
+    const generate = vi.fn().mockRejectedValue(new Error("provider failure"));
+    await processNextImport(generate);
+    expect(await submitWebsiteImport(account, item)).toMatchObject({
+      kind: "failed",
+    });
+    await processNextImport(generate);
+    expect(generate).toHaveBeenCalledTimes(1);
+    const [failed] = await db
+      .select()
+      .from(recipeImport)
+      .where(eq(recipeImport.id, item.id));
+    expect(failed?.usageReleased).toBe(false);
+    const badUrl = { ...input(), input: "http://127.0.0.1/private" };
+    await submitWebsiteImport(account, badUrl);
+    await processNextImport(generate);
+    const [unreadable] = await db
+      .select()
+      .from(recipeImport)
+      .where(eq(recipeImport.id, badUrl.id));
+    expect(unreadable).toMatchObject({ state: "failed", usageReleased: true });
+    expect(generate).toHaveBeenCalledTimes(1);
+  });
+  it("recovers saving without AI and blocks delayed requests after cancellation", async () => {
+    const item = input();
+    await submitWebsiteImport(account, item);
+    await db
+      .update(recipeImport)
+      .set({ state: "ready", generated: output })
+      .where(eq(recipeImport.id, item.id));
+    const generate = vi.fn();
+    await processNextImport(generate);
+    expect(await importStatus(account, item.id)).toMatchObject({
+      kind: "saved",
+    });
+    const cancelled = input();
+    await discardWebsiteImport(account, cancelled);
+    expect(await submitWebsiteImport(account, cancelled)).toMatchObject({
+      kind: "failed",
+    });
+    await processNextImport(generate);
+    expect(generate).not.toHaveBeenCalled();
+  });
+  it("expires an interrupted AI call without replaying it", async () => {
+    const item = input();
+    await submitWebsiteImport(account, item);
+    await db
+      .update(recipeImport)
+      .set({ state: "processing", startedAt: new Date(Date.now() - 240_000) })
+      .where(eq(recipeImport.id, item.id));
+    const generate = vi.fn();
+    await processNextImport(generate);
+    expect(await submitWebsiteImport(account, item)).toMatchObject({
+      kind: "failed",
+    });
+    expect(generate).not.toHaveBeenCalled();
+  });
+});
