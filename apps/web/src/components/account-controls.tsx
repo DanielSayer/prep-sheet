@@ -24,19 +24,11 @@ export function AccountControls() {
   const busy = request.isPending || cancel.isPending;
   return (
     <section className="help-section" aria-labelledby="account-heading">
-      <h2 id="account-heading">Account and support</h2>
+      <h2 id="account-heading">Account</h2>
       <p>
         You sign in through Discord. Manage your password, sign-in email and
         security settings in Discord.
       </p>
-      <div className="help-actions">
-        <Link to="/privacy" className="text-button">
-          Privacy
-        </Link>
-        <Link to="/support" className="text-button">
-          Support / report a problem
-        </Link>
-      </div>
       <details className="account-deletion">
         <summary>Request account deletion</summary>
         <p>

@@ -19,19 +19,24 @@
 }
 .settings-layout {
   display: grid;
-  grid-template-columns: 160px minmax(0, 1fr);
+  grid-template-columns: 200px minmax(0, 1fr);
   gap: 48px;
 }
-.settings-layout nav a {
+.settings-tabs button {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #e6ecd8;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  min-height: 48px;
+  border: 1px solid transparent;
   border-radius: 8px;
   padding: 12px 16px;
   font-weight: 800;
 }
-.settings-layout nav {
+.settings-tabs {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -191,14 +196,8 @@
     grid-template-columns: 1fr;
     gap: 24px;
   }
-  .settings-layout nav {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-  .settings-layout nav a {
-    flex: 1;
-    justify-content: center;
+  .settings-tabs {
+    display: none;
   }
   .tag-form {
     padding: 16px;
@@ -500,4 +499,51 @@
 }
 .extension-id {
   overflow-wrap: anywhere;
+}
+
+.settings-tabs button[aria-selected="true"] {
+  background: #e6ecd8;
+  border-color: #bbc6ad;
+}
+.settings-tabs button:hover {
+  background: #eef0e5;
+}
+.settings-tabs button:focus-visible,
+.settings-mobile-picker select:focus-visible,
+.settings-panels > [role="tabpanel"]:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+.settings-tabs svg {
+  flex-shrink: 0;
+}
+.settings-mobile-picker {
+  display: none;
+  gap: 8px;
+  font-weight: 800;
+}
+.settings-mobile-picker select {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #bbc6ad;
+  border-radius: 8px;
+  background: #fffef9;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+.settings-panels {
+  min-width: 0;
+}
+.settings-panels .connected-extensions {
+  margin-top: 0;
+}
+.settings-policy-heading {
+  margin-bottom: 24px;
+}
+@media (max-width: 700px) {
+  .settings-mobile-picker {
+    display: grid;
+  }
 }
