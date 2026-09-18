@@ -1,5 +1,6 @@
 import { db } from "@prep-sheet/db";
 import { recipeContentSchema } from "@prep-sheet/db/recipe-content";
+import { user } from "@prep-sheet/db/schema/auth";
 import {
   recipe,
   recipeCooking,
@@ -14,13 +15,20 @@ import {
   desc,
   eq,
   getTableColumns,
+  gt,
   inArray,
+  isNotNull,
   isNull,
   or,
   sql,
 } from "drizzle-orm";
 import { z } from "zod";
-import { accessibleRecipe, lockGroup, requireGroup } from "../groups/access";
+import {
+  accessibleRecipe,
+  lockGroup,
+  recipePermission,
+  requireGroup,
+} from "../groups/access";
 import { protectedProcedure, router } from "../index";
 import { generateRecipe } from "../recipes/generate";
 import { persistRecipe } from "../recipes/persist";
@@ -73,6 +81,56 @@ export async function getRecipe(id: string, userId: string) {
 }
 
 export const recipesRouter = router({
+  recentlyDeleted: protectedProcedure
+    .input(z.object({ groupId: z.uuid().nullable() }))
+    .query(async ({ input, ctx }) => {
+      const userId = ctx.session.user.id;
+      if (input.groupId) await requireGroup(db, input.groupId, userId);
+      return db
+        .select({
+          id: recipe.id,
+          title: recipe.title,
+          deletedAt: recipe.deletedAt,
+          expiresAt: recipe.expiresAt,
+          deletedByName: user.name,
+        })
+        .from(recipe)
+        .leftJoin(user, eq(user.id, recipe.deletedBy))
+        .where(
+          and(
+            recipePermission(userId),
+            input.groupId
+              ? eq(recipe.groupId, input.groupId)
+              : isNull(recipe.groupId),
+            isNotNull(recipe.deletedAt),
+            gt(recipe.expiresAt, sql`now()`),
+          ),
+        )
+        .orderBy(desc(recipe.deletedAt), asc(recipe.id));
+    }),
+  restore: protectedProcedure
+    .input(idInput)
+    .mutation(async ({ input, ctx }) => {
+      const [restored] = await db
+        .update(recipe)
+        .set({ deletedAt: null, deletedBy: null, expiresAt: null })
+        .where(
+          and(
+            eq(recipe.id, input.id),
+            recipePermission(ctx.session.user.id),
+            isNotNull(recipe.deletedAt),
+            gt(recipe.expiresAt, sql`now()`),
+          ),
+        )
+        .returning({ id: recipe.id });
+      if (!restored)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message:
+            "This recipe is no longer available to restore. Refresh Recently deleted.",
+        });
+      return restored;
+    }),
   cookingHistory: protectedProcedure
     .input(idInput)
     .query(async ({ input, ctx }) => {
@@ -484,7 +542,12 @@ export const recipesRouter = router({
     }),
   delete: protectedProcedure.input(idInput).mutation(async ({ input, ctx }) => {
     const deleted = await db
-      .delete(recipe)
+      .update(recipe)
+      .set({
+        deletedAt: sql`now()`,
+        deletedBy: ctx.session.user.id,
+        expiresAt: sql`now() + interval '30 days'`,
+      })
       .where(owned(input.id, ctx.session.user.id))
       .returning({ id: recipe.id });
     if (!deleted.length) throw missing();

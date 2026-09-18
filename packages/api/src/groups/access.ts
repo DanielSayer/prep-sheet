@@ -21,8 +21,11 @@ export const memberOf = (userId: string) =>
       ),
   );
 
-export const accessibleRecipe = (userId: string) =>
+export const recipePermission = (userId: string) =>
   or(and(isNull(recipe.groupId), eq(recipe.userId, userId)), memberOf(userId));
+
+export const accessibleRecipe = (userId: string) =>
+  and(isNull(recipe.deletedAt), recipePermission(userId));
 
 export async function requireGroup(
   database: Database,

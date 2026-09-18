@@ -111,8 +111,9 @@ export function GroupSettings({
       >
         <h3>Delete group</h3>
         <p>
-          This permanently deletes the group and all its shared recipes for
-          everyone. Personal recipes and copies in other collections are kept.
+          You can delete this group once it has no active or recoverable
+          recipes. Deleted recipes remain recoverable for 30 days. Personal
+          recipes and copies in other collections are kept.
         </p>
         <label>
           Type {group.name} to confirm

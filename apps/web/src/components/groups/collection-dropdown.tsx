@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@prep-sheet/ui/components/dropdown-menu";
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, Users } from "lucide-react";
+import { ChevronDown, Trash2, Users } from "lucide-react";
 import { useId, useRef } from "react";
 
 type CollectionOption = {
@@ -71,6 +71,13 @@ export function CollectionDropdown({
           {manageGroups && (
             <>
               <DropdownMenuSeparator className="collection-select-divider" />
+              <DropdownMenuItem
+                className="collection-select-manage"
+                render={<Link to="/recipes/deleted" />}
+              >
+                <Trash2 size={16} aria-hidden="true" />
+                Recently deleted
+              </DropdownMenuItem>
               <DropdownMenuItem
                 className="collection-select-manage"
                 render={<Link to="/groups" />}

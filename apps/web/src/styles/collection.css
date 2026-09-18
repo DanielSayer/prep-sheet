@@ -3,6 +3,47 @@
   margin: 0 auto;
   padding: 32px var(--page-gutter) 64px;
 }
+.deleted-recipes {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0 0;
+  border-top: 1px solid var(--line);
+}
+.deleted-recipe {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--line);
+}
+.deleted-recipe > div {
+  min-width: 0;
+}
+.deleted-recipe h2 {
+  font-size: 19px;
+  margin: 0 0 6px;
+  overflow-wrap: anywhere;
+}
+.deleted-recipe p {
+  color: var(--muted-ink);
+  font-size: 14px;
+  margin: 4px 0;
+}
+.deleted-recipe .deleted-recipe-expiry {
+  font-weight: 800;
+}
+.deleted-recipe button {
+  flex-shrink: 0;
+  min-height: 44px;
+}
+@media (max-width: 480px) {
+  .deleted-recipe {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
 .page-heading {
   display: flex;
   align-items: center;

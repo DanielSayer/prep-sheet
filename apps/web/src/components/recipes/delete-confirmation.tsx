@@ -13,8 +13,8 @@ export function DeleteConfirmation({
     <div className="delete-confirmation" role="alert">
       <p>
         {shared
-          ? "Remove this recipe for everyone in the group?"
-          : "Remove this recipe from your personal collection?"}
+          ? "Move this recipe to Recently deleted for everyone in the group? Any current member can restore it for 30 days."
+          : "Move this recipe to Recently deleted? You can restore it for 30 days."}
       </p>
       <button
         type="button"
@@ -31,7 +31,7 @@ export function DeleteConfirmation({
         disabled={pending}
         onClick={onConfirm}
       >
-        {pending ? "Removing..." : "Yes, remove"}
+        {pending ? "Deleting..." : "Delete recipe"}
       </button>
     </div>
   );

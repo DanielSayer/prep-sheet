@@ -24,6 +24,7 @@ import {
 import { RecipeEditor } from "./recipe-editor";
 import { RecipeHeading } from "./recipe-heading";
 import { RecipeOrganise } from "./recipe-organise";
+import { useRestoreRecipe } from "./use-restore-recipe";
 
 export function RecipeDetail({ id }: { id: string }) {
   const trpc = useTRPC();
@@ -41,6 +42,7 @@ export function RecipeDetail({ id }: { id: string }) {
     setEditing(!!readRecipeDraft(draftKey));
   }, [draftKey]);
   const [confirming, setConfirming] = useState(false);
+  const restore = useRestoreRecipe();
   const { groups, selectGroup } = useCollection();
 
   const returnToCollection = () => {
@@ -69,12 +71,12 @@ export function RecipeDetail({ id }: { id: string }) {
   const remove = useMutation(
     trpc.recipes.delete.mutationOptions({
       onSuccess: async () => {
-        await queryClient.invalidateQueries({
-          queryKey: trpc.recipes.list.queryKey(),
-        });
-
-        toast.success("Recipe removed.");
         returnToCollection();
+        toast.success("Recipe moved to Recently deleted.", {
+          duration: 8000,
+          action: { label: "Undo", onClick: () => restore.mutate({ id }) },
+        });
+        await queryClient.invalidateQueries();
       },
     }),
   );

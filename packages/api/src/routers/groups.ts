@@ -2,8 +2,9 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { db } from "@prep-sheet/db";
 import { user } from "@prep-sheet/db/schema/auth";
 import { group, groupInvite, groupMember } from "@prep-sheet/db/schema/group";
+import { recipe } from "@prep-sheet/db/schema/recipe";
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, gt, isNull } from "drizzle-orm";
+import { and, asc, eq, gt, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { lockGroup, requireGroup } from "../groups/access";
 import { protectedProcedure, router } from "../index";
@@ -241,6 +242,22 @@ export const groupsRouter = router({
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Enter the group name exactly to confirm deletion.",
+          });
+        const [retained] = await tx
+          .select({ id: recipe.id })
+          .from(recipe)
+          .where(
+            and(
+              eq(recipe.groupId, input.groupId),
+              or(isNull(recipe.deletedAt), gt(recipe.expiresAt, sql`now()`)),
+            ),
+          )
+          .limit(1);
+        if (retained)
+          throw new TRPCError({
+            code: "CONFLICT",
+            message:
+              "This group still has active or recoverable recipes. Delete its recipes and wait until their 30-day recovery periods end before deleting the group.",
           });
         await tx.delete(group).where(eq(group.id, input.groupId));
         return { success: true };

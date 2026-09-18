@@ -60,7 +60,7 @@ describe("recipes API with PostgreSQL", () => {
     await db.delete(user).where(inArray(user.id, ids));
     await db.$client.end();
   });
-  it("keeps cooking history private, validates dates, retries safely and cascades deletion", async () => {
+  it("keeps cooking history private, validates dates, retries safely and preserves history on deletion", async () => {
     const owner = caller(ids[0]);
     const member = caller(ids[1]);
     const outsider = caller(ids[3]);
@@ -153,7 +153,9 @@ describe("recipes API with PostgreSQL", () => {
         .select()
         .from(recipeCooking)
         .where(eq(recipeCooking.recipeId, id)),
-    ).toEqual([]);
+    ).toHaveLength(1);
+    await owner.recipes.restore({ id });
+    expect(await owner.recipes.cookingHistory({ id })).toHaveLength(1);
     await db.delete(group).where(eq(group.id, target.id));
   });
   it("requires authentication", async () => {
@@ -395,10 +397,7 @@ describe("recipes API with PostgreSQL", () => {
       owner.recipes.createManual({ ...input, groupId: target.id }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
     expect(generateRecipe).not.toHaveBeenCalled();
-    await owner.groups.delete({
-      groupId: target.id,
-      name: "Manual recipe test",
-    });
+    await db.delete(group).where(eq(group.id, target.id));
     await owner.recipes.delete({ id: saved.id });
   });
 
@@ -717,7 +716,7 @@ describe("recipes API with PostgreSQL", () => {
     expect((await owner.recipes.get({ id: saved.id })).userId).toBeNull();
   });
 
-  it("transfers ownership and deletes only the chosen group's recipes", async () => {
+  it("transfers ownership and blocks group deletion until recipe recovery expires", async () => {
     const owner = caller(ids[0]);
     const member = caller(ids[1]);
     const target = await owner.groups.create({ name: "Group lifecycle" });
@@ -766,6 +765,20 @@ describe("recipes API with PostgreSQL", () => {
     await expect(
       member.groups.delete({ groupId: target.id, name: "Wrong name" }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      member.groups.delete({ groupId: target.id, name: "Renamed group" }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    await member.recipes.delete({ id: shared.id });
+    await expect(
+      member.groups.delete({ groupId: target.id, name: "Renamed group" }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    await db
+      .update(recipe)
+      .set({
+        deletedAt: new Date(Date.now() - 31 * 86400000),
+        expiresAt: new Date(Date.now() - 86400000),
+      })
+      .where(eq(recipe.id, shared.id));
     await member.groups.delete({ groupId: target.id, name: "Renamed group" });
     await expect(member.recipes.get({ id: shared.id })).rejects.toMatchObject({
       code: "NOT_FOUND",

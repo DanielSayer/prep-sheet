@@ -29,6 +29,11 @@ export const recipe = pgTable(
     origin: text("origin", {
       enum: ["imported", "generated", "manual"],
     }).notNull(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    deletedBy: text("deleted_by").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -39,6 +44,11 @@ export const recipe = pgTable(
   (table) => [
     index("recipe_user_created_idx").on(table.userId, table.createdAt),
     index("recipe_group_created_idx").on(table.groupId, table.createdAt),
+    index("recipe_deleted_expiry_idx").on(table.expiresAt),
+    check(
+      "recipe_deletion_dates_check",
+      sql`(${table.deletedAt} is null and ${table.expiresAt} is null) or (${table.deletedAt} is not null and ${table.expiresAt} is not null and ${table.expiresAt} > ${table.deletedAt})`,
+    ),
   ],
 );
 

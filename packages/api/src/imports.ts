@@ -5,7 +5,7 @@ import { group, groupMember } from "@prep-sheet/db/schema/group";
 import { recipeImport } from "@prep-sheet/db/schema/import";
 import { recipe } from "@prep-sheet/db/schema/recipe";
 import { TRPCError } from "@trpc/server";
-import { and, asc, count, eq, gte, lt } from "drizzle-orm";
+import { and, asc, count, eq, gte, isNull, lt } from "drizzle-orm";
 import type { z } from "zod";
 import { lockGroup, requireGroup } from "./groups/access";
 import { type ImportStatus, importInputSchema } from "./import-contract";
@@ -54,7 +54,13 @@ export async function importStatus(
       const [saved] = await db
         .select({ title: recipe.title })
         .from(recipe)
-        .where(and(eq(recipe.id, id), eq(recipe.userId, userId)));
+        .where(
+          and(
+            eq(recipe.id, id),
+            eq(recipe.userId, userId),
+            isNull(recipe.deletedAt),
+          ),
+        );
       if (!saved)
         return {
           kind: "failed",
