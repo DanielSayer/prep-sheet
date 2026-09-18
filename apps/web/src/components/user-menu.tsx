@@ -10,9 +10,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import {
   ChevronDown,
+  LifeBuoy,
   LogIn,
   LogOut,
   Settings,
+  Shield,
   UserRound,
   Users,
 } from "lucide-react";
@@ -26,6 +28,8 @@ export default function UserMenu() {
   const accountActive = useRouterState({
     select: (state) =>
       state.location.pathname === "/settings" ||
+      state.location.pathname === "/privacy" ||
+      state.location.pathname === "/support" ||
       state.location.pathname === "/groups" ||
       state.location.pathname === "/login",
   });
@@ -72,6 +76,18 @@ export default function UserMenu() {
             render={<Link to="/login" />}
           >
             <LogIn size={16} /> Sign in
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="collection-select-manage"
+            render={<Link to="/support" />}
+          >
+            <LifeBuoy size={16} /> Support / report a problem
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="collection-select-manage"
+            render={<Link to="/privacy" />}
+          >
+            <Shield size={16} /> Privacy
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -131,6 +147,18 @@ export default function UserMenu() {
             render={<Link to="/groups" />}
           >
             <Users size={16} /> Groups
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="collection-select-manage"
+            render={<Link to="/support" />}
+          >
+            <LifeBuoy size={16} /> Support / report a problem
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="collection-select-manage"
+            render={<Link to="/privacy" />}
+          >
+            <Shield size={16} /> Privacy
           </DropdownMenuItem>
           <DropdownMenuItem
             className="collection-select-manage"

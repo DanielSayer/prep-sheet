@@ -5,4 +5,5 @@ export * from "./import";
 export * from "./meal-planner";
 export * from "./recipe";
 export * from "./shopping";
+export * from "./support";
 export * from "./tag";

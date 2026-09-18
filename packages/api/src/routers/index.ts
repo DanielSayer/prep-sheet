@@ -3,6 +3,7 @@ import { groupsRouter } from "./groups";
 import { plannerRouter } from "./planner";
 import { recipesRouter } from "./recipes";
 import { shoppingRouter } from "./shopping";
+import { supportRouter } from "./support";
 import { tagsRouter } from "./tags";
 
 export const appRouter = router({
@@ -11,6 +12,7 @@ export const appRouter = router({
   shopping: shoppingRouter,
   planner: plannerRouter,
   groups: groupsRouter,
+  support: supportRouter,
   healthCheck: publicProcedure.query(() => {
     return "OK";
   }),

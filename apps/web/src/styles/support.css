@@ -1,0 +1,100 @@
+.help-page {
+  max-width: 800px;
+}
+.help-section {
+  margin-bottom: 32px;
+}
+.help-section h2 {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+.help-section p,
+.help-section li {
+  line-height: 1.7;
+  margin-bottom: 12px;
+  overflow-wrap: anywhere;
+}
+.help-section ul {
+  padding-left: 24px;
+  list-style: disc;
+}
+.help-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+}
+.help-actions a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.help-form {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0;
+}
+.help-form label {
+  font-weight: 800;
+}
+.help-form input,
+.help-form textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+.help-form textarea {
+  resize: vertical;
+}
+.help-form button {
+  justify-self: start;
+  min-height: 48px;
+}
+.help-form :focus-visible,
+.help-section summary:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+.help-section summary {
+  cursor: pointer;
+  padding: 14px 0;
+  font-weight: 800;
+  min-height: 48px;
+}
+.account-deletion,
+.help-history {
+  border-top: 1px solid var(--line);
+  margin-top: 20px;
+}
+.account-group-notice {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f2f3e9;
+  margin-bottom: 20px;
+}
+.help-history li {
+  border-bottom: 1px solid var(--line);
+  padding: 12px 0;
+}
+.help-history li p {
+  white-space: pre-wrap;
+}
+@media (max-width: 560px) {
+  .help-form button {
+    width: 100%;
+  }
+}
+
+.help-section p a,
+.help-section li a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

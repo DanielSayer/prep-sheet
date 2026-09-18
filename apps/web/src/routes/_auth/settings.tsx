@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Pencil, Puzzle, Tag, Tags, Trash2 } from "lucide-react";
+import { Pencil, Puzzle, Tag, Tags, Trash2, UserRound } from "lucide-react";
 import { useState } from "react";
+import { AccountControls } from "@/components/account-controls";
 import { ConnectedExtensions } from "@/components/connected-extensions";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
 import { ApplyTagDialog } from "@/components/recipes/bulk-tag-dialog";
@@ -70,6 +71,9 @@ function Settings() {
       </div>
       <div className="settings-layout">
         <nav aria-label="Settings">
+          <a href="#account-heading">
+            <UserRound size={17} /> Account
+          </a>
           <a href="#tags-heading">
             <Tag size={17} /> Tags
           </a>
@@ -78,6 +82,7 @@ function Settings() {
           </a>
         </nav>
         <div>
+          <AccountControls />
           <section aria-labelledby="tags-heading">
             <h2 id="tags-heading">Your tags</h2>
             <p className="settings-intro">

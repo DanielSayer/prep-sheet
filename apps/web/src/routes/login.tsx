@@ -84,6 +84,14 @@ function Login() {
         <Link to="/" className="text-button">
           Back to the kitchen
         </Link>
+        <div className="help-actions">
+          <Link to="/privacy" className="text-button">
+            Privacy
+          </Link>
+          <Link to="/support" className="text-button">
+            Need help?
+          </Link>
+        </div>
       </div>
     </main>
   );
