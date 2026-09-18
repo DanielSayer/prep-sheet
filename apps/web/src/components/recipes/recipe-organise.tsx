@@ -1,30 +1,35 @@
+import { DropdownMenuItem } from "@prep-sheet/ui/components/dropdown-menu";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Copy, Download, ExternalLink, Plus } from "lucide-react";
-import { useState } from "react";
+import { Copy, ExternalLink, Plus, Star } from "lucide-react";
+import { type ComponentProps, useState } from "react";
 import { useTRPC } from "@/utils/trpc";
 import { ErrorNotice } from "../feedback";
 import { CopyRecipe } from "../groups/copy-recipe";
 import { FavouriteButton } from "./favourite-button";
 import { OrganiseDialog } from "./organise-dialog";
 import { RatingControl } from "./rating-control";
+import { RecipeHeading } from "./recipe-heading";
+import { RecipeReadingTools } from "./recipe-reading-tools";
 import { TagChoices } from "./tag-choices";
 export function RecipeOrganise({
   recipe,
+  onEdit,
+  onDelete,
 }: {
-  recipe: {
-    id: string;
-    title: string;
+  recipe: ComponentProps<typeof RecipeHeading>["recipe"] & {
     groupId: string | null;
     isFavourite: boolean;
     rating: number | null;
     tagIds: string[];
   };
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
   const trpc = useTRPC();
   const client = useQueryClient();
   const tags = useQuery(trpc.tags.list.queryOptions());
-  const [dialog, setDialog] = useState<"tags" | "copy" | null>(null);
+  const [dialog, setDialog] = useState<"tags" | "copy" | "rating" | null>(null);
   const update = useMutation(
     trpc.recipes.setTag.mutationOptions({
       onSuccess: async () => {
@@ -41,57 +46,97 @@ export function RecipeOrganise({
   const chosen =
     tags.data?.filter((tag) => recipe.tagIds.includes(tag.id)) ?? [];
   return (
-    <details className="recipe-organise">
-      <summary>Organise recipe</summary>
-      <RatingControl
-        id={recipe.id}
-        title={recipe.title}
-        rating={recipe.rating}
+    <>
+      <RecipeHeading
+        recipe={recipe}
+        editing={false}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        shoppingExtras={
+          <div className="recipe-desktop-actions recipe-personal-actions">
+            <RatingControl
+              id={recipe.id}
+              title={recipe.title}
+              rating={recipe.rating}
+            />
+            <FavouriteButton {...recipe} showLabel />
+          </div>
+        }
+        menuItems={
+          <>
+            <DropdownMenuItem
+              className="collection-select-manage recipe-mobile-action"
+              onClick={() => setDialog("rating")}
+            >
+              <Star size={17} /> Rate recipe
+            </DropdownMenuItem>
+            <FavouriteButton {...recipe} showLabel menuItem />
+            <DropdownMenuItem
+              className="collection-select-manage recipe-mobile-action"
+              onClick={() => setDialog("tags")}
+            >
+              <Plus size={17} /> Tags
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="collection-select-manage recipe-mobile-action"
+              onClick={() => setDialog("copy")}
+            >
+              <Copy size={17} /> Copy to collection
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="collection-select-manage recipe-mobile-action"
+              render={
+                <a
+                  href={`/api/recipes/${recipe.id}/pdf`}
+                  target="_blank"
+                  rel="noreferrer"
+                />
+              }
+            >
+              <ExternalLink size={17} /> Open PDF
+            </DropdownMenuItem>
+          </>
+        }
       />
-      <div className="organise-actions">
-        <FavouriteButton {...recipe} showLabel />
-        <button
-          type="button"
-          className="organise-action"
-          aria-haspopup="dialog"
-          onClick={() => setDialog("tags")}
-        >
-          <Plus size={17} />
-          Tags
-        </button>
-        <button
-          type="button"
-          className="organise-action"
-          aria-haspopup="dialog"
-          onClick={() => setDialog("copy")}
-        >
-          <Copy size={16} />
-          Copy
-        </button>
-        <a
-          href={`/api/recipes/${recipe.id}/pdf`}
-          target="_blank"
-          rel="noreferrer"
-          className="organise-action"
-        >
-          <ExternalLink size={16} /> Open PDF
-        </a>
-        <a
-          href={`/api/recipes/${recipe.id}/pdf`}
-          download={`${recipe.title.replace(/[^a-z0-9 -]/gi, "").slice(0, 80) || "recipe"}.pdf`}
-          className="organise-action"
-        >
-          <Download size={16} /> Download
-        </a>
-      </div>
-      <TagChoices
-        tags={chosen}
-        selected={recipe.tagIds}
-        toggle={toggle}
-        disabled={update.isPending}
-      />
-      {tags.isSuccess && chosen.length === 0 && (
-        <span className="muted">No tags yet</span>
+      <RecipeReadingTools>
+        <div className="recipe-desktop-actions">
+          <button
+            type="button"
+            className="organise-action"
+            aria-haspopup="dialog"
+            onClick={() => setDialog("tags")}
+          >
+            <Plus size={17} />
+            Tags
+          </button>
+          <button
+            type="button"
+            className="organise-action"
+            aria-haspopup="dialog"
+            onClick={() => setDialog("copy")}
+          >
+            <Copy size={16} />
+            Copy
+          </button>
+          <a
+            href={`/api/recipes/${recipe.id}/pdf`}
+            target="_blank"
+            rel="noreferrer"
+            className="organise-action"
+          >
+            <ExternalLink size={16} /> Open PDF
+          </a>
+        </div>
+      </RecipeReadingTools>
+      {chosen.length > 0 && (
+        <div className="recipe-selected-tags recipe-desktop-actions">
+          <TagChoices
+            tags={chosen}
+            selected={recipe.tagIds}
+            toggle={toggle}
+            disabled={update.isPending}
+          />
+        </div>
       )}
       {!dialog && (
         <ErrorNotice message={update.error?.message || tags.error?.message} />
@@ -128,6 +173,15 @@ export function RecipeOrganise({
           </div>
         </OrganiseDialog>
       )}
+      {dialog === "rating" && (
+        <OrganiseDialog title="Rate recipe" onClose={() => setDialog(null)}>
+          <RatingControl
+            id={recipe.id}
+            title={recipe.title}
+            rating={recipe.rating}
+          />
+        </OrganiseDialog>
+      )}
       {dialog === "copy" && (
         <OrganiseDialog
           title="Copy to a collection"
@@ -136,6 +190,6 @@ export function RecipeOrganise({
           <CopyRecipe id={recipe.id} sourceGroupId={recipe.groupId} />
         </OrganiseDialog>
       )}
-    </details>
+    </>
   );
 }

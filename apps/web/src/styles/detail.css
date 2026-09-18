@@ -17,10 +17,37 @@
   align-items: center;
 }
 .detail-page .page-heading {
+  position: relative;
   align-items: flex-start;
 }
 .detail-page .page-heading > div:first-child {
-  max-width: 760px;
+  width: 100%;
+  min-width: 0;
+}
+:where(.detail-page) .page-heading :where(h1, p) {
+  padding-right: 52px;
+}
+.detail-page .detail-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+.recipe-desktop-actions,
+.recipe-reading-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.recipe-personal-actions {
+  margin-left: auto;
+  gap: 16px;
+}
+.recipe-selected-tags {
+  margin: -6px 0 18px;
+}
+.recipe-actions-menu .recipe-mobile-action {
+  display: none;
 }
 .recipe-editor {
   max-width: 800px;
@@ -190,10 +217,16 @@
 .recipe-shopping-action {
   display: flex;
   flex-wrap: wrap;
-  align-items: start;
+  align-items: center;
   gap: 12px;
 }
 @media (max-width: 700px) {
+  .recipe-desktop-actions {
+    display: none;
+  }
+  .recipe-actions-menu .recipe-mobile-action {
+    display: flex;
+  }
   .recipe-shopping-action {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -233,7 +266,13 @@
 }
 .recipe-reading-tools nav {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 16px;
+}
+.recipe-jump-label {
+  color: var(--muted-ink);
+  font-size: 12px;
+  white-space: nowrap;
 }
 @media (max-width: 600px) {
   .recipe-reading-tools nav {
@@ -243,28 +282,29 @@
     flex: 1;
     justify-content: center;
   }
-  .recipe-reading-tools .keep-awake {
-    width: 100%;
+  .recipe-reading-actions {
+    margin-left: auto;
   }
 }
 .recipe-reading-tools nav a {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  padding: 8px;
+  padding: 8px 0;
   font-size: 13px;
   font-weight: 800;
-  border-radius: 8px;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 4px;
 }
 .recipe-reading-tools nav a:hover {
-  background: #e9ecdf;
+  text-decoration-color: currentColor;
 }
 .recipe-body h2,
 #recipe-history {
   scroll-margin-top: 125px;
 }
-.recipe-reading-tools nav a:focus-visible,
-.recipe-organise summary:focus-visible {
+.recipe-reading-tools nav a:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
 }

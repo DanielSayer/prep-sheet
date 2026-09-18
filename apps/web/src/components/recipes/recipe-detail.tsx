@@ -14,7 +14,6 @@ import { useTRPC } from "@/utils/trpc";
 import { useCollection } from "../groups/collection-context";
 import { CookingHistory } from "./cooking-history";
 import { DeleteConfirmation } from "./delete-confirmation";
-import { KeepAwake } from "./keep-awake";
 import { RecipeBody } from "./recipe-body";
 import {
   readRecipeDraft,
@@ -119,21 +118,20 @@ export function RecipeDetail({ id }: { id: string }) {
 
         {recipe.data && !recipe.isError && (
           <>
-            <RecipeHeading
-              recipe={recipe.data}
-              editing={editing}
-              onEdit={() => setEditing(true)}
-              onDelete={() => setConfirming(true)}
-            />
-            {!editing && (
-              <div className="recipe-reading-tools">
-                <nav aria-label="Recipe sections">
-                  <a href="#ingredients-heading">Ingredients</a>
-                  <a href="#method-heading">Method</a>
-                  <a href="#recipe-history">History</a>
-                </nav>
-                <KeepAwake />
-              </div>
+            {editing ? (
+              <RecipeHeading
+                recipe={recipe.data}
+                editing={editing}
+                onEdit={() => setEditing(true)}
+                onDelete={() => setConfirming(true)}
+              />
+            ) : (
+              <RecipeOrganise
+                key={`organise-${id}`}
+                recipe={recipe.data}
+                onEdit={() => setEditing(true)}
+                onDelete={() => setConfirming(true)}
+              />
             )}
 
             {confirming && (
@@ -166,9 +164,6 @@ export function RecipeDetail({ id }: { id: string }) {
                     : undefined
                 }
               />
-            )}
-            {!editing && (
-              <RecipeOrganise key={`organise-${id}`} recipe={recipe.data} />
             )}
             {!editing && session?.user.id && (
               <div id="recipe-history">

@@ -5,7 +5,14 @@ import {
   DropdownMenuTrigger,
 } from "@prep-sheet/ui/components/dropdown-menu";
 import { Link } from "@tanstack/react-router";
-import { CalendarDays, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import {
+  CalendarDays,
+  Download,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+} from "lucide-react";
+import type { ReactNode } from "react";
 import { AddRecipesButton } from "../shopping/add-recipes";
 
 export function RecipeHeading({
@@ -13,6 +20,8 @@ export function RecipeHeading({
   editing,
   onEdit,
   onDelete,
+  shoppingExtras,
+  menuItems,
 }: {
   recipe: {
     id: string;
@@ -24,6 +33,8 @@ export function RecipeHeading({
   editing: boolean;
   onEdit: () => void;
   onDelete: () => void;
+  shoppingExtras?: ReactNode;
+  menuItems?: ReactNode;
 }) {
   return (
     <div className="page-heading">
@@ -61,6 +72,7 @@ export function RecipeHeading({
               <CalendarDays size={17} />
               Add to meal plan
             </Link>
+            {shoppingExtras}
           </div>
         )}
       </div>
@@ -78,6 +90,18 @@ export function RecipeHeading({
               className="collection-select-menu recipe-actions-menu"
               align="end"
             >
+              {menuItems}
+              <DropdownMenuItem
+                className="collection-select-manage"
+                render={
+                  <a
+                    href={`/api/recipes/${recipe.id}/pdf`}
+                    download={`${recipe.title.replace(/[^a-z0-9 -]/gi, "").slice(0, 80) || "recipe"}.pdf`}
+                  />
+                }
+              >
+                <Download size={17} /> Download PDF
+              </DropdownMenuItem>
               <DropdownMenuItem
                 className="collection-select-manage"
                 onClick={onEdit}
