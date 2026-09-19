@@ -15,7 +15,7 @@
   font: inherit;
   color: var(--ink);
   background: #fffdf7;
-  border: 1px solid var(--line);
+  border: 1px solid var(--control-line);
   border-radius: 9px;
   padding: 10px 12px;
   max-width: 100%;
@@ -28,7 +28,7 @@
   width: 100%;
   min-height: 48px;
   padding: 11px 16px;
-  border: 1px solid #bcc6ae;
+  border: 1px solid var(--control-line);
   border-radius: 10px;
   background: #fffdf7;
   color: var(--ink);
@@ -57,7 +57,7 @@
 }
 .collection-select-trigger:focus-visible,
 select:focus-visible {
-  outline: 3px solid #de772f;
+  outline: 3px solid var(--ink);
   outline-offset: 3px;
 }
 .collection-select-menu {
@@ -189,7 +189,7 @@ select:focus-visible {
   font: inherit;
   color: var(--ink);
   background: #fffdf7;
-  border: 1px solid var(--line);
+  border: 1px solid var(--control-line);
   border-radius: 9px;
   padding: 10px 12px;
   width: 100%;

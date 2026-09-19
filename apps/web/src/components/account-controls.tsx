@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ErrorNotice } from "@/components/feedback";
+import { LinkedAccounts } from "@/components/linked-accounts";
 import { useTRPC } from "@/utils/trpc";
 
 export function AccountControls() {
@@ -25,16 +26,14 @@ export function AccountControls() {
   return (
     <section className="help-section" aria-labelledby="account-heading">
       <h2 id="account-heading">Account</h2>
-      <p>
-        You sign in through Discord. Manage your password, sign-in email and
-        security settings in Discord.
-      </p>
+      <p>Manage your password, email and security in Google or Discord.</p>
+      <LinkedAccounts />
       <details className="account-deletion">
         <summary>Request account deletion</summary>
         <p>
-          This is a manual review request. Your account stays active until
-          deletion is completed. You can cancel while it is pending. Your
-          Discord account is unaffected.
+          Deletion is reviewed manually. Your account stays active until then,
+          and you can cancel while pending. Your Google or Discord account is
+          unaffected.
         </p>
         <ul>
           <li>
@@ -82,8 +81,8 @@ export function AccountControls() {
                   Manage groups
                 </Link>
                 <p>
-                  You can submit a request now, but these groups must be
-                  resolved before it is completed.
+                  You can request deletion now. Resolve these groups before
+                  completion.
                 </p>
               </div>
             )}

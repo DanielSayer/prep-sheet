@@ -23,7 +23,7 @@
 .shopping-field input {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid #a6b29b;
+  border: 1px solid var(--control-line);
   border-radius: 9px;
   padding: 12px;
   background: #fffef9;
@@ -119,7 +119,7 @@
   border-bottom: 1px solid var(--line);
 }
 .shopping-completed summary:focus-visible {
-  outline: 3px solid #de772f;
+  outline: 3px solid var(--ink);
   outline-offset: 4px;
 }
 .shopping-empty {

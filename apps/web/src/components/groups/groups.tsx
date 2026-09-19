@@ -31,8 +31,7 @@ export function Groups() {
             Your groups<span className="title-dot">.</span>
           </h1>
           <p>
-            A shared cookbook for friends, family or flatmates. Your personal
-            collection stays private.
+            Share recipes with a group. Your personal collection stays private.
           </p>
         </div>
         <Link to="/recipes" className="button button-outline">
@@ -72,8 +71,7 @@ export function Groups() {
         />
         {groups.data?.length === 0 && (
           <p className="group-panel">
-            Create a group and send an invitation link to someone you'd like to
-            cook with.
+            Create a group, then invite others to join.
           </p>
         )}
         {groups.data?.map((group) => (
@@ -237,8 +235,8 @@ function GroupPanel({ id }: { id: string }) {
                   Copy link
                 </button>
                 <p>
-                  Send this privately. Anyone with the link can join. Each link
-                  works once and expires after 7 days.
+                  Share privately. Anyone with this link can join once. It
+                  expires in 7 days.
                 </p>
               </div>
             )}

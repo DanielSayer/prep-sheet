@@ -391,7 +391,7 @@ export function MealEditor({
               {step === "choose" && (
                 <>
                   <p className="muted">
-                    Choose an earlier cooking session. Leftovers add no shopping
+                    Choose an earlier meal. Leftovers add no shopping
                     ingredients.
                   </p>
                   <div className="meal-recipe-options">
@@ -465,10 +465,7 @@ export function MealEditor({
             </label>
           )}
           {draft.kind === "out" && step === "choose" && (
-            <p className="muted">
-              Plan a meal out. No ingredients will be added to your shopping
-              list.
-            </p>
+            <p className="muted">Meals out add no shopping ingredients.</p>
           )}
           <ErrorNotice
             message={error || save.error?.message || planner.error?.message}

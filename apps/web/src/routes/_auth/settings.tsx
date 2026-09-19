@@ -87,7 +87,6 @@ function Settings() {
           <h1>
             Settings<span className="title-dot">.</span>
           </h1>
-          <p>A few things to make your collection your own.</p>
         </div>
       </div>
       <div className="settings-layout">
@@ -165,9 +164,9 @@ function Settings() {
             <section aria-labelledby="tags-heading">
               <h2 id="tags-heading">Your tags</h2>
               <p className="settings-intro">
-                New recipes are tagged automatically using these choices. Tags
-                and favourites are personal, including in group collections. You
-                can adjust tags on any recipe.
+                New recipes use these tags automatically. Your tags and
+                favourites stay private, even in groups. Edit tags on any
+                recipe.
               </p>
               <form
                 className="tag-form"
@@ -359,8 +358,8 @@ function Settings() {
                 </ul>
               </LoadingState>
               <p className="muted">
-                Deleting a custom tag removes it from your recipes. Existing
-                recipes keep their tags when you add new choices.
+                Deleting a tag removes it from your recipes. Adding a tag won't
+                change existing recipes.
               </p>
             </section>
           </div>
@@ -383,7 +382,7 @@ function Settings() {
             hidden={activeTab !== "privacy"}
           >
             <h2 className="settings-policy-heading">Privacy policy</h2>
-            <PrivacyPolicy />
+            <PrivacyPolicy embedded />
           </div>
           <div
             id="settings-panel-report"

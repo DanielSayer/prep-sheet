@@ -219,10 +219,7 @@ export function PlanShop({
                 <section className="meal-review-section">
                   <h3>Meals covered</h3>
                   {!preview.data.meals.length && (
-                    <p>
-                      No meals planned for these dates. You can still shop for
-                      your other groceries.
-                    </p>
+                    <p>No meals planned. You can still shop for groceries.</p>
                   )}
                   <ul className="meal-review-meals">
                     {preview.data.meals.map((meal) => (
@@ -255,8 +252,8 @@ export function PlanShop({
                 <section className="meal-review-section">
                   <h3>Ingredient changes</h3>
                   <p className="muted">
-                    Other groceries are kept. Bought and already-owned
-                    quantities are preserved when updating the current trip.
+                    Keeps other groceries and quantities already bought or at
+                    home.
                   </p>
                   {!preview.data.changes.length && (
                     <p>No ingredient changes needed.</p>

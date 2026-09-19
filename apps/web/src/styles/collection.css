@@ -100,7 +100,7 @@
   justify-content: space-between;
   gap: 12px;
   min-height: 42px;
-  border: 1.5px solid #bcc6ae;
+  border: 1.5px solid var(--control-line);
   border-radius: 10px;
   padding: 0 12px;
   background: #fffef9;
@@ -125,7 +125,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  border: 1.5px solid #bcc6ae;
+  border: 1.5px solid var(--control-line);
   border-radius: 10px;
   padding: 10px 14px;
   background: #fffef9;
@@ -480,7 +480,7 @@
   width: 32px;
   height: 36px;
   padding: 0;
-  color: #c58d2d;
+  color: #95620d;
   border-radius: 7px;
   cursor: pointer;
   transition:

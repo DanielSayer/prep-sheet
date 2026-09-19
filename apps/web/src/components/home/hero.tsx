@@ -19,9 +19,8 @@ export function Hero() {
       </h1>
 
       <p>
-        A recipe you found. A dish you dreamed up.
-        <br className="desktop-break" /> Add it here. We'll organise the
-        ingredients and steps.
+        Paste a recipe or describe a dish. We'll organise the ingredients and
+        steps.
       </p>
 
       <div className="hero-sticker sticker-fork" aria-hidden="true">

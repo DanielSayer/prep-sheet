@@ -10,6 +10,8 @@ export const env = createEnv({
     EXTENSION_IDS: z.string().optional(),
     DISCORD_CLIENT_ID: z.string().optional(),
     DISCORD_CLIENT_SECRET: z.string().optional(),
+    GOOGLE_CLIENT_ID: z.string().optional(),
+    GOOGLE_CLIENT_SECRET: z.string().optional(),
     OPENAI_API_KEY: z.string().optional(),
     AI_DAILY_ATTEMPTS: z.coerce.number().int().positive().default(50),
     AI_PENDING_PER_ACCOUNT: z.coerce.number().int().positive().default(5),

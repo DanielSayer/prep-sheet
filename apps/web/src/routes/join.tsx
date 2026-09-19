@@ -3,6 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
 import { useCollection } from "@/components/groups/collection-context";
+import { type SignInProvider, SocialSignIn } from "@/components/social-sign-in";
 import { authClient } from "@/lib/auth-client";
 import { useTRPC } from "@/utils/trpc";
 
@@ -14,7 +15,7 @@ export const Route = createFileRoute("/join")({
 function JoinGroup() {
   const [token, setToken] = useState<string>();
   const [error, setError] = useState("");
-  const [signingIn, setSigningIn] = useState(false);
+  const [signingIn, setSigningIn] = useState<SignInProvider | null>(null);
   const { data: session, isPending } = authClient.useSession();
   const trpc = useTRPC();
   const client = useQueryClient();
@@ -39,18 +40,19 @@ function JoinGroup() {
       },
     }),
   );
-  async function signIn() {
-    setSigningIn(true);
+  async function signIn(provider: SignInProvider) {
+    if (signingIn) return;
+    setSigningIn(provider);
     setError("");
     try {
       const result = await authClient.signIn.social({
-        provider: "discord",
+        provider,
         callbackURL: `${window.location.origin}/join#${token}`,
       });
       if (result.error) throw new Error("Couldn't sign in. Please try again.");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Couldn't sign in.");
-      setSigningIn(false);
+      setSigningIn(null);
     }
   }
   return (
@@ -69,14 +71,10 @@ function JoinGroup() {
                 Sign in to see your invitation. Your personal recipes will stay
                 private.
               </p>
-              <button
-                type="button"
-                className="button button-discord"
-                disabled={signingIn}
-                onClick={() => void signIn()}
-              >
-                {signingIn ? "Connecting..." : "Continue with Discord"}
-              </button>
+              <SocialSignIn
+                pending={signingIn}
+                onSignIn={(provider) => void signIn(provider)}
+              />
             </>
           ) : (
             <LoadingState

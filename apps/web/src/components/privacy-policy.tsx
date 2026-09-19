@@ -1,28 +1,27 @@
 import { Link } from "@tanstack/react-router";
 
-export function PrivacyPolicy() {
+export function PrivacyPolicy({ embedded = false }: { embedded?: boolean }) {
+  const Heading = embedded ? "h3" : "h2";
   return (
     <>
       <section className="help-section">
-        <h2>Signing in with Discord</h2>
+        <Heading>Sign-in</Heading>
         <p>
-          Discord handles sign-in. Prep Sheet stores your account identifier,
-          name, email and profile image, along with session information needed
-          to keep you signed in. Session records can include your IP address and
-          browser information.
+          Google or Discord handles sign-in. We store your account ID, name,
+          email, profile image and session details. Sessions may include your IP
+          address and browser information.
         </p>
         <p>
-          Prep Sheet does not manage your Discord password. Change your
-          password, email and Discord security settings in Discord.
+          Prep Sheet does not manage your Google or Discord password. Change
+          your password, email and security settings with your sign-in provider.
         </p>
       </section>
       <section className="help-section">
-        <h2>Recipe capture and AI</h2>
+        <Heading>Recipe capture and AI</Heading>
         <p>
-          When you ask Prep Sheet to import or generate a recipe, recipe text or
-          your description is sent to OpenAI for processing. Your tag names and
-          descriptions are included to help organise the result. Avoid putting
-          private information in recipe input or tags.
+          To import or generate recipes, we send your input and tag names and
+          descriptions to OpenAI. Leave private information out of recipes and
+          tags.
         </p>
         <p>
           For a pasted link, our server fetches the page and extracts recipe
@@ -43,7 +42,7 @@ export function PrivacyPolicy() {
         </p>
       </section>
       <section className="help-section">
-        <h2>Personal and shared information</h2>
+        <Heading>Privacy and sharing</Heading>
         <p>
           Personal recipes are available to your account. Recipes saved to a
           group are available to its members. Group members can see member
@@ -60,11 +59,11 @@ export function PrivacyPolicy() {
         </p>
       </section>
       <section className="help-section">
-        <h2>Leaving Prep Sheet</h2>
+        <Heading>Leaving Prep Sheet</Heading>
         <p>
           You can request deletion from account settings. The request is
           reviewed manually and can be cancelled while pending. It does not
-          delete your Discord account.
+          delete your Google or Discord account.
         </p>
         <p>
           Before deletion can be completed, transfer any groups you own to

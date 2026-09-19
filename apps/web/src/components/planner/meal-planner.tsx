@@ -63,7 +63,7 @@ export function MealPlanner({ recipeId }: { recipeId?: string }) {
           <h1>
             Meal planner<span className="title-dot">.</span>
           </h1>
-          <p>A week of meals, one shop at a time.</p>
+          <p>Your private weekly plan.</p>
         </div>
         <button
           type="button"

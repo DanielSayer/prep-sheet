@@ -15,10 +15,15 @@ Copy `apps/web/.env.example` to `apps/web/.env` and fill in the credentials. Kee
 - `BETTER_AUTH_SECRET`: a random secret of at least 32 characters.
 - `BETTER_AUTH_URL`: `http://localhost:3001`.
 - `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET`: from your Discord application.
+- `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`: from a Google Cloud OAuth client of type Web application.
 - `OPENAI_API_KEY`: an API key with available API credits.
 - `OPENAI_MODEL`: defaults to `gpt-5.6-luna`.
 
 Register `http://localhost:3001/api/auth/callback/discord` in the Discord Developer Portal under OAuth2 redirects. Use the same hostname for the app and callback.
+
+For Google, configure the OAuth consent screen and create a Web application client in Google Cloud Console. Register `http://localhost:3001/api/auth/callback/google` as an authorized redirect URI. Add the equivalent HTTPS URI for your production domain. While the consent screen is in testing mode, add your test accounts; make the app available to your intended audience before public launch. Set both Google environment variables and restart the server. Only basic profile and email access is used.
+
+Existing users should sign in with Discord and choose **Settings > Account > Link Google** to keep their recipes and groups. Linking requires a session created within the last ten minutes and matching email addresses. Users with older sessions must sign out and sign in again. Matching emails never silently merge accounts. An identity already attached to another Prep Sheet account cannot be linked or merged through this flow. Email/password sign-in is not enabled.
 
 ```sh
 pnpm db:push
@@ -34,7 +39,7 @@ Recipe favourites and 1–5 star ratings are personal to each user, including in
 ## Implementation
 
 - TanStack Start, React, tRPC and TanStack Query.
-- Better Auth with Discord. Recipe operations and PDF downloads check personal ownership or current group membership on the server.
+- Better Auth with Google and Discord. Recipe operations and PDF downloads check personal ownership or current group membership on the server.
 - PostgreSQL JSONB stores the recipe, with separate creator/group/title/source/timestamp columns. Zod validates generation and edits.
 - Vercel AI SDK and OpenAI structured output. One submission creates one recipe, without a chat transcript. Missing credentials, inaccessible pages and provider failures leave the input available to retry.
 - Link imports fetch HTML, prefer Recipe JSON-LD, then fall back to article text. Private network addresses and unsafe redirects are rejected. Requests are bounded by time and response size. No browser automation or paywall support.

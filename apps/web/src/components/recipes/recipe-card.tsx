@@ -67,7 +67,7 @@ export function RecipeCard({
       </h2>
       <p>
         {recipe.content.description ||
-          `${recipe.content.ingredients.length} ingredients. Something good for dinner.`}
+          `${recipe.content.ingredients.length} ${recipe.content.ingredients.length === 1 ? "ingredient" : "ingredients"}`}
       </p>
 
       <div className="recipe-card-bottom">

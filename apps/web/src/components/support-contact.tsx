@@ -8,8 +8,7 @@ export function SupportContact() {
     </p>
   ) : (
     <p className="muted">
-      Support email coming soon. While Prep Sheet is in preview, signed-in users
-      can submit a report below. If you cannot sign in, contact the person who
+      Support email isn't available yet. Can't sign in? Contact the person who
       invited you.
     </p>
   );

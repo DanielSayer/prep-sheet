@@ -22,9 +22,8 @@ export function ReportForm() {
     <section className="help-section">
       <h2>Report a problem</h2>
       <p>
-        Include what you were trying to do, what happened and any error message.
-        Do not include passwords, sign-in codes or private recipe content.
-        Reports are reviewed manually.
+        Describe what went wrong and include any error message. Leave out
+        passwords, sign-in codes and private recipes.
       </p>
       <form
         className="help-form"
@@ -61,8 +60,7 @@ export function ReportForm() {
       </form>
       {report.isSuccess && (
         <p role="status">
-          Report received. Reference: {report.data.id}. It is saved for manual
-          review.
+          Report saved for review. Reference: {report.data.id}.
         </p>
       )}
       <details className="help-history">

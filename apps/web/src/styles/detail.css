@@ -78,7 +78,7 @@
 .recipe-editor input,
 .recipe-editor textarea {
   min-width: 0;
-  border: 1.5px solid #bfc9b0;
+  border: 1.5px solid var(--control-line);
   border-radius: 8px;
   padding: 11px;
   background: white;
@@ -451,8 +451,9 @@
   font-weight: 400;
 }
 .recipe-review-option:has(input:checked) .recipe-review-value {
-  border-left: 3px solid var(--ink);
-  padding-left: 12px;
+  background: #e6ecd8;
+  border-radius: 6px;
+  padding: 12px;
 }
 .recipe-review-alternatives {
   display: flex;

@@ -39,7 +39,7 @@ export function RecipeFields({ content }: { content: RecipeDraft }) {
       />
 
       <TextField
-        label="A little introduction"
+        label="Description"
         name="description"
         rows={2}
         maxLength={600}

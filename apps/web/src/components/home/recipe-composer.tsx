@@ -244,11 +244,11 @@ function AccountComposer({
             </div>
           )}
           <IdeaChips disabled={!!pending} onSelect={change} />
-          <p className="composer-footnote">
-            {result?.kind === "failed"
-              ? "A new attempt uses your AI allowance if generation starts."
-              : "Less scrolling. More cooking."}
-          </p>
+          {result?.kind === "failed" && (
+            <p className="composer-footnote">
+              Retrying uses your AI allowance if generation starts.
+            </p>
+          )}
         </>
       )}
     </section>

@@ -13,7 +13,6 @@ function Home() {
       <HowItWorks />
       <footer className="home-footer">
         <span>Your recipes, ready to cook.</span>
-        <span>A little kitchen magic.</span>
       </footer>
     </main>
   );

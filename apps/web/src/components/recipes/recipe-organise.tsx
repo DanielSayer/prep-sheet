@@ -146,7 +146,7 @@ export function RecipeOrganise({
           title="Choose your tags"
           onClose={() => setDialog(null)}
         >
-          <p>Tap a tag to add or remove it. These choices are just for you.</p>
+          <p>Select tags to add or remove. Your tags stay private.</p>
           <ErrorNotice
             message={tags.error?.message}
             retry={() => void tags.refetch()}

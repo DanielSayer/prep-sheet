@@ -1,6 +1,14 @@
 .login-page {
   padding: 60px 24px;
 }
+.social-sign-in {
+  display: grid;
+  gap: 12px;
+}
+.social-sign-in .button {
+  width: 100%;
+  min-height: 44px;
+}
 .login-card {
   max-width: 440px;
   margin: auto;

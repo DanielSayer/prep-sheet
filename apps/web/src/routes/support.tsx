@@ -21,8 +21,9 @@ function Support() {
         <h2>Get help</h2>
         <SupportContact />
         <p>
-          Discord manages your password and sign-in email. Prep Sheet account
-          deletion is available in <Link to="/settings">account settings</Link>.
+          Your sign-in provider manages your password and sign-in email. Prep
+          Sheet account deletion is available in{" "}
+          <Link to="/settings">account settings</Link>.
         </p>
       </section>
       {isPending ? (
@@ -34,7 +35,7 @@ function Support() {
           <h2>Report a problem</h2>
           <p>Sign in to send a report linked to your Prep Sheet account.</p>
           <Link to="/login" className="button button-primary">
-            Sign in with Discord
+            Sign in
           </Link>
         </section>
       )}

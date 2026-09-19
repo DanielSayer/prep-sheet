@@ -38,10 +38,7 @@ export function GroupSettings({
       <summary>Ownership and deletion</summary>
       <div className="group-confirm">
         <h3>Transfer ownership</h3>
-        <p>
-          Choose another member to manage the group. You'll stay a member and
-          can then leave if you want.
-        </p>
+        <p>Choose a new owner. You'll stay a member until you leave.</p>
         <label>
           New owner
           <select

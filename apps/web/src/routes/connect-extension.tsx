@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { ErrorNotice } from "@/components/feedback";
+import { type SignInProvider, SocialSignIn } from "@/components/social-sign-in";
 import { authClient } from "@/lib/auth-client";
 import { extensionRequest } from "@/lib/extension-api";
 
@@ -21,6 +22,7 @@ function ConnectExtension() {
   const { data: session, isPending } = authClient.useSession();
   const [valid, setValid] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [signingIn, setSigningIn] = useState<SignInProvider | null>(null);
   const [error, setError] = useState("");
   useEffect(() => {
     let active = true;
@@ -40,25 +42,33 @@ function ConnectExtension() {
     };
   }, [input]);
 
+  async function signIn(provider: SignInProvider) {
+    if (signingIn || !valid || isPending) return;
+    setSigningIn(provider);
+    setError("");
+    try {
+      const result = await authClient.signIn.social({
+        provider,
+        callbackURL: window.location.pathname + window.location.search,
+      });
+      if (result.error) throw new Error("Couldn't sign in. Please try again.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Couldn't sign in.");
+      setSigningIn(null);
+    }
+  }
+
   async function connect() {
+    if (busy || !valid || !session || isPending) return;
     setBusy(true);
     setError("");
     try {
-      if (!session) {
-        const result = await authClient.signIn.social({
-          provider: "discord",
-          callbackURL: window.location.pathname + window.location.search,
-        });
-        if (result.error)
-          throw new Error("Couldn't sign in with Discord. Please try again.");
-      } else {
-        const result = await extensionRequest(
-          "authorize",
-          input,
-          z.object({ redirect: z.string() }),
-        );
-        window.location.replace(result.redirect);
-      }
+      const result = await extensionRequest(
+        "authorize",
+        input,
+        z.object({ redirect: z.string() }),
+      );
+      window.location.replace(result.redirect);
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -86,18 +96,22 @@ function ConnectExtension() {
         <p className="small-note">
           Access lasts 30 days. You can revoke it at any time in Settings.
         </p>
-        <button
-          type="button"
-          className="button button-primary"
-          disabled={!valid || busy || isPending}
-          onClick={() => void connect()}
-        >
-          {busy
-            ? "Connecting..."
-            : session
-              ? "Connect extension"
-              : "Continue with Discord"}
-        </button>
+        {session ? (
+          <button
+            type="button"
+            className="button button-primary"
+            disabled={!valid || busy || isPending}
+            onClick={() => void connect()}
+          >
+            {busy ? "Connecting..." : "Connect extension"}
+          </button>
+        ) : (
+          <SocialSignIn
+            pending={signingIn}
+            disabled={!valid || isPending}
+            onSignIn={(provider) => void signIn(provider)}
+          />
+        )}
         <ErrorNotice message={error} />
         <p className="small-note">To cancel, close this window.</p>
       </div>

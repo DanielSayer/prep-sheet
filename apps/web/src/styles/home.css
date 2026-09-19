@@ -91,10 +91,10 @@
   font-size: 17px;
   line-height: 1.6;
   color: var(--ink);
-  outline: none;
+  outline-offset: 4px;
 }
 .composer textarea::placeholder {
-  color: #818477;
+  color: var(--muted-ink);
 }
 .composer-toolbar {
   display: flex;
@@ -140,13 +140,13 @@
   border-color: #a4b292;
 }
 .idea-chips button > span {
-  color: #7d8b6d;
+  color: var(--muted-ink);
 }
 .composer-footnote {
   text-align: center;
   margin-top: 16px;
   font-size: 12px;
-  color: #7b806f;
+  color: var(--muted-ink);
 }
 .how-it-works {
   display: grid;
@@ -184,7 +184,7 @@
 .step-number {
   font-family: monospace;
   font-size: 10px;
-  color: #7d856e;
+  color: var(--muted-ink);
 }
 .how-step h2 {
   font-size: 15px;
@@ -204,5 +204,5 @@
   padding: 20px 0;
   border-top: 1px solid var(--line);
   font-size: 11px;
-  color: #838774;
+  color: var(--muted-ink);
 }

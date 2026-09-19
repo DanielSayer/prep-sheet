@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, CookingPot } from "lucide-react";
+import { CookingPot } from "lucide-react";
 import { useState } from "react";
 import { ErrorNotice } from "@/components/feedback";
+import { type SignInProvider, SocialSignIn } from "@/components/social-sign-in";
 import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/login")({
@@ -13,39 +14,47 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const { error: callbackError } = Route.useSearch();
-  const [pending, setPending] = useState(false);
+  const [pending, setPending] = useState<SignInProvider | null>(null);
   const [error, setError] = useState(() =>
-    callbackError === "access_denied"
-      ? "Discord sign-in was cancelled. You can try again when you're ready."
-      : callbackError
-        ? "We couldn't finish signing in with Discord. Please try again. If it keeps failing, the sign-in settings may need checking."
-        : "",
+    callbackError === "account_not_linked" ||
+    callbackError === "account not linked"
+      ? "An account already uses this email. Sign in with your original method, then link the other method in Settings."
+      : callbackError === "link_failed" ||
+          callbackError === "email_does_not_match" ||
+          callbackError === "account_already_linked_to_different_user" ||
+          callbackError === "unable_to_link_account"
+        ? "Couldn't link that account. Use the same email address as your Prep Sheet account and make sure it isn't linked to another account. Return to Settings to try again."
+        : callbackError === "access_denied"
+          ? "Sign-in was cancelled. You can try again when you're ready."
+          : callbackError
+            ? "We couldn't finish signing in. Please try again. If it keeps failing, the sign-in settings may need checking."
+            : "",
   );
 
-  async function signIn() {
+  async function signIn(provider: SignInProvider) {
     if (pending) return;
-    setPending(true);
+    setPending(provider);
     setError("");
 
     try {
       const result = await authClient.signIn.social({
-        provider: "discord",
+        provider,
         callbackURL: "/",
         errorCallbackURL: "/login",
       });
 
       if (result.error)
         throw new Error(
-          "Discord sign-in isn't ready. Check the Discord credentials and callback URL in your server settings.",
+          "This sign-in method is temporarily unavailable. Please try again or use the other option.",
         );
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
-          : "Couldn't connect to Discord. Please try again.",
+          : "Couldn't sign in. Please try again.",
       );
 
-      setPending(false);
+      setPending(null);
     }
   }
 
@@ -56,29 +65,19 @@ function Login() {
           <CookingPot size={58} />
         </span>
 
-        <h1>
-          Your recipes.
-          <br />
-          One happy home.
-        </h1>
+        <h1>Your recipe collection</h1>
 
-        <p>
-          Sign in to save your favourites and start your own little cookbook.
-        </p>
+        <p>Sign in to save and organise recipes.</p>
 
-        <button
-          type="button"
-          className="button button-discord"
-          onClick={signIn}
-          disabled={pending}
-        >
-          {pending ? "Connecting to Discord..." : "Continue with Discord"}
-          <ArrowRight size={19} />
-        </button>
+        <SocialSignIn
+          pending={pending}
+          onSignIn={(provider) => void signIn(provider)}
+        />
 
         <ErrorNotice message={error} />
         <p className="small-note">
-          Just a sign-in. We won't post to your servers.
+          Already use Discord? Sign in with Discord, then link Google in
+          Settings to keep your recipes.
         </p>
 
         <Link to="/" className="text-button">

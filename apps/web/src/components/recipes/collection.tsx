@@ -103,7 +103,7 @@ export function Collection() {
           <p>
             {groupId
               ? "Recipes everyone in your group can cook, edit and add to."
-              : "Just for you. Your personal recipes stay private."}
+              : "Your personal recipes stay private."}
           </p>
         </div>
 

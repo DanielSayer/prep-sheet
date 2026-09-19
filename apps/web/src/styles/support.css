@@ -9,6 +9,15 @@
   font-weight: 800;
   margin-bottom: 12px;
 }
+.help-section h3 {
+  margin: 24px 0 8px;
+}
+.help-section > p,
+.linked-accounts > p {
+  max-width: 65ch;
+  color: var(--muted-ink);
+  font-size: 15px;
+}
 .help-section p,
 .help-section li {
   line-height: 1.7;
@@ -42,7 +51,7 @@
 .help-form textarea {
   width: 100%;
   min-width: 0;
-  border: 1px solid var(--line);
+  border: 1px solid var(--control-line);
   border-radius: 8px;
   padding: 12px;
   background: var(--paper);

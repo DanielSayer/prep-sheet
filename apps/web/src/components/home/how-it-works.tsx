@@ -3,20 +3,20 @@ import { BookOpen, FileText, WandSparkles } from "lucide-react";
 const steps = [
   {
     icon: WandSparkles,
-    title: "Throw in an idea",
-    text: "Paste a recipe, a link, or your dinner wish.",
+    title: "Add a recipe",
+    text: "Paste text, a link or a meal idea.",
     colour: "orange",
   },
   {
     icon: BookOpen,
-    title: "Save to your collection",
-    text: "Ingredients and steps, all in your collection.",
+    title: "Save it",
+    text: "Keep ingredients and steps together.",
     colour: "green",
   },
   {
     icon: FileText,
-    title: "Take it to the kitchen",
-    text: "Open a tidy PDF. Print it. Get cooking.",
+    title: "Start cooking",
+    text: "Follow the recipe or print a PDF.",
     colour: "purple",
   },
 ];

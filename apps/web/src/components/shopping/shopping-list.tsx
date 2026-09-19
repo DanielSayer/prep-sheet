@@ -417,10 +417,7 @@ function PersonalList({ userId }: { userId: string }) {
             if (!clear.isPending) setReset(false);
           }}
         >
-          <p>
-            This removes every item, including bought items and groceries you
-            already have.
-          </p>
+          <p>Removes all items, including those bought or already at home.</p>
           <ErrorNotice message={clear.error?.message} />
           <div className="organise-dialog-footer shopping-row-actions">
             <button
