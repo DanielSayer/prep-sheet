@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CookingPot } from "lucide-react";
 import { useState } from "react";
 import { ErrorNotice } from "@/components/feedback";
 import { type SignInProvider, SocialSignIn } from "@/components/social-sign-in";
@@ -62,7 +61,7 @@ function Login() {
     <main id="main-content" className="login-page">
       <div className="login-card">
         <span className="login-illustration">
-          <CookingPot size={58} />
+          <img src="/branding/icon-192.png" alt="" width={96} height={96} />
         </span>
 
         <h1>Your recipe collection</h1>

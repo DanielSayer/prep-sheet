@@ -10,6 +10,7 @@ import {
 import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import { CollectionProvider } from "../components/groups/collection-context";
 import Header from "../components/header";
+import { getSiteOrigin } from "../functions/get-site-origin";
 
 import appCss from "../index.css?url";
 
@@ -19,7 +20,8 @@ interface RouterAppContext {
 }
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
-  head: () => ({
+  loader: () => getSiteOrigin(),
+  head: ({ loaderData }) => ({
     meta: [
       {
         charSet: "utf-8",
@@ -31,8 +33,74 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
       {
         title: "Prep Sheet · Good recipes, all together",
       },
+      {
+        name: "description",
+        content:
+          "Your recipes, ready to cook. Save and organise recipes with Prep Sheet.",
+      },
+      { name: "theme-color", content: "#faf7ef" },
+      { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "Prep Sheet" },
+      {
+        property: "og:title",
+        content: "Prep Sheet · Good recipes, all together",
+      },
+      {
+        property: "og:description",
+        content:
+          "Your recipes, ready to cook. Save and organise recipes with Prep Sheet.",
+      },
+      {
+        property: "og:image",
+        content: `${loaderData}/branding/share-1200x630.png`,
+      },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:type", content: "image/png" },
+      {
+        property: "og:image:alt",
+        content:
+          "Prep Sheet. Your recipes, ready to cook. Recipe sheet and kitchen knife logo.",
+      },
+      { name: "twitter:card", content: "summary_large_image" },
+      {
+        name: "twitter:title",
+        content: "Prep Sheet · Good recipes, all together",
+      },
+      {
+        name: "twitter:description",
+        content:
+          "Your recipes, ready to cook. Save and organise recipes with Prep Sheet.",
+      },
+      {
+        name: "twitter:image",
+        content: `${loaderData}/branding/share-1200x630.png`,
+      },
+      {
+        name: "twitter:image:alt",
+        content: "Prep Sheet. Your recipes, ready to cook.",
+      },
     ],
     links: [
+      { rel: "icon", href: "/favicon.ico", sizes: "16x16 32x32 48x48" },
+      {
+        rel: "icon",
+        href: "/branding/favicon-32.png",
+        type: "image/png",
+        sizes: "32x32",
+      },
+      {
+        rel: "icon",
+        href: "/branding/favicon-16.png",
+        type: "image/png",
+        sizes: "16x16",
+      },
+      {
+        rel: "apple-touch-icon",
+        href: "/apple-touch-icon.png",
+        sizes: "180x180",
+      },
+      { rel: "manifest", href: "/site.webmanifest" },
       {
         rel: "stylesheet",
         href: appCss,

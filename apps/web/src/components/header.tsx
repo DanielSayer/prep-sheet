@@ -1,22 +1,18 @@
 import { Link } from "@tanstack/react-router";
-import {
-  BookOpen,
-  CalendarDays,
-  CookingPot,
-  Plus,
-  ShoppingBasket,
-} from "lucide-react";
+import { BookOpen, CalendarDays, Plus, ShoppingBasket } from "lucide-react";
 import UserMenu from "./user-menu";
 
 export default function Header() {
   return (
     <header className="site-header">
       <Link to="/" className="brand" aria-label="Prep Sheet home">
-        <span className="brand-icon">
-          <CookingPot size={25} strokeWidth={2.5} />
-        </span>
-        prep<span>sheet</span>
-        <span className="brand-dot">.</span>
+        <img
+          src="/branding/logo-horizontal.png"
+          alt="Prep Sheet"
+          className="brand-logo"
+          width={2172}
+          height={724}
+        />
       </Link>
 
       <nav aria-label="Main navigation">

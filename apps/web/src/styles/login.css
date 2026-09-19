@@ -25,10 +25,10 @@
   margin: 0 auto 28px;
   width: 112px;
   height: 112px;
-  background: #f8ddb0;
+  background: var(--paper);
   border: 2px solid var(--ink);
   border-radius: 30px;
-  transform: rotate(-7deg);
+  overflow: hidden;
 }
 .login-card h1 {
   font-size: 35px;

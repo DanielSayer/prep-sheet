@@ -119,26 +119,15 @@ textarea::placeholder {
 .brand {
   display: inline-flex;
   align-items: center;
-  font-size: 29px;
-  font-weight: 900;
-  letter-spacing: -1.3px;
+  flex-shrink: 0;
+  min-height: 44px;
 }
-.brand > span:not(.brand-icon, .brand-dot) {
-  font-weight: 600;
+.brand-logo {
+  display: block;
+  width: 210px;
+  height: 70px;
+  object-fit: contain;
 }
-.brand-icon {
-  width: 44px;
-  height: 44px;
-  border: 2px solid var(--ink);
-  border-radius: 13px;
-  background: #edb767;
-  box-shadow: 0 3px 0 var(--ink);
-  display: grid;
-  place-items: center;
-  margin-right: 11px;
-  transform: rotate(-7deg);
-}
-.brand-dot,
 .title-dot {
   color: #a64d1c;
 }
