@@ -14,6 +14,32 @@ const fieldsSchema = z.object({
 });
 
 export type RecipeDraft = z.infer<typeof fieldsSchema>;
+const savedDraftSchema = fieldsSchema.extend({
+  baseRevision: z.number().int().positive().nullable().optional(),
+  baseFields: fieldsSchema.nullable().optional(),
+});
+
+export function readDraftBase(key: string): RecipeDraft | null {
+  try {
+    const result = savedDraftSchema.safeParse(
+      JSON.parse(sessionStorage.getItem(key) ?? "null"),
+    );
+    return result.success ? (result.data.baseFields ?? null) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function readDraftRevision(key: string): number | null {
+  try {
+    const result = savedDraftSchema.safeParse(
+      JSON.parse(sessionStorage.getItem(key) ?? "null"),
+    );
+    return result.success ? (result.data.baseRevision ?? null) : null;
+  } catch {
+    return null;
+  }
+}
 
 export function recipeDraftKey(userId: string, recipeId = "manual") {
   return `prep-sheet-recipe-draft:v1:${userId}:${recipeId}`;
@@ -43,10 +69,19 @@ export function readRecipeDraft(key: string): RecipeDraft | null {
   }
 }
 
-export function writeRecipeDraft(key: string, draft: RecipeDraft | null) {
+export function writeRecipeDraft(
+  key: string,
+  draft: RecipeDraft | null,
+  baseRevision?: number | null,
+  baseFields?: RecipeDraft | null,
+) {
   try {
     if (draft === null) sessionStorage.removeItem(key);
-    else sessionStorage.setItem(key, JSON.stringify(draft));
+    else
+      sessionStorage.setItem(
+        key,
+        JSON.stringify({ ...draft, baseRevision, baseFields }),
+      );
     return true;
   } catch {
     return false;

@@ -25,6 +25,7 @@ export const recipe = pgTable(
     }),
     title: text("title").notNull(),
     content: jsonb("content").$type<RecipeContent>().notNull(),
+    revision: integer("revision").default(1).notNull(),
     sourceUrl: text("source_url"),
     origin: text("origin", {
       enum: ["imported", "generated", "manual"],

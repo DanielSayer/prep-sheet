@@ -5,8 +5,9 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
+import { TRPCClientError } from "@trpc/client";
 import { ArrowLeft } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
 import { authClient } from "@/lib/auth-client";
@@ -67,6 +68,13 @@ export function RecipeDetail({ id }: { id: string }) {
     }),
   );
 
+  const copyRequest = useRef<{
+    id: string;
+    draft: string;
+    source: string;
+  } | null>(null);
+  const copy = useMutation(trpc.recipes.createManual.mutationOptions());
+
   const remove = useMutation(
     trpc.recipes.delete.mutationOptions({
       onSuccess: async () => {
@@ -116,7 +124,7 @@ export function RecipeDetail({ id }: { id: string }) {
           retry={() => void recipe.refetch()}
         />
 
-        {recipe.data && !recipe.isError && (
+        {recipe.data && (!recipe.isError || editing) && (
           <>
             {editing ? (
               <RecipeHeading
@@ -149,9 +157,56 @@ export function RecipeDetail({ id }: { id: string }) {
                 key={draftKey}
                 draftKey={draftKey}
                 content={recipe.data.content}
-                pending={update.isPending}
-                error={update.error?.message}
-                onSave={(content) => update.mutate({ id, content })}
+                savedRevision={recipe.data.revision}
+                loadLatest={async () => {
+                  const result = await recipe.refetch();
+                  if (result.error) throw result.error;
+                  if (!result.data) throw new Error("Recipe not found.");
+                  return result.data;
+                }}
+                pending={update.isPending || copy.isPending}
+                onSave={async (content, expectedRevision) => {
+                  if (expectedRevision === null)
+                    throw new Error("Reload the recipe before saving.");
+                  try {
+                    await update.mutateAsync({ id, content, expectedRevision });
+                  } catch (error) {
+                    if (
+                      error instanceof TRPCClientError &&
+                      error.data?.code === "CONFLICT"
+                    )
+                      return "conflict";
+                    throw error;
+                  }
+                }}
+                onSaveCopy={async (content) => {
+                  const draft = JSON.stringify(content);
+                  if (
+                    copyRequest.current?.draft !== draft ||
+                    copyRequest.current.source !== draftKey
+                  ) {
+                    copyRequest.current = {
+                      id: crypto.randomUUID(),
+                      draft,
+                      source: draftKey,
+                    };
+                  }
+                  const saved = await copy.mutateAsync({
+                    id: copyRequest.current.id,
+                    groupId: null,
+                    content,
+                  });
+                  writeRecipeDraft(draftKey, null);
+                  selectGroup(null);
+                  await queryClient.invalidateQueries({
+                    queryKey: trpc.recipes.list.queryKey(),
+                  });
+                  await navigate({
+                    to: "/recipes/$recipeId",
+                    params: { recipeId: saved.id },
+                  });
+                  toast.success("Copy saved to your personal collection.");
+                }}
                 onCancel={() => setEditing(false)}
               />
             ) : (

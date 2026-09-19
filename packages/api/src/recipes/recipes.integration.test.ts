@@ -62,6 +62,57 @@ async function createAndWait(
 }
 
 describe("recipes API with PostgreSQL", () => {
+  it("rejects concurrent shared and same-user edits, including a second conflict after review", async () => {
+    const owner = caller(ids[0]);
+    const member = caller(ids[1]);
+    const shared = await owner.groups.create({ name: "Concurrent edits" });
+    const invite = await owner.groups.invite({ groupId: shared.id });
+    await member.groups.acceptInvite({ token: invite.token });
+    for (const groupId of [shared.id, null]) {
+      const id = randomUUID();
+      const created = await owner.recipes.createManual({
+        id,
+        groupId,
+        content: sampleRecipe,
+      });
+      const secondEditor = groupId ? member : owner;
+      const results = await Promise.allSettled([
+        owner.recipes.update({
+          id,
+          expectedRevision: created.revision,
+          content: { ...sampleRecipe, title: "First writer" },
+        }),
+        secondEditor.recipes.update({
+          id,
+          expectedRevision: created.revision,
+          content: { ...sampleRecipe, title: "Second writer" },
+        }),
+      ]);
+      expect(
+        results.filter((result) => result.status === "fulfilled"),
+      ).toHaveLength(1);
+      expect(
+        results.find((result) => result.status === "rejected"),
+      ).toMatchObject({ reason: { code: "CONFLICT" } });
+      const latest = await owner.recipes.get({ id });
+      expect(latest.revision).toBe(created.revision + 1);
+      await owner.recipes.update({
+        id,
+        expectedRevision: latest.revision,
+        content: { ...sampleRecipe, title: "Third writer" },
+      });
+      await expect(
+        secondEditor.recipes.update({
+          id,
+          expectedRevision: latest.revision,
+          content: sampleRecipe,
+        }),
+      ).rejects.toMatchObject({ code: "CONFLICT" });
+      expect((await owner.recipes.get({ id })).title).toBe("Third writer");
+      await owner.recipes.delete({ id });
+    }
+    await db.delete(group).where(eq(group.id, shared.id));
+  });
   beforeAll(async () => {
     await db.insert(user).values(
       ids.map((id) => ({
@@ -338,12 +389,13 @@ describe("recipes API with PostgreSQL", () => {
       code: "NOT_FOUND",
     });
     await expect(
-      other.recipes.update({ id, content: sampleRecipe }),
+      other.recipes.update({ expectedRevision: 1, id, content: sampleRecipe }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(other.recipes.delete({ id })).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
     await owner.recipes.update({
+      expectedRevision: 1,
       id,
       content: { ...sampleRecipe, title: "My lemon pasta" },
     });
@@ -493,6 +545,7 @@ describe("recipes API with PostgreSQL", () => {
   it("validates edits before touching the database", async () => {
     await expect(
       caller(ids[0]).recipes.update({
+        expectedRevision: 1,
         id: randomUUID(),
         content: { ...sampleRecipe, steps: [] },
       }),
@@ -594,7 +647,11 @@ describe("recipes API with PostgreSQL", () => {
       { code: "NOT_FOUND" },
     );
     await expect(
-      outsider.recipes.update({ id: shared.id, content: sampleRecipe }),
+      outsider.recipes.update({
+        expectedRevision: 1,
+        id: shared.id,
+        content: sampleRecipe,
+      }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(
       outsider.recipes.delete({ id: shared.id }),
@@ -609,6 +666,7 @@ describe("recipes API with PostgreSQL", () => {
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(vi.mocked(generateRecipe).mock.calls.length).toBe(calls);
     await owner.recipes.update({
+      expectedRevision: 1,
       id: shared.id,
       content: { ...sampleRecipe, title: "Everyone's pasta" },
     });
@@ -649,7 +707,11 @@ describe("recipes API with PostgreSQL", () => {
       code: "NOT_FOUND",
     });
     await expect(
-      member.recipes.update({ id: shared.id, content: sampleRecipe }),
+      member.recipes.update({
+        expectedRevision: 1,
+        id: shared.id,
+        content: sampleRecipe,
+      }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(
       member.recipes.delete({ id: shared.id }),

@@ -87,7 +87,12 @@ describe("recipe recovery with PostgreSQL", () => {
     );
     for (const request of [
       () => owner.recipes.get({ id }),
-      () => owner.recipes.update({ id, content: sampleRecipe }),
+      () =>
+        owner.recipes.update({
+          expectedRevision: 1,
+          id,
+          content: sampleRecipe,
+        }),
       () => owner.recipes.copy({ id, newId: randomUUID(), groupId: null }),
       () => owner.recipes.setFavourite({ id, isFavourite: false }),
       () =>

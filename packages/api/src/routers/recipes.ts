@@ -493,7 +493,12 @@ export const recipesRouter = router({
       }),
     ),
   update: protectedProcedure
-    .input(idInput.extend({ content: recipeContentSchema }))
+    .input(
+      idInput.extend({
+        content: recipeContentSchema,
+        expectedRevision: z.number().int().positive(),
+      }),
+    )
     .mutation(async ({ input, ctx }) => {
       const [result] = await db
         .update(recipe)
@@ -501,10 +506,23 @@ export const recipesRouter = router({
           title: input.content.title,
           content: input.content,
           updatedAt: new Date(),
+          revision: sql`${recipe.revision} + 1`,
         })
-        .where(owned(input.id, ctx.session.user.id))
+        .where(
+          and(
+            owned(input.id, ctx.session.user.id),
+            eq(recipe.revision, input.expectedRevision),
+          ),
+        )
         .returning();
-      if (!result) throw missing();
+      if (!result) {
+        await getRecipe(input.id, ctx.session.user.id);
+        throw new TRPCError({
+          code: "CONFLICT",
+          message:
+            "This recipe changed since you started editing. Your draft has been kept. Compare changes or reload the saved recipe.",
+        });
+      }
       return result;
     }),
   delete: protectedProcedure.input(idInput).mutation(async ({ input, ctx }) => {
