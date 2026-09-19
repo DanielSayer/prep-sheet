@@ -10,7 +10,7 @@ import {
   Trash2,
   UserRound,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { AccountControls } from "@/components/account-controls";
 import { ConnectedExtensions } from "@/components/connected-extensions";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
@@ -33,7 +33,18 @@ const settingsTabs = [
   { id: "report", label: "Report a problem", icon: MessageSquare },
 ];
 
+function subscribeToMobileSettings(onChange: () => void) {
+  const media = window.matchMedia("(max-width: 650px)");
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+}
+
 function Settings() {
+  const isMobile = useSyncExternalStore(
+    subscribeToMobileSettings,
+    () => window.matchMedia("(max-width: 650px)").matches,
+    () => false,
+  );
   const [activeTab, setActiveTab] = useState("account");
   const trpc = useTRPC();
   const client = useQueryClient();
@@ -94,7 +105,7 @@ function Settings() {
           className="settings-tabs"
           role="tablist"
           aria-label="Settings"
-          aria-orientation="vertical"
+          aria-orientation={isMobile ? "horizontal" : "vertical"}
         >
           {settingsTabs.map(({ id, label, icon: Icon }, index) => (
             <button
@@ -108,9 +119,9 @@ function Settings() {
               onClick={() => setActiveTab(id)}
               onKeyDown={(event) => {
                 let nextIndex = index;
-                if (event.key === "ArrowDown")
+                if (event.key === (isMobile ? "ArrowRight" : "ArrowDown"))
                   nextIndex = (index + 1) % settingsTabs.length;
-                else if (event.key === "ArrowUp")
+                else if (event.key === (isMobile ? "ArrowLeft" : "ArrowUp"))
                   nextIndex =
                     (index + settingsTabs.length - 1) % settingsTabs.length;
                 else if (event.key === "Home") nextIndex = 0;
@@ -129,19 +140,6 @@ function Settings() {
             </button>
           ))}
         </div>
-        <label className="settings-mobile-picker">
-          Settings section
-          <select
-            value={activeTab}
-            onChange={(event) => setActiveTab(event.target.value)}
-          >
-            {settingsTabs.map(({ id, label }) => (
-              <option key={id} value={id}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
         <div className="settings-panels">
           <div
             id="settings-panel-account"

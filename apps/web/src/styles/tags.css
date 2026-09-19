@@ -193,11 +193,23 @@
     right: 0;
   }
   .settings-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 24px;
   }
   .settings-tabs {
-    display: none;
+    flex-direction: row;
+    gap: 4px;
+    min-width: 0;
+    overflow-x: auto;
+    padding: 4px 4px 8px;
+    margin: -4px -4px 0;
+    scrollbar-width: thin;
+  }
+  .settings-tabs button {
+    flex-shrink: 0;
+    gap: 8px;
+    padding: 10px 12px;
+    white-space: nowrap;
   }
   .tag-form {
     padding: 16px;
@@ -509,29 +521,12 @@
   background: #eef0e5;
 }
 .settings-tabs button:focus-visible,
-.settings-mobile-picker select:focus-visible,
 .settings-panels > [role="tabpanel"]:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 3px;
 }
 .settings-tabs svg {
   flex-shrink: 0;
-}
-.settings-mobile-picker {
-  display: none;
-  gap: 8px;
-  font-weight: 800;
-}
-.settings-mobile-picker select {
-  width: 100%;
-  min-height: 48px;
-  padding: 10px 12px;
-  border: 1px solid var(--control-line);
-  border-radius: 8px;
-  background: #fffef9;
-  color: var(--ink);
-  font: inherit;
-  font-size: 16px;
 }
 .settings-panels {
   min-width: 0;
@@ -541,9 +536,4 @@
 }
 .settings-policy-heading {
   margin-bottom: 24px;
-}
-@media (max-width: 700px) {
-  .settings-mobile-picker {
-    display: grid;
-  }
 }
