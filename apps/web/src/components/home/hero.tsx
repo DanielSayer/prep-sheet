@@ -13,9 +13,12 @@ export function Hero() {
       </div>
 
       <h1 id="hero-title">
-        Big ideas.
-        <br />
-        <span>Good dinners.</span>
+        <span className="desktop-hero-title">
+          Big ideas.
+          <br />
+          <span>Good dinners.</span>
+        </span>
+        <span className="mobile-screen-title">Add a recipe</span>
       </h1>
 
       <p>

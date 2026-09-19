@@ -61,7 +61,9 @@ export function MealPlanner({ recipeId }: { recipeId?: string }) {
       <div className="page-heading">
         <div>
           <h1>
-            Meal planner<span className="title-dot">.</span>
+            <span className="desktop-screen-title">Meal planner</span>
+            <span className="mobile-screen-title">Planner</span>
+            <span className="title-dot">.</span>
           </h1>
           <p>Your private weekly plan.</p>
         </div>

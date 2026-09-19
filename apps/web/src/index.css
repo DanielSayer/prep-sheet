@@ -17,3 +17,218 @@
 @import "./styles/shopping.css";
 @import "./styles/planner.css";
 @import "./styles/support.css";
+.mobile-screen-title {
+  display: none;
+}
+.hero h1 > .desktop-hero-title {
+  color: var(--ink);
+}
+.desktop-hero-title > span {
+  color: var(--green);
+}
+
+@media (max-width: 850px) {
+  :root {
+    --page-gutter: 16px;
+  }
+  html {
+    scrollbar-gutter: auto;
+  }
+  /* Navigation lives in the bottom tabs. The page supplies its own title. */
+  .site-header {
+    height: env(safe-area-inset-top, 0px);
+    padding: 0;
+    border: 0;
+  }
+  .site-header > .brand {
+    display: none;
+  }
+  .home-page,
+  .page-width {
+    padding: 0 var(--page-gutter) 24px;
+  }
+  .page-heading,
+  .collection-page .page-heading {
+    min-height: 64px;
+    margin-bottom: 12px;
+    padding-block: 10px;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+  .page-heading h1 {
+    margin: 0;
+    font-size: 23px;
+    line-height: 1.2;
+    letter-spacing: -0.6px;
+  }
+  .page-heading .title-dot,
+  .desktop-collection-title,
+  .desktop-screen-title,
+  .desktop-hero-title,
+  .hero > p,
+  .hero-sticker,
+  .home-page > .how-it-works,
+  .home-footer,
+  .planner-page > .page-heading p,
+  .shopping-page > .page-heading p {
+    display: none;
+  }
+  .mobile-screen-title {
+    display: inline;
+  }
+  .hero {
+    padding: 20px 0;
+    text-align: left;
+  }
+  .hero h1 {
+    font-size: 23px;
+    line-height: 1.2;
+    letter-spacing: -0.6px;
+    margin: 0;
+  }
+  .hero h1 > .mobile-screen-title {
+    color: var(--ink);
+  }
+  .button,
+  .button:hover:not(:disabled),
+  .button:active:not(:disabled) {
+    min-height: 44px;
+    border-width: 1px;
+    box-shadow: none;
+    transform: none;
+  }
+  .button:active:not(:disabled) {
+    opacity: 0.8;
+  }
+  .page-heading > .button,
+  .page-heading > .shopping-generate-action {
+    width: auto;
+    flex-shrink: 0;
+    max-width: 48%;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .collection-page .collection-add {
+    display: none;
+  }
+  .composer,
+  .composer:focus-within {
+    padding: 16px;
+    border: 1px solid var(--control-line);
+    border-radius: 14px;
+    box-shadow: none;
+  }
+  .composer textarea {
+    min-height: 160px;
+    font-size: 16px;
+  }
+  .composer-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .composer-toolbar > .button {
+    min-height: 48px;
+  }
+  .composer-toolbar .composer-manual {
+    order: 2;
+    justify-content: center;
+  }
+  .idea-chips {
+    justify-content: flex-start;
+    gap: 8px;
+    margin-top: 20px;
+  }
+  .idea-chips > span {
+    width: 100%;
+  }
+  .idea-chips button {
+    min-height: 44px;
+    border-radius: 22px;
+    padding-inline: 14px;
+  }
+  /* Keep collection context, without repeating it as a large page heading. */
+  .collection-page > .collection-select,
+  .composer-section > .collection-select {
+    width: 100%;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .collection-select-label {
+    font-size: 13px;
+    color: var(--muted-ink);
+  }
+  .collection-page > .collection-select .collection-select-trigger,
+  .composer-section > .collection-select .collection-select-trigger {
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  .recipe-card,
+  .recipe-card:hover {
+    box-shadow: none;
+    transform: none;
+    border: 1px solid var(--line);
+  }
+  .recipe-grid {
+    gap: 8px;
+  }
+  .collection-page .recipe-card {
+    padding: 12px;
+    border-radius: 10px;
+  }
+  .collection-page .recipe-card h2 {
+    min-height: 28px;
+    font-size: 18px;
+    margin-bottom: 0;
+    padding-right: 40px;
+  }
+  .collection-page .recipe-card-top {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    margin: 0;
+  }
+  .collection-page .recipe-card-top > svg {
+    display: none;
+  }
+  .collection-page .recipe-card > p {
+    display: none;
+  }
+  .recipe-card-bottom {
+    padding-top: 4px;
+    gap: 0 8px;
+  }
+  .recipe-card-bottom > span:first-child {
+    flex-basis: 120px;
+  }
+  .meal-day-heading {
+    min-height: 52px;
+    padding-block: 8px;
+  }
+  .meal-add {
+    margin: 4px 8px;
+  }
+  .back-link {
+    min-height: 44px;
+    margin: 4px 0 0;
+  }
+  .detail-page .page-heading {
+    align-items: flex-start;
+  }
+  .detail-page .page-heading p,
+  .groups-page .page-heading p {
+    font-size: 13px;
+    margin-top: 6px;
+  }
+  /* Recovery instructions remain visible, including on the deleted list. */
+  .collection-page:has(.deleted-recipes) .page-heading p,
+  .collection-page:has(> .back-link) .page-heading p {
+    display: block;
+    font-size: 13px;
+    margin-top: 8px;
+  }
+}

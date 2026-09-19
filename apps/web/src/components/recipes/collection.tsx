@@ -96,7 +96,8 @@ export function Collection() {
       <div className="page-heading">
         <div>
           <h1>
-            {name}
+            <span className="desktop-collection-title">{name}</span>
+            <span className="mobile-screen-title">Recipes</span>
             <span className="title-dot">.</span>
           </h1>
 

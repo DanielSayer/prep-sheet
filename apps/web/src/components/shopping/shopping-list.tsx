@@ -288,7 +288,9 @@ function PersonalList({ userId }: { userId: string }) {
       <div className="page-heading">
         <div>
           <h1>
-            Shopping list<span className="title-dot">.</span>
+            <span className="desktop-screen-title">Shopping list</span>
+            <span className="mobile-screen-title">Shopping</span>
+            <span className="title-dot">.</span>
           </h1>
           <p>Your personal list, saved as you go.</p>
         </div>
