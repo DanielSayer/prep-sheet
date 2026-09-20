@@ -106,7 +106,7 @@ Live checks use API credits. The regular test suite never makes paid AI requests
 
 Use a Supabase PostgreSQL connection, check the PostgreSQL version and pooling settings, and create the initial migration. Add the deployed Discord callback URL and update `BETTER_AUTH_URL`. Review sign-up and generation limits before making the app publicly reachable. Local Docker data does not automatically sync to Supabase.
 
-If localhost shows an older app after sign-in, an existing service worker from another project may be serving cached content at that port. Clear that localhost site's service worker/cache in your browser, or use a fresh query URL such as `http://localhost:3001/?prep-sheet=1` while diagnosing it.
+Local development automatically retires service workers left by other projects on the same origin, including the old Korex worker on port 3001. The dev server serves a replacement when the browser updates that worker; it unregisters itself, clears Workbox caches and reloads its controlled tabs. Prep Sheet also removes leftover registrations when its development page loads. Cookies, local storage and session storage are preserved. HTML responses use `Cache-Control: no-store`, and Vite fails if port 3001 is occupied instead of silently switching ports. These recovery handlers are development-only. Restart the dev server after upgrading, then open `http://localhost:3001/` normally; a stale tab may reload once as its worker updates.
 
 ## Durable imports and AI allowance
 

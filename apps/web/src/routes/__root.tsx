@@ -115,6 +115,9 @@ function RootDocument() {
   return (
     <html lang="en">
       <head>
+        {import.meta.env.DEV && (
+          <script src="/@prep-sheet/local-cache-recovery.js" />
+        )}
         <HeadContent />
       </head>
 
