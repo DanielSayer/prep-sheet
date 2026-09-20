@@ -7,12 +7,13 @@ export default function Header() {
     <header className="site-header">
       <Link to="/" className="brand" aria-label="Prep Sheet home">
         <img
-          src="/branding/logo-horizontal.png"
-          alt="Prep Sheet"
-          className="brand-logo"
-          width={2172}
-          height={724}
+          src="/branding/icon-192.png"
+          alt=""
+          className="brand-icon"
+          width={40}
+          height={40}
         />
+        <span className="brand-wordmark">prep sheet</span>
       </Link>
 
       <nav aria-label="Main navigation">

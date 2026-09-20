@@ -1,7 +1,3 @@
-@import "@fontsource/nunito/400.css";
-@import "@fontsource/nunito/600.css";
-@import "@fontsource/nunito/800.css";
-@import "@fontsource/nunito/900.css";
 @import "@prep-sheet/ui/globals.css";
 
 @import "./styles/base.css";
@@ -17,6 +13,7 @@
 @import "./styles/shopping.css";
 @import "./styles/planner.css";
 @import "./styles/support.css";
+@import "./styles/landing.css";
 .mobile-screen-title {
   display: none;
 }
@@ -49,16 +46,16 @@
   }
   .page-heading,
   .collection-page .page-heading {
-    min-height: 64px;
-    margin-bottom: 12px;
-    padding-block: 10px;
+    min-height: 76px;
+    margin: 0 0 12px;
+    padding: 20px 0 12px;
     flex-direction: row;
     align-items: center;
     gap: 12px;
   }
   .page-heading h1 {
     margin: 0;
-    font-size: 23px;
+    font-size: 24px;
     line-height: 1.2;
     letter-spacing: -0.6px;
   }
@@ -78,17 +75,29 @@
     display: inline;
   }
   .hero {
-    padding: 20px 0;
+    margin: 0 0 12px;
+    padding: 24px 0 12px;
     text-align: left;
   }
   .hero h1 {
-    font-size: 23px;
+    font-size: 24px;
     line-height: 1.2;
     letter-spacing: -0.6px;
     margin: 0;
   }
   .hero h1 > .mobile-screen-title {
     color: var(--ink);
+  }
+  .site-header nav {
+    background: #fffef9;
+    border-top-color: #ced7c2;
+  }
+  .site-header nav a.active,
+  .site-header nav .account-trigger[data-active="true"],
+  .site-header nav .account-trigger[data-popup-open] {
+    background: var(--green-dark);
+    color: white;
+    border-radius: 14px;
   }
   .button,
   .button:hover:not(:disabled),
@@ -155,11 +164,20 @@
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
     gap: 12px;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
   }
   .collection-select-label {
     font-size: 13px;
     color: var(--muted-ink);
+  }
+  .collection-page .collection-toolbar {
+    padding: 12px 0;
+    margin-bottom: 16px;
+  }
+  .collection-count {
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 800;
   }
   .collection-page > .collection-select .collection-select-trigger,
   .composer-section > .collection-select .collection-select-trigger {
@@ -174,11 +192,12 @@
     border: 1px solid var(--line);
   }
   .recipe-grid {
-    gap: 8px;
+    gap: 10px;
   }
   .collection-page .recipe-card {
-    padding: 12px;
-    border-radius: 10px;
+    padding: 16px;
+    border-radius: 14px;
+    background: #fffef9;
   }
   .collection-page .recipe-card h2 {
     min-height: 28px;
@@ -208,6 +227,14 @@
   .meal-day-heading {
     min-height: 52px;
     padding-block: 8px;
+    background: #e9eddf;
+  }
+  .meal-today .meal-day-heading {
+    background: var(--green-dark);
+    color: white;
+  }
+  .meal-today .meal-day-heading small {
+    color: white;
   }
   .meal-add {
     margin: 4px 8px;
@@ -230,5 +257,18 @@
     display: block;
     font-size: 13px;
     margin-top: 8px;
+  }
+}
+
+@media (max-width: 360px) {
+  .page-heading {
+    flex-wrap: wrap;
+  }
+  .page-heading > div {
+    flex: 1 1 160px;
+  }
+  .page-heading > .button,
+  .page-heading > .shopping-generate-action {
+    max-width: 100%;
   }
 }

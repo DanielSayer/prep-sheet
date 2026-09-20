@@ -47,3 +47,19 @@
   font-size: 12px;
   margin: 20px 0;
 }
+.login-card > .text-button {
+  margin-top: 20px;
+  padding: 10px 12px;
+  min-height: 44px;
+}
+.login-card .help-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-top: 16px;
+}
+.login-card .help-actions .text-button {
+  min-height: 44px;
+  padding-block: 10px;
+}

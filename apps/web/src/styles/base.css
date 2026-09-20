@@ -9,7 +9,8 @@
   --control-line: #7b876f;
   --background: var(--paper);
   --foreground: var(--ink);
-  --font-sans: "Nunito", sans-serif;
+  --font-sans: "Trebuchet MS", Arial, sans-serif;
+  --font-heading: var(--font-sans);
   --page-gutter: 32px;
   --mobile-nav-height: 0px;
 }
@@ -21,7 +22,7 @@ body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
-  font-family: "Nunito", sans-serif;
+  font-family: var(--font-sans);
   font-size: 16px;
 }
 button,
@@ -63,9 +64,17 @@ h3,
 p {
   margin: 0;
 }
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+}
 h1 {
   font-size: 32px;
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1.2;
 }
 h2 {

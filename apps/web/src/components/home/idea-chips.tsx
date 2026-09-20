@@ -1,9 +1,3 @@
-const ideas = [
-  "A 20-minute lemon pasta",
-  "Dinner with chickpeas & spinach",
-  "Something chocolatey",
-];
-
 export function IdeaChips({
   disabled,
   onSelect,
@@ -13,21 +7,18 @@ export function IdeaChips({
 }) {
   return (
     <div className="idea-chips">
-      <span>Or try</span>
-      {ideas.map((idea) => (
-        <button
-          key={idea}
-          type="button"
-          disabled={disabled}
-          onClick={() => {
-            onSelect(`Generate a recipe: ${idea}`);
-            document.getElementById("recipe-input")?.focus();
-          }}
-        >
-          {idea}
-          <span aria-hidden="true">↗</span>
-        </button>
-      ))}
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => {
+          onSelect(
+            "Generate a recipe: lemon and chickpea pasta with spinach for two people, ready in 25 minutes.",
+          );
+          document.getElementById("recipe-input")?.focus();
+        }}
+      >
+        Try a lemon pasta idea <span aria-hidden="true">↗</span>
+      </button>
     </div>
   );
 }

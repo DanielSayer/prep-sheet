@@ -1,4 +1,4 @@
-import { ArrowRight, LoaderCircle, Pencil, Sparkles } from "lucide-react";
+import { ArrowRight, LoaderCircle, Pencil } from "lucide-react";
 import type { SubmitEvent } from "react";
 
 export function ComposerForm({
@@ -22,8 +22,8 @@ export function ComposerForm({
 }) {
   return (
     <form className="composer" onSubmit={onSubmit}>
-      <label className="sr-only" htmlFor="recipe-input">
-        Paste a recipe, a link, or describe a dish
+      <label className="composer-label" htmlFor="recipe-input">
+        What would you like to cook?
       </label>
 
       <textarea
@@ -56,7 +56,7 @@ export function ComposerForm({
             </>
           ) : (
             <>
-              <Sparkles size={18} /> Create recipe <ArrowRight size={18} />
+              Make a recipe <ArrowRight size={18} aria-hidden="true" />
             </>
           )}
         </button>

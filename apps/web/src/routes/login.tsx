@@ -74,10 +74,6 @@ function Login() {
         />
 
         <ErrorNotice message={error} />
-        <p className="small-note">
-          Already use Discord? Sign in with Discord, then link Google in
-          Settings to keep your recipes.
-        </p>
 
         <Link to="/" className="text-button">
           Back to the kitchen
