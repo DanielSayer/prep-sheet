@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { hashSecret } from "@prep-sheet/auth/extensions";
 import { db } from "@prep-sheet/db";
 import { user } from "@prep-sheet/db/schema/auth";
+import { aiSpend, billingAccount } from "@prep-sheet/db/schema/billing";
 import { extensionCredential } from "@prep-sheet/db/schema/extension";
 import { group, groupMember } from "@prep-sheet/db/schema/group";
 import { extensionRate, recipeImport } from "@prep-sheet/db/schema/import";
@@ -80,6 +81,13 @@ describe("durable extension imports with PostgreSQL", () => {
         email: `${id}@example.test`,
       })),
     );
+    await db.insert(billingAccount).values(
+      [owner, other].map((userId) => ({
+        userId,
+        status: "active",
+        validUntil: new Date(Date.now() + 86400000),
+      })),
+    );
     await db
       .insert(group)
       .values({ id: groupId, name: "Shared recipes", ownerId: owner });
@@ -94,6 +102,15 @@ describe("durable extension imports with PostgreSQL", () => {
     });
   });
   afterAll(async () => {
+    await db.delete(aiSpend).where(
+      inArray(
+        aiSpend.importId,
+        db
+          .select({ id: recipeImport.id })
+          .from(recipeImport)
+          .where(inArray(recipeImport.userId, [owner, other])),
+      ),
+    );
     await db.delete(group).where(eq(group.id, groupId));
     await db.delete(recipe).where(inArray(recipe.userId, [owner, other]));
     await db.delete(user).where(inArray(user.id, [owner, other]));

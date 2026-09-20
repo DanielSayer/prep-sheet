@@ -59,6 +59,21 @@ export function PrivacyPolicy({ embedded = false }: { embedded?: boolean }) {
         </p>
       </section>
       <section className="help-section">
+        <Heading>Billing</Heading>
+        <p>
+          Polar handles Pro subscriptions and payments. We send your account ID,
+          name and email to Polar when you open checkout. We store your Polar
+          customer ID, subscription status and usage allowances. Payment card
+          details stay with the payment provider.
+        </p>
+        <p>
+          Cancel your subscription in Plan &amp; billing before account deletion
+          can be completed. Billing records may need to be retained by Polar for
+          tax and legal obligations. We keep AI spending records without account
+          details to enforce service limits.
+        </p>
+      </section>
+      <section className="help-section">
         <Heading>Leaving Prep Sheet</Heading>
         <p>
           You can request deletion from account settings. The request is

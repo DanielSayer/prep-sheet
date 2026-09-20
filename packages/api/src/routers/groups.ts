@@ -6,6 +6,7 @@ import { recipe } from "@prep-sheet/db/schema/recipe";
 import { TRPCError } from "@trpc/server";
 import { and, asc, eq, gt, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
+import { requireHouseholdPlan } from "../billing/usage";
 import { lockGroup, requireGroup } from "../groups/access";
 import { protectedProcedure, router } from "../index";
 
@@ -40,6 +41,7 @@ export const groupsRouter = router({
     .input(z.object({ name: z.string().trim().min(1).max(80) }))
     .mutation(({ input, ctx }) =>
       db.transaction(async (tx) => {
+        await requireHouseholdPlan(tx, ctx.session.user.id);
         const [created] = await tx
           .insert(group)
           .values({
@@ -99,6 +101,7 @@ export const groupsRouter = router({
       await lockGroup(tx, input.groupId);
       await requireGroup(tx, input.groupId, ctx.session.user.id, true);
       const token = randomBytes(32).toString("hex");
+      await requireHouseholdPlan(tx, ctx.session.user.id);
       const expiresAt = new Date(Date.now() + 7 * 86400000);
       await tx.insert(groupInvite).values({
         id: randomUUID(),
@@ -220,6 +223,7 @@ export const groupsRouter = router({
             code: "BAD_REQUEST",
             message: "Choose someone who is already a member.",
           });
+        await requireHouseholdPlan(tx, input.userId);
         await tx
           .update(group)
           .set({ ownerId: input.userId })

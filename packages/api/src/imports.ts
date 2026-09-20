@@ -4,7 +4,6 @@ import { user } from "@prep-sheet/db/schema/auth";
 import { group, groupMember } from "@prep-sheet/db/schema/group";
 import { recipeImport } from "@prep-sheet/db/schema/import";
 import { recipe } from "@prep-sheet/db/schema/recipe";
-import { env } from "@prep-sheet/env/server";
 import { TRPCError } from "@trpc/server";
 import {
   and,
@@ -18,6 +17,12 @@ import {
   lt,
   sql,
 } from "drizzle-orm";
+import { pricing } from "./billing/policy";
+import {
+  checkAiAllowance,
+  checkRecipeCapacity,
+  reserveAiSpend,
+} from "./billing/usage";
 import { accessibleRecipe, lockGroup, requireGroup } from "./groups/access";
 import {
   type ImportStatus,
@@ -256,6 +261,8 @@ async function submitJob(userId: string, input: JobInput) {
     }
     if (input.groupId) await requireGroup(tx, input.groupId, userId);
     await checkRecipeUsage(tx, userId);
+    await checkRecipeCapacity(tx, userId);
+    const usageBucket = await checkAiAllowance(tx, userId);
     const [pending] = await tx
       .select({ total: count() })
       .from(recipeImport)
@@ -270,7 +277,7 @@ async function submitJob(userId: string, input: JobInput) {
           ]),
         ),
       );
-    if ((pending?.total ?? 0) >= env.AI_PENDING_PER_ACCOUNT)
+    if ((pending?.total ?? 0) >= pricing.ai.pendingPerAccount)
       throw new TRPCError({
         code: "TOO_MANY_REQUESTS",
         message: "Your recipe queue is full. Wait for an import to finish.",
@@ -306,6 +313,7 @@ async function submitJob(userId: string, input: JobInput) {
       sourceKind: input.sourceKind,
       sourceUrl: input.sourceUrl,
       fingerprint,
+      usageBucket,
     });
   });
   return importStatus(userId, input.id);
@@ -354,7 +362,7 @@ export async function processNextImport(generate = generateRecipe) {
       .select({ total: count() })
       .from(recipeImport)
       .where(inArray(recipeImport.state, ["fetching", "processing"]));
-    if ((active?.total ?? 0) >= env.AI_CONCURRENT_ATTEMPTS) return null;
+    if ((active?.total ?? 0) >= pricing.ai.concurrentAttempts) return null;
     const [next] = await tx
       .select()
       .from(recipeImport)
@@ -384,22 +392,26 @@ export async function processNextImport(generate = generateRecipe) {
         : { content: job.input, sourceUrl: job.sourceUrl };
     const tags = await availableTags(job.userId);
     // Persist the exact input before crossing the AI boundary.
-    const claimed = await db
-      .update(recipeImport)
-      .set({
-        state: "processing",
-        input: prepared.content,
-        sourceUrl: prepared.sourceUrl,
-        startedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(recipeImport.id, job.id),
-          eq(recipeImport.workerToken, job.workerToken),
-          eq(recipeImport.state, "fetching"),
-        ),
-      )
-      .returning({ id: recipeImport.id });
+    const claimed = await db.transaction(async (tx) => {
+      const claimed = await tx
+        .update(recipeImport)
+        .set({
+          state: "processing",
+          input: prepared.content,
+          sourceUrl: prepared.sourceUrl,
+          startedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(recipeImport.id, job.id),
+            eq(recipeImport.workerToken, job.workerToken),
+            eq(recipeImport.state, "fetching"),
+          ),
+        )
+        .returning({ id: recipeImport.id });
+      if (claimed.length) await reserveAiSpend(tx, job.id);
+      return claimed;
+    });
     if (!claimed.length) return true;
     generationStarted = true;
     const result = await generate(

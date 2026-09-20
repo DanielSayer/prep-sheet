@@ -27,6 +27,9 @@ export const recipeImport = pgTable(
       .notNull()
       .default("captured"),
     usageReleased: boolean("usage_released").notNull().default(false),
+    usageBucket: text("usage_bucket", { enum: ["free", "trial", "pro"] })
+      .notNull()
+      .default("free"),
     state: text("state", {
       enum: ["queued", "fetching", "processing", "ready", "saved", "failed"],
     })

@@ -14,7 +14,7 @@
 }
 .help-section > p,
 .linked-accounts > p {
-  max-width: 65ch;
+  max-width: 80ch;
   color: var(--muted-ink);
   font-size: 15px;
 }

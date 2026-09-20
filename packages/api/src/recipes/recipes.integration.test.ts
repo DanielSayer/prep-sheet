@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { db } from "@prep-sheet/db";
 import { user } from "@prep-sheet/db/schema/auth";
+import { aiSpend, billingAccount } from "@prep-sheet/db/schema/billing";
 import { group, groupInvite } from "@prep-sheet/db/schema/group";
+import { recipeImport } from "@prep-sheet/db/schema/import";
 import {
   recipe,
   recipeCooking,
@@ -121,8 +123,26 @@ describe("recipes API with PostgreSQL", () => {
         email: `${id}@example.test`,
       })),
     );
+    await db.insert(billingAccount).values(
+      ids.map((userId) => ({
+        userId,
+        status: "active",
+        validUntil: new Date(Date.now() + 86400000),
+      })),
+    );
   });
   afterAll(async () => {
+    await db
+      .delete(aiSpend)
+      .where(
+        inArray(
+          aiSpend.importId,
+          db
+            .select({ id: recipeImport.id })
+            .from(recipeImport)
+            .where(inArray(recipeImport.userId, ids)),
+        ),
+      );
     await db.delete(group).where(inArray(group.ownerId, ids));
     await db.delete(recipe).where(inArray(recipe.userId, ids));
     await db.delete(user).where(inArray(user.id, ids));

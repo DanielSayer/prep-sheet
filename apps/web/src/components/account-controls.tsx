@@ -37,6 +37,10 @@ export function AccountControls() {
         </p>
         <ul>
           <li>
+            Cancel Pro in Plan &amp; billing and wait for the subscription to
+            end before deletion can be completed.
+          </li>
+          <li>
             Your personal recipes, tags, favourites, ratings, cooking history,
             shopping lists, meal plans, imports and support reports are removed
             from the live database.

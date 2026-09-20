@@ -13,9 +13,10 @@ export const env = createEnv({
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
     OPENAI_API_KEY: z.string().optional(),
-    AI_DAILY_ATTEMPTS: z.coerce.number().int().positive().default(50),
-    AI_PENDING_PER_ACCOUNT: z.coerce.number().int().positive().default(5),
-    AI_CONCURRENT_ATTEMPTS: z.coerce.number().int().positive().default(2),
+    POLAR_ACCESS_TOKEN: z.string().optional(),
+    POLAR_WEBHOOK_SECRET: z.string().optional(),
+    POLAR_PRO_PRODUCT_ID: z.uuid().optional(),
+    POLAR_SERVER: z.enum(["sandbox", "production"]).default("sandbox"),
     OPENAI_MODEL: z.string().default("gpt-5.6-luna"),
     NODE_ENV: z
       .enum(["development", "production", "test"])

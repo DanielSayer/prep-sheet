@@ -1,8 +1,8 @@
 import { user } from "@prep-sheet/db/schema/auth";
 import { recipeImport } from "@prep-sheet/db/schema/import";
-import { env } from "@prep-sheet/env/server";
 import { TRPCError } from "@trpc/server";
 import { and, count, eq, gte, inArray, or, sql } from "drizzle-orm";
+import { pricing } from "../billing/policy";
 import type { Database } from "../groups/access";
 
 // Admission and reservation must share this transaction and account lock.
@@ -34,9 +34,9 @@ export async function checkRecipeUsage(tx: Database, userId: string) {
         ),
       ),
     );
-  if ((usage?.total ?? 0) >= env.AI_DAILY_ATTEMPTS)
+  if ((usage?.total ?? 0) >= pricing.ai.dailyAttemptsPerAccount)
     throw new TRPCError({
       code: "TOO_MANY_REQUESTS",
-      message: `You've used your ${env.AI_DAILY_ATTEMPTS} AI attempts in the last 24 hours. Try again when an attempt expires.`,
+      message: `You've used your ${pricing.ai.dailyAttemptsPerAccount} AI attempts in the last 24 hours. Try again when an attempt expires.`,
     });
 }

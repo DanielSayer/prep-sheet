@@ -23,6 +23,7 @@ import {
   sql,
 } from "drizzle-orm";
 import { z } from "zod";
+import { checkRecipeCapacity, lockAccount } from "../billing/usage";
 import {
   accessibleRecipe,
   lockGroup,
@@ -111,10 +112,21 @@ export const recipesRouter = router({
         )
         .orderBy(desc(recipe.deletedAt), asc(recipe.id));
     }),
-  restore: protectedProcedure
-    .input(idInput)
-    .mutation(async ({ input, ctx }) => {
-      const [restored] = await db
+  restore: protectedProcedure.input(idInput).mutation(async ({ input, ctx }) =>
+    db.transaction(async (tx) => {
+      const [candidate] = await tx
+        .select({ userId: recipe.userId })
+        .from(recipe)
+        .where(
+          and(
+            eq(recipe.id, input.id),
+            recipePermission(ctx.session.user.id),
+            isNotNull(recipe.deletedAt),
+          ),
+        );
+      if (!candidate) throw missing();
+      if (candidate.userId) await checkRecipeCapacity(tx, candidate.userId);
+      const [restored] = await tx
         .update(recipe)
         .set({ deletedAt: null, deletedBy: null, expiresAt: null })
         .where(
@@ -134,6 +146,7 @@ export const recipesRouter = router({
         });
       return restored;
     }),
+  ),
   cookingHistory: protectedProcedure
     .input(idInput)
     .query(async ({ input, ctx }) => {
@@ -423,6 +436,12 @@ export const recipesRouter = router({
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.user.id;
       await db.transaction(async (tx) => {
+        await lockAccount(tx, userId);
+        const [existing] = await tx
+          .select({ id: recipe.id })
+          .from(recipe)
+          .where(eq(recipe.id, input.id));
+        if (!existing) await checkRecipeCapacity(tx, userId);
         if (input.groupId) {
           await lockGroup(tx, input.groupId);
           await requireGroup(tx, input.groupId, userId);
@@ -457,6 +476,7 @@ export const recipesRouter = router({
     .mutation(({ input, ctx }) =>
       db.transaction(async (tx) => {
         const userId = ctx.session.user.id;
+        await checkRecipeCapacity(tx, userId);
         if (input.groupId) {
           await lockGroup(tx, input.groupId);
           await requireGroup(tx, input.groupId, userId);

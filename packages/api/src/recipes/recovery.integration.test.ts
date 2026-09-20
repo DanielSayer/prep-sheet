@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { db } from "@prep-sheet/db";
 import { user } from "@prep-sheet/db/schema/auth";
+import { billingAccount } from "@prep-sheet/db/schema/billing";
 import { group } from "@prep-sheet/db/schema/group";
 import { recipe } from "@prep-sheet/db/schema/recipe";
 import { eq, inArray } from "drizzle-orm";
@@ -51,6 +52,15 @@ describe("recipe recovery with PostgreSQL", () => {
         email: `${id}@example.test`,
       })),
     );
+    await db
+      .insert(billingAccount)
+      .values(
+        users.map((userId) => ({
+          userId,
+          status: "active",
+          validUntil: new Date(Date.now() + 86400000),
+        })),
+      );
   });
   afterAll(async () => {
     await db.delete(group).where(inArray(group.ownerId, users));

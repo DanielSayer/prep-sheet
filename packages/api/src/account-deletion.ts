@@ -1,9 +1,15 @@
 import { db } from "@prep-sheet/db";
 import { user } from "@prep-sheet/db/schema/auth";
+import { billingAccount } from "@prep-sheet/db/schema/billing";
 import { group } from "@prep-sheet/db/schema/group";
 import { recipe } from "@prep-sheet/db/schema/recipe";
 import { accountDeletionRequest } from "@prep-sheet/db/schema/support";
 import { and, eq, isNull } from "drizzle-orm";
+import {
+  billingEnabled,
+  hasUnfinishedSubscription,
+  syncBilling,
+} from "./billing/polar";
 
 // Operator-only. Never expose this as a public or authenticated user procedure.
 export async function completeAccountDeletion(requestId: string) {
@@ -28,6 +34,24 @@ export async function completeAccountDeletion(requestId: string) {
       throw new Error(
         "The account still owns groups. Ask the owner to transfer or explicitly delete them first.",
       );
+    const [billing] = await tx
+      .select()
+      .from(billingAccount)
+      .where(eq(billingAccount.userId, request.userId));
+    if (billing?.customerId) {
+      if (!billingEnabled())
+        throw new Error(
+          "Restore Polar configuration and verify cancellation before deleting this account.",
+        );
+      const current = await syncBilling(tx, request.userId);
+      if (
+        current?.status !== "free" ||
+        (await hasUnfinishedSubscription(request.userId))
+      )
+        throw new Error(
+          "Cancel the Polar subscription and wait for it to end before completing account deletion.",
+        );
+    }
     // Personal recipes use SET NULL, so remove them explicitly before the user.
     await tx
       .delete(recipe)

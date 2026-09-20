@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
+  CreditCard,
   MessageSquare,
   Pencil,
   Puzzle,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import { AccountControls } from "@/components/account-controls";
+import { Billing } from "@/components/billing";
 import { ConnectedExtensions } from "@/components/connected-extensions";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
 import { PrivacyPolicy } from "@/components/privacy-policy";
@@ -21,12 +23,16 @@ import { SupportContact } from "@/components/support-contact";
 import { useTRPC } from "@/utils/trpc";
 
 export const Route = createFileRoute("/_auth/settings")({
+  validateSearch: (search): { billing?: string } => ({
+    billing: search.billing === "1" || search.billing === 1 ? "1" : undefined,
+  }),
   ssr: false,
   component: Settings,
 });
 
 const settingsTabs = [
   { id: "account", label: "Account", icon: UserRound },
+  { id: "billing", label: "Plan & billing", icon: CreditCard },
   { id: "tags", label: "Tags", icon: Tag },
   { id: "extensions", label: "Extensions", icon: Puzzle },
   { id: "privacy", label: "Privacy policy", icon: Shield },
@@ -45,7 +51,10 @@ function Settings() {
     () => window.matchMedia("(max-width: 650px)").matches,
     () => false,
   );
-  const [activeTab, setActiveTab] = useState("account");
+  const search = Route.useSearch();
+  const [activeTab, setActiveTab] = useState(
+    search.billing ? "billing" : "account",
+  );
   const trpc = useTRPC();
   const client = useQueryClient();
   const tags = useQuery(trpc.tags.list.queryOptions());
@@ -141,6 +150,14 @@ function Settings() {
           ))}
         </div>
         <div className="settings-panels">
+          <div
+            id="settings-panel-billing"
+            role="tabpanel"
+            aria-label="Plan & billing"
+            hidden={activeTab !== "billing"}
+          >
+            <Billing />
+          </div>
           <div
             id="settings-panel-account"
             role="tabpanel"

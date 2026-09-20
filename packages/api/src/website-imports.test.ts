@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { db } from "@prep-sheet/db";
 import { user } from "@prep-sheet/db/schema/auth";
+import { aiSpend, billingAccount } from "@prep-sheet/db/schema/billing";
 import { group, groupMember } from "@prep-sheet/db/schema/group";
 import { recipeImport } from "@prep-sheet/db/schema/import";
 import { recipe } from "@prep-sheet/db/schema/recipe";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import {
   afterAll,
   beforeAll,
@@ -44,12 +45,39 @@ describe("website durable imports", () => {
       name: "Import test",
       email: `${account}@example.test`,
     });
+    await db.insert(billingAccount).values({
+      userId: account,
+      status: "active",
+      validUntil: new Date(Date.now() + 86400000),
+    });
   });
   beforeEach(async () => {
+    await db
+      .delete(aiSpend)
+      .where(
+        inArray(
+          aiSpend.importId,
+          db
+            .select({ id: recipeImport.id })
+            .from(recipeImport)
+            .where(eq(recipeImport.userId, account)),
+        ),
+      );
     await db.delete(recipeImport).where(eq(recipeImport.userId, account));
     await db.delete(recipe).where(eq(recipe.userId, account));
   });
   afterAll(async () => {
+    await db
+      .delete(aiSpend)
+      .where(
+        inArray(
+          aiSpend.importId,
+          db
+            .select({ id: recipeImport.id })
+            .from(recipeImport)
+            .where(eq(recipeImport.userId, account)),
+        ),
+      );
     await db.delete(recipe).where(eq(recipe.userId, account));
     await db.delete(group).where(eq(group.ownerId, account));
     await db.delete(user).where(eq(user.id, account));

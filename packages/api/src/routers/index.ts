@@ -1,4 +1,5 @@
 import { publicProcedure, router } from "../index";
+import { billingRouter } from "./billing";
 import { groupsRouter } from "./groups";
 import { plannerRouter } from "./planner";
 import { recipesRouter } from "./recipes";
@@ -7,6 +8,7 @@ import { supportRouter } from "./support";
 import { tagsRouter } from "./tags";
 
 export const appRouter = router({
+  billing: billingRouter,
   recipes: recipesRouter,
   tags: tagsRouter,
   shopping: shoppingRouter,
