@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight, BookOpen } from "lucide-react";
+import { ArrowUpRight, BookOpen, FilterX } from "lucide-react";
 
 export function EmptyCollection({
   searching,
@@ -60,7 +60,7 @@ export function EmptyCollection({
           className="button button-outline"
           onClick={onClear}
         >
-          Clear filters
+          <FilterX size={17} aria-hidden="true" /> Clear filters
         </button>
       ) : (
         <Link to="/" className="button button-primary">

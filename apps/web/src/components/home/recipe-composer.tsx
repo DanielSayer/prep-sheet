@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { Pencil, Plus, RefreshCw, X } from "lucide-react";
 import { type SubmitEvent, useEffect, useRef, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useTRPC } from "@/utils/trpc";
@@ -224,7 +225,7 @@ function AccountComposer({
                   disabled={create.isPending}
                   onClick={() => create.mutate(pending)}
                 >
-                  Check again
+                  <RefreshCw size={17} aria-hidden="true" /> Check again
                 </button>
               )}
               {(terminal || create.isError) && (
@@ -234,6 +235,13 @@ function AccountComposer({
                   disabled={discard.isPending}
                   onClick={() => void reset()}
                 >
+                  {result?.kind === "saved" ? (
+                    <Plus size={17} aria-hidden="true" />
+                  ) : terminal ? (
+                    <Pencil size={17} aria-hidden="true" />
+                  ) : (
+                    <X size={17} aria-hidden="true" />
+                  )}
                   {result?.kind === "saved"
                     ? "Add another recipe"
                     : terminal

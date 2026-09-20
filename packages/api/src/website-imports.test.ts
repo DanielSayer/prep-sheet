@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { db } from "@prep-sheet/db";
 import { user } from "@prep-sheet/db/schema/auth";
+import { group, groupMember } from "@prep-sheet/db/schema/group";
 import { recipeImport } from "@prep-sheet/db/schema/import";
 import { recipe } from "@prep-sheet/db/schema/recipe";
 import { eq } from "drizzle-orm";
@@ -17,6 +18,7 @@ import {
   discardWebsiteImport,
   importStatus,
   processNextImport,
+  recentImports,
   submitWebsiteImport,
 } from "./imports";
 import { sampleRecipe } from "./recipes/fixtures";
@@ -49,6 +51,7 @@ describe("website durable imports", () => {
   });
   afterAll(async () => {
     await db.delete(recipe).where(eq(recipe.userId, account));
+    await db.delete(group).where(eq(group.ownerId, account));
     await db.delete(user).where(eq(user.id, account));
     await db.$client.end();
   });
@@ -85,6 +88,71 @@ describe("website durable imports", () => {
       .from(recipe)
       .where(eq(recipe.id, item.id));
     expect(saved).toMatchObject({ origin: "generated", sourceUrl: null });
+  });
+  it("recovers account jobs without request IDs and hides deleted recipe links", async () => {
+    const item = input();
+    await submitWebsiteImport(account, item);
+    expect(await recentImports(randomUUID())).toEqual([]);
+    expect(await recentImports(account)).toMatchObject([
+      { id: item.id, state: "queued", recipeId: null },
+    ]);
+    await processNextImport(vi.fn().mockResolvedValue(output));
+    expect(await recentImports(account)).toMatchObject([
+      {
+        id: item.id,
+        state: "saved",
+        recipeId: item.id,
+        title: sampleRecipe.title,
+      },
+    ]);
+    await db.delete(recipe).where(eq(recipe.id, item.id));
+    expect(await recentImports(account)).toMatchObject([
+      { id: item.id, state: "saved", recipeId: null, title: null },
+    ]);
+  });
+  it("hides completed recipe titles and links after group access is lost", async () => {
+    const groupId = randomUUID();
+    await db
+      .insert(group)
+      .values({ id: groupId, name: "Import collection", ownerId: account });
+    await db.insert(groupMember).values({ groupId, userId: account });
+    const item = { ...input(), groupId };
+    await submitWebsiteImport(account, item);
+    await processNextImport(vi.fn().mockResolvedValue(output));
+    expect(await recentImports(account)).toMatchObject([
+      { recipeId: item.id, title: sampleRecipe.title },
+    ]);
+    await db.delete(groupMember).where(eq(groupMember.groupId, groupId));
+    expect(await recentImports(account)).toMatchObject([
+      { state: "saved", recipeId: null, title: null },
+    ]);
+  });
+  it("keeps old active imports ahead of a bounded recent history", async () => {
+    const activeId = randomUUID();
+    await db.insert(recipeImport).values([
+      {
+        id: activeId,
+        userId: account,
+        input: "",
+        fingerprint: "active",
+        createdAt: new Date(0),
+      },
+      ...Array.from({ length: 55 }, () => ({
+        id: randomUUID(),
+        userId: account,
+        input: "",
+        fingerprint: "failed",
+        state: "failed" as const,
+        error: "Could not read page",
+      })),
+    ]);
+    const jobs = await recentImports(account);
+    expect(jobs).toHaveLength(50);
+    expect(jobs[0]).toMatchObject({ id: activeId, state: "queued" });
+    expect(jobs[1]).toMatchObject({
+      state: "failed",
+      error: "Could not read page",
+    });
   });
   it("atomically bounds the last daily reservation and retains it after deletion", async () => {
     await db.insert(recipeImport).values(

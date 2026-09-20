@@ -1,4 +1,4 @@
-import { AlertCircle, LoaderCircle } from "lucide-react";
+import { AlertCircle, LoaderCircle, RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 
 export function LoadingState({
@@ -37,7 +37,7 @@ export function ErrorNotice({
         <p>{message}</p>
         {retry && (
           <button className="text-button" type="button" onClick={retry}>
-            Try again
+            <RefreshCw size={17} aria-hidden="true" /> Try again
           </button>
         )}
       </div>

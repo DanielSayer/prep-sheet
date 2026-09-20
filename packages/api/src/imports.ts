@@ -10,6 +10,7 @@ import {
   and,
   asc,
   count,
+  desc,
   eq,
   gte,
   inArray,
@@ -17,7 +18,7 @@ import {
   lt,
   sql,
 } from "drizzle-orm";
-import { lockGroup, requireGroup } from "./groups/access";
+import { accessibleRecipe, lockGroup, requireGroup } from "./groups/access";
 import {
   type ImportStatus,
   importInputSchema,
@@ -36,6 +37,39 @@ export async function importCollections(userId: string) {
     .where(eq(groupMember.userId, userId))
     .orderBy(asc(group.name));
   return [{ id: null, name: "My recipes" }, ...groups];
+}
+
+export async function recentImports(userId: string) {
+  return db
+    .select({
+      id: recipeImport.id,
+      state: recipeImport.state,
+      sourceKind: recipeImport.sourceKind,
+      sourceUrl: recipeImport.sourceUrl,
+      createdAt: recipeImport.createdAt,
+      error: recipeImport.error,
+      recipeId: recipe.id,
+      title: recipe.title,
+    })
+    .from(recipeImport)
+    .leftJoin(
+      recipe,
+      and(eq(recipe.id, recipeImport.id), accessibleRecipe(userId)),
+    )
+    .where(eq(recipeImport.userId, userId))
+    .orderBy(
+      desc(
+        inArray(recipeImport.state, [
+          "queued",
+          "fetching",
+          "processing",
+          "ready",
+        ]),
+      ),
+      desc(recipeImport.createdAt),
+      desc(recipeImport.id),
+    )
+    .limit(50);
 }
 
 export async function importStatus(

@@ -1,12 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, Link } from "@tanstack/react-router";
 import {
+  CheckCheck,
+  CookingPot,
+  FilterX,
   Heart,
+  History,
   Plus,
   Search,
   SlidersHorizontal,
   Star,
   Tags as TagsIcon,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ErrorNotice, LoadingState } from "@/components/feedback";
@@ -116,7 +121,14 @@ export function Collection() {
         </Link>
       </div>
 
-      <CollectionSelect />
+      <div className="collection-navigation">
+        <div className="collection-navigation-select">
+          <CollectionSelect />
+        </div>
+        <Link to="/recipes/imports" className="text-button">
+          <History size={17} aria-hidden="true" /> Recent imports
+        </Link>
+      </div>
       <div className="collection-toolbar">
         <div className="collection-count">
           <span>
@@ -180,6 +192,7 @@ export function Collection() {
                 )
               }
             >
+              <CheckCheck size={17} aria-hidden="true" />
               {allVisibleSelected ? "Deselect all" : "Select all"}
             </button>
             <button
@@ -191,7 +204,7 @@ export function Collection() {
                 setSelectedRecipeIds([]);
               }}
             >
-              Cancel
+              <X size={17} aria-hidden="true" /> Cancel
             </button>
           </div>
           {selectedRecipeIds.length > 100 && (
@@ -209,7 +222,7 @@ export function Collection() {
               }
               onClick={() => setBulkDialog(true)}
             >
-              Tag recipes
+              <TagsIcon size={17} aria-hidden="true" /> Tag recipes
             </button>
           </div>
         </section>
@@ -254,7 +267,7 @@ export function Collection() {
             })
           }
         >
-          Never cooked
+          <CookingPot size={17} aria-hidden="true" /> Never cooked
         </button>
         <label className="cooking-date-filter">
           Last cooked before
@@ -294,7 +307,7 @@ export function Collection() {
             });
           }}
         >
-          Clear filters
+          <FilterX size={17} aria-hidden="true" /> Clear filters
         </button>
       )}
       <ErrorNotice

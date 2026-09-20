@@ -33,6 +33,7 @@ import { websiteImportSchema } from "../import-contract";
 import {
   discardWebsiteImport,
   importStatus,
+  recentImports,
   submitWebsiteImport,
 } from "../imports";
 import { protectedProcedure, router } from "../index";
@@ -397,6 +398,13 @@ export const recipesRouter = router({
     .mutation(({ input, ctx }) =>
       submitWebsiteImport(ctx.session.user.id, input),
     ),
+  recentImports: protectedProcedure
+    .input(z.object({ accountId: z.string() }))
+    .query(({ ctx, input }) => {
+      if (input.accountId !== ctx.session.user.id)
+        throw new TRPCError({ code: "FORBIDDEN" });
+      return recentImports(ctx.session.user.id);
+    }),
   importStatus: protectedProcedure
     .input(idInput)
     .query(({ input, ctx }) => importStatus(ctx.session.user.id, input.id)),
