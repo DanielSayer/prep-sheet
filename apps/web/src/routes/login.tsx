@@ -5,14 +5,17 @@ import { type SignInProvider, SocialSignIn } from "@/components/social-sign-in";
 import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (search: Record<string, unknown>): { error?: string } => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { error?: string; billing?: string } => ({
     error: typeof search.error === "string" ? search.error : undefined,
+    billing: search.billing === "1" || search.billing === 1 ? "1" : undefined,
   }),
   component: Login,
 });
 
 function Login() {
-  const { error: callbackError } = Route.useSearch();
+  const { error: callbackError, billing } = Route.useSearch();
   const [pending, setPending] = useState<SignInProvider | null>(null);
   const [error, setError] = useState(() =>
     callbackError === "account_not_linked" ||
@@ -38,8 +41,8 @@ function Login() {
     try {
       const result = await authClient.signIn.social({
         provider,
-        callbackURL: "/",
-        errorCallbackURL: "/login",
+        callbackURL: billing ? "/settings?billing=1" : "/",
+        errorCallbackURL: billing ? "/login?billing=1" : "/login",
       });
 
       if (result.error)
@@ -66,7 +69,11 @@ function Login() {
 
         <h1>Your recipe collection</h1>
 
-        <p>Sign in to save and organise recipes.</p>
+        <p>
+          {billing
+            ? "Sign in to choose Pro and review your free trial eligibility."
+            : "Sign in to save and organise recipes."}
+        </p>
 
         <SocialSignIn
           pending={pending}

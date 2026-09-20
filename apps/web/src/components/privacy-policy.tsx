@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 export function PrivacyPolicy({ embedded = false }: { embedded?: boolean }) {
   const Heading = embedded ? "h3" : "h2";
   return (
-    <>
+    <div className="privacy-policy">
       <section className="help-section">
         <Heading>Sign-in</Heading>
         <p>
@@ -109,6 +109,6 @@ export function PrivacyPolicy({ embedded = false }: { embedded?: boolean }) {
           </Link>
         </div>
       </section>
-    </>
+    </div>
   );
 }

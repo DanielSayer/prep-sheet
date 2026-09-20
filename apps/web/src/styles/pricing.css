@@ -1,0 +1,223 @@
+.pricing-faq details p {
+  color: var(--muted-ink);
+  line-height: 1.7;
+  margin: 0 0 18px;
+  max-width: 80ch;
+}
+.pricing-page {
+  max-width: 1040px;
+  padding-bottom: 64px;
+}
+.pricing-heading {
+  margin: 40px 0 32px;
+  text-align: center;
+}
+.pricing-heading h1,
+.pricing-heading h2 {
+  font-size: clamp(28px, 3.6vw, 44px);
+  letter-spacing: -1.2px;
+  line-height: 1.15;
+  margin: 10px 0 16px;
+}
+.pricing-heading > p:last-child {
+  color: var(--muted-ink);
+  max-width: 58ch;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+.plan-eyebrow {
+  color: var(--green-dark);
+  font-size: 13px;
+  font-weight: 800;
+}
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+.plan-card {
+  padding: 28px;
+  border: 1px solid var(--control-line);
+  border-radius: 20px;
+  background: #fffef9;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.plan-card-pro {
+  background: #edf1e3;
+  border: 2px solid var(--green-dark);
+  padding: 27px;
+}
+.plan-card h3 {
+  font-size: 28px;
+  margin: 12px 0 8px;
+  font-weight: 900;
+}
+.plan-card .plan-description {
+  color: var(--muted-ink);
+  line-height: 1.6;
+  min-height: 3.2em;
+  margin: 0 0 20px;
+}
+.plan-card .plan-price {
+  font-size: 40px;
+  font-weight: 900;
+  letter-spacing: -1.2px;
+  line-height: 1.2;
+  margin: 0 0 10px;
+}
+.plan-price span {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--muted-ink);
+  white-space: nowrap;
+}
+.plan-card .plan-terms {
+  font-size: 13px;
+  color: var(--muted-ink);
+  margin: 0 0 24px;
+  line-height: 1.6;
+}
+.plan-card > .button,
+.plan-current {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+  text-align: center;
+}
+.plan-card .plan-current {
+  padding: 12px;
+  border: 1px dashed var(--control-line);
+  border-radius: 8px;
+  font-weight: 800;
+  margin: 0;
+}
+.plan-card .plan-features {
+  list-style: none;
+  padding: 0;
+  margin: 26px 0 0;
+  display: grid;
+  gap: 16px;
+}
+.plan-card .plan-features li {
+  display: flex;
+  gap: 10px;
+  font-size: 15px;
+  line-height: 1.55;
+  margin: 0;
+}
+.plan-features svg {
+  flex-shrink: 0;
+  color: var(--green-dark);
+  margin-top: 3px;
+}
+.plan-trial {
+  border-top: 1px solid #bac8aa;
+  margin-top: 24px;
+  padding-top: 18px;
+}
+.plan-trial strong {
+  font-size: 15px;
+}
+.plan-card .plan-trial p {
+  font-size: 13px;
+  line-height: 1.65;
+  margin: 6px 0 0;
+  color: var(--muted-ink);
+}
+.pricing-faq {
+  margin-top: 40px;
+}
+.pricing-faq h2 {
+  font-size: 24px;
+  margin-bottom: 18px;
+}
+.pricing-faq details {
+  border-bottom: 1px solid var(--line);
+}
+.pricing-faq summary {
+  cursor: pointer;
+  padding: 18px 0;
+  min-height: 48px;
+  font-weight: 800;
+}
+
+.pricing-faq summary:focus-visible,
+.pricing-links a:focus-visible,
+.hero-pricing-link:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+}
+.home-plans {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.home-plans .plan-grid {
+  max-width: 960px;
+  margin: 0 auto;
+}
+.pricing-links {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin-top: 24px;
+}
+.pricing-links a,
+.hero-pricing-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.hero-pricing-link {
+  margin-top: 12px;
+}
+.billing-section .billing-summary {
+  background: #edf1e3;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.billing-summary p:last-child {
+  margin-bottom: 0;
+}
+.billing-actions {
+  margin-top: 24px;
+}
+.privacy-page {
+  max-width: calc(100ch + 2 * var(--page-gutter));
+}
+.privacy-policy .help-section > p {
+  max-width: 100ch;
+}
+@media (max-width: 650px) {
+  .plan-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+  .plan-card {
+    padding: 24px;
+  }
+  .plan-card-pro {
+    padding: 23px;
+  }
+  .plan-card .plan-description {
+    min-height: 0;
+  }
+  .pricing-heading {
+    margin-top: 24px;
+    text-align: left;
+  }
+  .pricing-heading > p:last-child {
+    margin: 0;
+  }
+}

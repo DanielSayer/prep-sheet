@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { ErrorNotice } from "@/components/feedback";
+import { PlanCards, PricingFaq } from "@/components/plan-cards";
 import { useTRPC } from "@/utils/trpc";
 
 export function Billing() {
@@ -85,46 +86,40 @@ export function Billing() {
               </p>
             )}
           </div>
-          {plan.tier === "free" && (
-            <div className="billing-offer">
-              <h3>Grow your cookbook with Pro</h3>
-              <ul>
-                <li>
-                  {plan.pricing.pro.recipes === null
-                    ? "Unlimited saved recipes"
-                    : `Save up to ${plan.pricing.pro.recipes} recipes`}
-                </li>
-                <li>
-                  {plan.pricing.pro.aiCredits} AI imports or generated recipes
-                  each month
-                </li>
-                {plan.pricing.pro.createHousehold && (
-                  <li>Create a shared household. Anyone can join.</li>
-                )}
-              </ul>
-              {plan.trialEligible && plan.pricing.trial.days > 0 && (
-                <p>
-                  Try Pro for {plan.pricing.trial.days} days with{" "}
-                  {plan.pricing.trial.aiCredits} AI credits total.
-                </p>
-              )}
-              <p className="muted">
-                See the price and renewal terms at checkout. Discount codes are
-                welcome.
+          <PlanCards
+            trialEligible={plan.trialEligible && plan.tier === "free"}
+            freeAction={
+              <p className="plan-current">
+                {plan.tier === "free"
+                  ? "Your current plan"
+                  : "Included with Pro"}
               </p>
-              <button
-                type="button"
-                className="button button-primary"
-                disabled={busy || !plan.available}
-                onClick={() => checkout.mutate()}
-              >
-                {checkout.isPending ? "Opening checkout..." : "Upgrade to Pro"}
-              </button>
-              {!plan.available && (
-                <p className="muted">Pro checkout is coming soon.</p>
-              )}
-            </div>
-          )}
+            }
+            proAction={
+              plan.tier === "pro" ? (
+                <p className="plan-current">
+                  {plan.bucket === "trial"
+                    ? "Your trial is active"
+                    : "Your current plan"}
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  className="button button-primary"
+                  disabled={busy || !plan.available}
+                  onClick={() => checkout.mutate()}
+                >
+                  {checkout.isPending
+                    ? "Opening checkout..."
+                    : !plan.available
+                      ? "Pro is coming soon"
+                      : plan.trialEligible && plan.pricing.trial.days > 0
+                        ? `Start ${plan.pricing.trial.days}-day free trial`
+                        : "Get Pro"}
+                </button>
+              )
+            }
+          />
           <div className="billing-actions">
             {plan.hasCustomer && (
               <button
@@ -149,11 +144,7 @@ export function Billing() {
               </button>
             )}
           </div>
-          <p className="muted">
-            AI credits cover attempts once processing starts. Deleting recipes
-            does not restore credits. Pro credits reset on the first of each
-            month, UTC.
-          </p>
+          <PricingFaq />
         </>
       )}
       <ErrorNotice

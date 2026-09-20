@@ -14,6 +14,7 @@
 @import "./styles/planner.css";
 @import "./styles/support.css";
 @import "./styles/landing.css";
+@import "./styles/pricing.css";
 .mobile-screen-title {
   display: none;
 }

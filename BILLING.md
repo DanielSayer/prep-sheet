@@ -6,6 +6,8 @@ Edit `packages/api/src/billing/policy.ts` for recipe limits, AI credits, househo
 
 Defaults are 10 recipes and 3 lifetime AI credits for Free, unlimited recipes and 50 monthly AI credits for Pro, and a 7-day trial with 3 total credits. Pro credits reset on the first of each calendar month at 00:00 UTC, independently of the payment date. Unused credits do not roll over. Coupons, including 100% discounts, never bypass these limits.
 
+The public pricing page advertises A$4.99/month with a 7-day trial. Configure the Polar monthly product to match before enabling checkout. Updating the UI does not change the Polar product.
+
 Polar owns the recurring price, currency, taxes and coupons. Create one monthly recurring Pro product. Do not use a one-time or metered product for this integration. The checkout displays the authoritative price before purchase. Future paid features from PRICING.md are not gated yet.
 
 ## Setup

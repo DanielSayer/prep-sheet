@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import {
   ChevronDown,
+  CreditCard,
   LifeBuoy,
   LogIn,
   LogOut,
@@ -28,6 +29,7 @@ export default function UserMenu() {
   const accountActive = useRouterState({
     select: (state) =>
       state.location.pathname === "/settings" ||
+      state.location.pathname === "/pricing" ||
       state.location.pathname === "/privacy" ||
       state.location.pathname === "/support" ||
       state.location.pathname === "/groups" ||
@@ -76,6 +78,12 @@ export default function UserMenu() {
             render={<Link to="/login" />}
           >
             <LogIn size={16} /> Sign in
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="collection-select-manage"
+            render={<Link to="/pricing" />}
+          >
+            <CreditCard size={16} /> Plans &amp; pricing
           </DropdownMenuItem>
           <DropdownMenuItem
             className="collection-select-manage"

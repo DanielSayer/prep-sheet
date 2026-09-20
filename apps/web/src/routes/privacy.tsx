@@ -5,7 +5,7 @@ export const Route = createFileRoute("/privacy")({ component: Privacy });
 
 function Privacy() {
   return (
-    <main id="main-content" className="page-width help-page">
+    <main id="main-content" className="page-width help-page privacy-page">
       <div className="page-heading">
         <div>
           <h1>
