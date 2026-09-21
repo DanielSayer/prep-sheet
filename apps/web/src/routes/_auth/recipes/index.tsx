@@ -3,7 +3,7 @@ import { z } from "zod";
 import { Collection } from "@/components/recipes/collection";
 import { type RecipeSort, recipeSorts } from "@/components/recipes/recipe-list";
 
-export type CollectionSearch = {
+type CollectionSearch = {
   q?: string;
   favourites?: boolean;
   unrated?: boolean;

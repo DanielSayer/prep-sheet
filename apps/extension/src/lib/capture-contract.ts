@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const sourceUrlSchema = z
+const sourceUrlSchema = z
   .string()
   .max(4096)
   .url()
@@ -14,7 +14,7 @@ export const sourceUrlSchema = z
       !url.hash
     );
   });
-export const capturedRecipeSchema = z.strictObject({
+const capturedRecipeSchema = z.strictObject({
   title: z.string().trim().min(1).max(300),
   content: z.string().trim().min(1).max(32_000),
   format: z.enum(["json-ld", "text"]),

@@ -10,7 +10,7 @@ import { useTRPC } from "@/utils/trpc";
 import { ErrorNotice, LoadingState } from "../feedback";
 import { PlanShop, TripSummary } from "../planner/plan-shop";
 
-export function GenerateListButton({
+function GenerateListButton({
   disabled = false,
   mode = "generate",
 }: {

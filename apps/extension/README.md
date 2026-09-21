@@ -95,8 +95,7 @@ Server input text is cleared after processing or failure, and checkpointed outpu
 - `src/lib/extract-recipe.ts`: self-contained DOM extractor injected with `scripting.executeScript` only after a capture click. There is no persistent content script or page-message listener.
 - `src/lib/capture-contract.ts`: validated capture responses, size limits and recovery messages.
 - `src/entrypoints/popup/Capture.tsx`: capture action, recipe choices and local text preview.
-- `src/lib/api-client.ts`: reserved tRPC client with a type-only router dependency. It makes no requests until called. Extension tokens are accepted only by dedicated extension endpoints, not website tRPC.
-- `src/lib/config.ts` and `origin.ts`: validated website origin used by the popup and API client.
+- `src/lib/config.ts` and `origin.ts`: validated website origin used by the popup and background worker. Extension tokens are accepted only by dedicated extension endpoints, not website tRPC.
 
 Static builds request `activeTab`, `scripting`, `identity`, `storage` and the configured Prep Sheet host only. No content scripts are registered on all sites. WXT's live development server may add local reload permissions and content security policy entries; static packages do not need those additions.
 

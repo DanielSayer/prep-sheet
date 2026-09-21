@@ -8,7 +8,7 @@ export type Database =
   | typeof db
   | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-export const memberOf = (userId: string) =>
+const memberOf = (userId: string) =>
   exists(
     db
       .select({ id: groupMember.userId })

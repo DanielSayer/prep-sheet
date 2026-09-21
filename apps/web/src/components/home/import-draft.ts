@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const pendingImportSchema = z.object({
+const pendingImportSchema = z.object({
   id: z.uuid(),
   input: z.string().trim().min(3).max(20000),
   groupId: z.uuid().nullable(),

@@ -15,7 +15,7 @@ export async function lockAccount(tx: Database, userId: string) {
     .for("update");
 }
 
-export async function getAllowance(tx: Database, userId: string) {
+async function getAllowance(tx: Database, userId: string) {
   const [account] = await tx
     .select()
     .from(billingAccount)
