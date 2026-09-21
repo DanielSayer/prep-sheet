@@ -3,6 +3,7 @@ import type { RecipeContent } from "@prep-sheet/db/recipe-content";
 import {
   Document,
   Font,
+  Image,
   Link,
   Page,
   renderToBuffer,
@@ -10,6 +11,7 @@ import {
   Text,
   View,
 } from "@react-pdf/renderer";
+import logo from "../../../../apps/web/public/branding/logo-horizontal.png?inline";
 
 const require = createRequire(import.meta.url);
 Font.register({
@@ -48,7 +50,7 @@ const s = StyleSheet.create({
     marginBottom: 22,
     gap: 9,
   },
-  brandName: { fontSize: 19, fontWeight: 800, color: "#063338" },
+  brandLogo: { width: 150, height: 50, objectFit: "contain" },
   title: {
     fontSize: 30,
     fontWeight: 800,
@@ -151,9 +153,7 @@ export async function recipePdf(
     <Document title={content.title} author="Prep Sheet">
       <Page size="A4" style={s.page}>
         <View style={s.brand}>
-          <Text style={s.brandName}>
-            prepsheet<Text style={{ color: "#eb713a" }}>.</Text>
-          </Text>
+          <Image src={logo} style={s.brandLogo} />
         </View>
         <Text style={s.title}>{content.title}</Text>
         {content.description && (
