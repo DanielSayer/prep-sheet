@@ -2,6 +2,7 @@ import { createHmac, randomUUID } from "node:crypto";
 import { Polar } from "@polar-sh/sdk";
 import type { CustomerState } from "@polar-sh/sdk/models/components/customerstate";
 import type { CustomerStateSubscription } from "@polar-sh/sdk/models/components/customerstatesubscription";
+import { ResourceNotFound } from "@polar-sh/sdk/models/errors/resourcenotfound";
 import { db } from "@prep-sheet/db";
 import { user } from "@prep-sheet/db/schema/auth";
 import { billingAccount } from "@prep-sheet/db/schema/billing";
@@ -151,6 +152,31 @@ describe("Polar synchronization and signed webhooks", () => {
     vi.unstubAllEnvs();
     await db.delete(user).where(eq(user.id, userId));
     await db.$client.end();
+  });
+  it("keeps first-time customers on Free when Polar has no customer yet", async () => {
+    const request = new Request(
+      "https://sandbox-api.polar.sh/v1/customers/external/test/state",
+    );
+    const body = JSON.stringify({
+      error: "ResourceNotFound",
+      detail: "Not found",
+    });
+    const response = new Response(body, { status: 404 });
+    vi.spyOn(customerPrototype, "getStateExternal").mockRejectedValue(
+      new ResourceNotFound(
+        {
+          error: "ResourceNotFound",
+          detail: "Not found",
+        },
+        { request, response, body },
+      ),
+    );
+    const account = await db.transaction((tx) => syncBilling(tx, userId));
+    expect(account).toMatchObject({
+      status: "free",
+      customerId: null,
+      trialUsed: false,
+    });
   });
   it("rejects forged and expired signatures before calling the API", async () => {
     const fetch = vi

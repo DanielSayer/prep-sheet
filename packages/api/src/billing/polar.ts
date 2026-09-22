@@ -1,5 +1,5 @@
 import { Polar } from "@polar-sh/sdk";
-import { SDKError } from "@polar-sh/sdk/models/errors/sdkerror";
+import { PolarError } from "@polar-sh/sdk/models/errors/polarerror";
 import {
   validateEvent,
   WebhookVerificationError,
@@ -48,7 +48,7 @@ export async function syncBilling(tx: Database, userId: string) {
   try {
     state = await polar().customers.getStateExternal({ externalId: userId });
   } catch (error) {
-    if (!(error instanceof SDKError) || error.statusCode !== 404) throw error;
+    if (!(error instanceof PolarError) || error.statusCode !== 404) throw error;
   }
   const now = new Date();
   const subscription = state?.activeSubscriptions
