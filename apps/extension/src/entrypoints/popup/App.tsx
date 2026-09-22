@@ -49,7 +49,16 @@ export function App() {
   }, [connection, send]);
   return (
     <main>
-      <p className="brand">Prep Sheet</p>
+      <p className="brand">
+        <img
+          src="/branding/icon-192.png"
+          alt=""
+          className="brand-icon"
+          width={40}
+          height={40}
+        />
+        <span className="brand-wordmark">prep sheet</span>
+      </p>
       {connection?.kind === "connected" ? (
         <>
           <Capture

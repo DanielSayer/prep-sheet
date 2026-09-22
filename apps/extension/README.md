@@ -4,6 +4,10 @@ Chrome and Edge Manifest V3 app built with [WXT](https://wxt.dev/), React and Ty
 
 Parts 1 to 4 are implemented. The popup connects an account, captures recipes from the loaded tab, selects a personal or group collection, and saves through a durable server queue. See [TODO.md](./TODO.md) and [AUTH.md](./AUTH.md).
 
+## Branding
+
+The website owns the brand. The popup imports `apps/web/src/styles/brand.css` for its font, palette, spacing, focus styles and wordmark. WXT copies the website PNGs from `apps/web/public/branding` into each extension build and declares them as toolbar and extension icons. Change those website sources to update both apps; keep the compact popup layout in its own stylesheet. Turbo includes these shared sources in its cache inputs.
+
 ## Local development
 
 Use the repository's pnpm version and Node 22 or newer. From the repository root:

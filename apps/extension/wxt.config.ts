@@ -1,5 +1,13 @@
+import { resolve } from "node:path";
 import { defineConfig } from "wxt";
 import { getBuildSettings } from "./config/build";
+
+const icons = {
+  16: "branding/favicon-16.png",
+  32: "branding/favicon-32.png",
+  48: "branding/favicon-48.png",
+  192: "branding/icon-192.png",
+};
 
 export default defineConfig({
   srcDir: "src",
@@ -8,6 +16,16 @@ export default defineConfig({
   modules: ["@wxt-dev/module-react"],
   imports: false,
   webExt: { disabled: true },
+  hooks: {
+    "build:publicAssets": (wxt, files) => {
+      for (const relativeDest of Object.values(icons)) {
+        files.push({
+          absoluteSrc: resolve(wxt.config.root, "../web/public", relativeDest),
+          relativeDest,
+        });
+      }
+    },
+  },
   manifest: ({ mode }) => {
     const { origin, key, development } = getBuildSettings(mode);
     return {
@@ -17,7 +35,8 @@ export default defineConfig({
       permissions: ["activeTab", "scripting", "identity", "storage"],
       minimum_chrome_version: "116",
       host_permissions: [`${origin}/*`],
-      action: { default_title: "Prep Sheet" },
+      icons,
+      action: { default_title: "Prep Sheet", default_icon: icons },
     };
   },
   vite: ({ mode }) => ({

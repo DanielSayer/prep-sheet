@@ -1,0 +1,39 @@
+/* Website brand source of truth. Also imported by the extension popup. */
+:root {
+  --paper: #faf7ef;
+  --ink: #283e32;
+  --green: #527b42;
+  --green-dark: #35532d;
+  --green-hover: #466e38;
+  --orange: #ee8a4b;
+  --line: #dedfce;
+  --muted-ink: #596451;
+  --control-line: #7b876f;
+  --surface-muted: #e9eddf;
+  --success-background: #e9f0dc;
+  --error-background: #ffede1;
+  --error-ink: #803e23;
+  --error-line: #d99a75;
+  --font-sans: "Trebuchet MS", Arial, sans-serif;
+  --font-heading: var(--font-sans);
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --control-radius: 12px;
+  --focus-outline: 3px solid var(--ink);
+  --focus-offset: 4px;
+}
+
+.brand-icon {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+.brand-wordmark {
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: -1.2px;
+  color: var(--ink);
+}

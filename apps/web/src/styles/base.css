@@ -1,16 +1,8 @@
+@import "./brand.css";
+
 :root {
-  --paper: #faf7ef;
-  --ink: #283e32;
-  --green: #527b42;
-  --green-dark: #35532d;
-  --orange: #ee8a4b;
-  --line: #dedfce;
-  --muted-ink: #596451;
-  --control-line: #7b876f;
   --background: var(--paper);
   --foreground: var(--ink);
-  --font-sans: "Trebuchet MS", Arial, sans-serif;
-  --font-heading: var(--font-sans);
   --page-gutter: 32px;
   --mobile-nav-height: 0px;
 }
@@ -55,8 +47,8 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 4px;
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
 }
 h1,
 h2,
@@ -92,8 +84,8 @@ select {
 }
 select:focus-visible,
 summary:focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 4px;
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
 }
 input::placeholder,
 textarea::placeholder {
@@ -110,7 +102,7 @@ textarea::placeholder {
   left: 20px;
   z-index: 100;
   background: white;
-  padding: 12px;
+  padding: var(--space-3);
   border: 2px solid var(--ink);
 }
 .skip-link:focus {
@@ -174,7 +166,7 @@ textarea::placeholder {
 .site-header nav a:hover,
 .site-header nav a.active {
   color: var(--ink);
-  background: #e9eddf;
+  background: var(--surface-muted);
 }
 .button {
   display: inline-flex;
@@ -183,7 +175,7 @@ textarea::placeholder {
   gap: 10px;
   padding: 13px 22px;
   border: 2px solid var(--ink);
-  border-radius: 12px;
+  border-radius: var(--control-radius);
   font-weight: 800;
   font-size: 15px;
   line-height: 1.4;
@@ -209,7 +201,7 @@ textarea::placeholder {
   box-shadow: 0 4px 0 var(--green-dark);
 }
 .button-primary:hover:not(:disabled) {
-  background: #466e38;
+  background: var(--green-hover);
   box-shadow: 0 6px 0 var(--green-dark);
 }
 .button-outline {
@@ -262,7 +254,7 @@ textarea::placeholder {
 .account-placeholder {
   width: 85px;
   height: 36px;
-  background: #e9eddf;
+  background: var(--surface-muted);
   border-radius: 10px;
 }
 /* Billing shares the settings page's type and button styles. */
@@ -270,7 +262,7 @@ textarea::placeholder {
 .billing-offer {
   padding: 1.25rem;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--control-radius);
   margin-bottom: 1rem;
 }
 .billing-summary > strong {

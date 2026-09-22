@@ -20,12 +20,12 @@
   align-items: flex-start;
   gap: 10px;
   padding: 16px;
-  background: #ffede1;
-  border: 1px solid #d99a75;
+  background: var(--error-background);
+  border: 1px solid var(--error-line);
   border-radius: 12px;
   margin-top: 20px;
   font-size: 14px;
-  color: #803e23;
+  color: var(--error-ink);
 }
 .error-notice > svg {
   flex-shrink: 0;
@@ -47,7 +47,7 @@
   align-items: center;
   gap: 14px;
   margin-top: 20px;
-  background: #e9f0dc;
+  background: var(--success-background);
   border: 1.5px solid #8d9f70;
   border-radius: 12px;
   padding: 18px;

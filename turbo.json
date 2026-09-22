@@ -1,6 +1,10 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "globalDependencies": [
+    "apps/web/src/styles/brand.css",
+    "apps/web/public/branding/**"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
