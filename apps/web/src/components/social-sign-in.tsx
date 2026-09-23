@@ -13,23 +13,29 @@ export function SocialSignIn({
     <div className="social-sign-in" aria-busy={pending !== null}>
       <button
         type="button"
-        className="button button-outline"
+        className="social-provider-button social-provider-button-google"
         disabled={disabled || pending !== null}
         onClick={() => onSignIn("google")}
       >
-        {pending === "google"
-          ? "Connecting to Google..."
-          : "Continue with Google"}
+        <img src="/auth/google-g.png" alt="" width="20" height="20" />
+        <span>
+          {pending === "google"
+            ? "Connecting to Google..."
+            : "Continue with Google"}
+        </span>
       </button>
       <button
         type="button"
-        className="button button-outline"
+        className="social-provider-button social-provider-button-discord"
         disabled={disabled || pending !== null}
         onClick={() => onSignIn("discord")}
       >
-        {pending === "discord"
-          ? "Connecting to Discord..."
-          : "Continue with Discord"}
+        <img src="/auth/discord-mark.svg" alt="" width="27" height="20" />
+        <span>
+          {pending === "discord"
+            ? "Connecting to Discord..."
+            : "Continue with Discord"}
+        </span>
       </button>
     </div>
   );

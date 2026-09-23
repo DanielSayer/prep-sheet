@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Google Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/auth/google-sans-medium.ttf") format("truetype");
+}
+
 .login-page {
   padding: 60px 24px;
 }
@@ -5,9 +13,48 @@
   display: grid;
   gap: 12px;
 }
-.social-sign-in .button {
+.social-provider-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  min-height: 44px;
+  min-height: 48px;
+  padding: 12px 44px;
+  border: 1px solid;
+  border-radius: 24px;
+  font-family: "Google Sans", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+.social-provider-button img {
+  display: block;
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  object-fit: contain;
+  transform: translateY(-50%);
+}
+.social-provider-button-google {
+  background: #fff;
+  border-color: #747775;
+  color: #1f1f1f;
+}
+.social-provider-button-google:hover:not(:disabled) {
+  background: #f8f9fa;
+}
+.social-provider-button-discord {
+  background: #fff;
+  border-color: #5865f2;
+  color: #1f1f1f;
+}
+.social-provider-button-discord:hover:not(:disabled) {
+  background: #f2f3ff;
 }
 .login-card {
   max-width: 440px;
