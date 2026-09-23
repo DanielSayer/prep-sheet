@@ -23,6 +23,7 @@ import {
   submitWebsiteImport,
 } from "./imports";
 import { sampleRecipe } from "./recipes/fixtures";
+import { requireRecipeProvider } from "./recipes/generate";
 import { checkRecipeUsage } from "./recipes/usage";
 
 const account = randomUUID();
@@ -257,6 +258,27 @@ describe("website durable imports", () => {
       .where(eq(recipeImport.id, badUrl.id));
     expect(unreadable).toMatchObject({ state: "failed", usageReleased: true });
     expect(generate).toHaveBeenCalledTimes(1);
+  });
+  it("releases AI usage when the provider is not configured", async () => {
+    const item = input();
+    await submitWebsiteImport(account, item);
+    const generate = vi.fn().mockResolvedValue(output);
+
+    await processNextImport(generate, () => requireRecipeProvider(""));
+
+    expect(generate).not.toHaveBeenCalled();
+    expect(await importStatus(account, item.id)).toMatchObject({
+      kind: "failed",
+      message: expect.not.stringContaining("OPENAI_API_KEY"),
+    });
+    const [failed] = await db
+      .select()
+      .from(recipeImport)
+      .where(eq(recipeImport.id, item.id));
+    expect(failed?.usageReleased).toBe(true);
+    expect(
+      await db.select().from(aiSpend).where(eq(aiSpend.importId, item.id)),
+    ).toHaveLength(0);
   });
   it("recovers saving without AI and blocks delayed requests after cancellation", async () => {
     const item = input();

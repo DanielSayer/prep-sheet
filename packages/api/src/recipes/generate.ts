@@ -14,24 +14,29 @@ const resultSchema = z.object({
   tagIds: z.array(z.string()).max(105),
 });
 
+export function requireRecipeProvider(apiKey = env.OPENAI_API_KEY) {
+  if (!apiKey?.trim())
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message:
+        "Recipe creation is temporarily unavailable. Please try again later or add a recipe manually.",
+    });
+  return apiKey.trim();
+}
+
 export async function generateRecipe(
   input: string,
   tags: { id: string; name: string; description: string }[] = [],
   capturedSourceUrl?: string,
 ) {
-  if (!env.OPENAI_API_KEY)
-    throw new TRPCError({
-      code: "PRECONDITION_FAILED",
-      message:
-        "Recipe creation needs an OpenAI API key. Add OPENAI_API_KEY to apps/web/.env and restart the server.",
-    });
+  const apiKey = requireRecipeProvider();
   const { content, sourceUrl } = await prepareRecipeInput(
     input,
     capturedSourceUrl,
   );
   try {
     const { output } = await generateText({
-      model: createOpenAI({ apiKey: env.OPENAI_API_KEY })(env.OPENAI_MODEL),
+      model: createOpenAI({ apiKey })(env.OPENAI_MODEL),
       output: Output.object({ schema: resultSchema }),
       maxOutputTokens: 7000,
       maxRetries: 0,

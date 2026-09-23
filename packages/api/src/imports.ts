@@ -29,7 +29,11 @@ import {
   importInputSchema,
   websiteImportSchema,
 } from "./import-contract";
-import { generateRecipe, prepareRecipeInput } from "./recipes/generate";
+import {
+  generateRecipe,
+  prepareRecipeInput,
+  requireRecipeProvider,
+} from "./recipes/generate";
 import { persistRecipe } from "./recipes/persist";
 import { checkRecipeUsage } from "./recipes/usage";
 import { availableTags } from "./routers/tags";
@@ -320,7 +324,12 @@ async function submitJob(userId: string, input: JobInput) {
 }
 
 // A dedicated process awaits this function. No work is launched by HTTP handlers.
-export async function processNextImport(generate = generateRecipe) {
+export async function processNextImport(
+  generate = generateRecipe,
+  ensureProviderReady: () => void = generate === generateRecipe
+    ? requireRecipeProvider
+    : () => {},
+) {
   const [ready] = await db
     .select({ id: recipeImport.id })
     .from(recipeImport)
@@ -391,6 +400,8 @@ export async function processNextImport(generate = generateRecipe) {
         ? await prepareRecipeInput(job.input, job.sourceUrl ?? undefined)
         : { content: job.input, sourceUrl: job.sourceUrl };
     const tags = await availableTags(job.userId);
+    // A missing provider key must fail before reserving spend or consuming AI usage.
+    ensureProviderReady();
     // Persist the exact input before crossing the AI boundary.
     const claimed = await db.transaction(async (tx) => {
       const claimed = await tx
