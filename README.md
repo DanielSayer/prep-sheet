@@ -80,7 +80,11 @@ pnpm build
 pnpm check
 ```
 
-`pnpm test` needs the local database with the schema pushed. Integration tests create unique test users, exercise real database operations and remove those users afterwards. OpenAI calls are mocked in that suite. PDF fixtures are written under ignored `tmp/pdfs` for visual inspection.
+`pnpm test` starts one fresh PostgreSQL 18 container for the whole Vitest run. It assigns a free loopback port, creates a separate Docker volume, pushes the current Drizzle schema, and passes the test `DATABASE_URL` to every Vitest worker. The wrapper removes the container and volume after success or failure. Docker Desktop must be running. The development container and its data are not part of this Compose project.
+
+Use `pnpm test path/to/file.test.ts` to run selected files with the same lifecycle. Run tests through this command rather than invoking Vitest directly; Vitest rejects runs without the wrapper's isolated database marker. Ordinary integration tests use a local placeholder OpenAI key because generation is mocked. `pnpm test:live` uses a real key from `apps/web/.env` or the process environment when `LIVE_AI_TEST=1`.
+
+Integration tests create unique test users, exercise real database operations and remove those users afterwards. PDF fixtures are written under ignored `tmp/pdfs` for visual inspection. If the process is forcibly killed before cleanup, remove the orphaned `prep-sheet-test-*` Compose project and its volume after checking its name with `docker ps -a`.
 
 Group integration coverage includes private/group isolation, shared editing, unauthorised imports and copies, owner permissions, removal and leaving, expired/revoked invites, concurrent invite acceptance, membership changes during recipe generation and preserving contributions after account deletion.
 
@@ -126,4 +130,4 @@ Reservations are created atomically with admission. Failures before generation r
 
 Keep job records for usage accounting and request deduplication. Do not purge saved or failed jobs when deleting recipes. Existing extension jobs remain compatible; historical website attempts made before this upgrade have no job record.
 
-Run PostgreSQL integration tests without file parallelism when exercising the shared import queue: `pnpm test --fileParallelism=false`. Use a development/test database without live import workers.
+Vitest runs files sequentially because the integration suites share the isolated PostgreSQL import queue. Development workers can continue using the development database during tests.

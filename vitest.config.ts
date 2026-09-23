@@ -1,7 +1,23 @@
-import { config } from "dotenv";
 import { defineConfig } from "vitest/config";
 
-config({ path: "apps/web/.env", quiet: true });
+// biome-ignore lint/suspicious/noUndeclaredEnvVars: The test wrapper sets this for its direct Vitest child process.
+if (process.env.PREP_SHEET_TEST_DATABASE !== "isolated") {
+  throw new Error(
+    "Run tests with pnpm test so they use an isolated PostgreSQL container.",
+  );
+}
+const databaseUrl = new URL(
+  // biome-ignore lint/suspicious/noUndeclaredEnvVars: Vitest runs directly from the test wrapper.
+  process.env.DATABASE_URL ?? "postgresql://localhost/",
+);
+if (
+  databaseUrl.hostname !== "127.0.0.1" ||
+  databaseUrl.pathname !== "/prep_sheet_test" ||
+  !databaseUrl.port ||
+  databaseUrl.port === "5432"
+) {
+  throw new Error("Vitest requires the wrapper's isolated PostgreSQL URL.");
+}
 
 export default defineConfig({
   resolve: { tsconfigPaths: true },
