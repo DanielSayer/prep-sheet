@@ -48,6 +48,15 @@ function AccountComposer({
   const key = importDraftKey(userId ?? "guest");
   const create = useMutation(trpc.recipes.create.mutationOptions());
   const discard = useMutation(trpc.recipes.discardImport.mutationOptions());
+  const rejectionCode = create.error?.data?.code;
+  const admissionRejected =
+    rejectionCode === "BAD_REQUEST" ||
+    rejectionCode === "UNAUTHORIZED" ||
+    rejectionCode === "FORBIDDEN" ||
+    rejectionCode === "NOT_FOUND" ||
+    rejectionCode === "CONFLICT" ||
+    rejectionCode === "PRECONDITION_FAILED" ||
+    rejectionCode === "TOO_MANY_REQUESTS";
 
   useEffect(() => {
     const restored = userId ? readPendingImport(key) : null;
@@ -88,6 +97,7 @@ function AccountComposer({
         enabled: !!pending && !!userId,
         retry: false,
         refetchInterval: (query) => {
+          if (admissionRejected && !query.state.data) return false;
           const kind = query.state.data?.kind;
           return kind === "saved" || kind === "failed" ? false : 2000;
         },
@@ -97,7 +107,8 @@ function AccountComposer({
   const result =
     status.data ?? (create.data?.id === pending?.id ? create.data : undefined);
   const terminal = result?.kind === "saved" || result?.kind === "failed";
-  const busy = !!pending && !terminal;
+  const rejected = admissionRejected && !result;
+  const busy = !!pending && !terminal && !rejected;
   useEffect(() => {
     if (result?.kind !== "saved" || completed.current === result.id) return;
     completed.current = result.id;
@@ -218,7 +229,7 @@ function AccountComposer({
           />
           {pending && (
             <div className="composer-toolbar">
-              {busy && create.isError && (
+              {busy && create.isError && !admissionRejected && (
                 <button
                   type="button"
                   className="text-button"
@@ -246,7 +257,9 @@ function AccountComposer({
                     ? "Add another recipe"
                     : terminal
                       ? "Edit and start a new attempt"
-                      : "Cancel request"}
+                      : rejected
+                        ? "Edit and try again"
+                        : "Cancel request"}
                 </button>
               )}
             </div>

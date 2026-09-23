@@ -4,6 +4,7 @@ import { defineConfig } from "vitest/config";
 config({ path: "apps/web/.env", quiet: true });
 
 export default defineConfig({
+  resolve: { tsconfigPaths: true },
   test: {
     // Integration suites share a PostgreSQL import queue.
     fileParallelism: false,
